@@ -145,6 +145,13 @@ func TestNativeCloseInterruptsReadAndRejectsLaterOperations(t *testing.T) {
 	}
 }
 
+func TestNativeTCPWrapperCannotAuthorizeShortPairing(t *testing.T) {
+	conn, _ := nativeTestConn(t)
+	if conn.authenticatedBluetoothPeer() != "" || authenticatedPeer(conn) != "" {
+		t.Fatal("TCP socket wrapper acquired native authenticated Bluetooth authority")
+	}
+}
+
 func TestNativeWriteSendsTheEntireBuffer(t *testing.T) {
 	conn, peer := nativeTestConn(t)
 	if err := syscall.SetsockoptInt(conn.handle, syscall.SOL_SOCKET, syscall.SO_SNDBUF, 1024); err != nil {

@@ -77,6 +77,7 @@ func (h *Hub) Handler() http.Handler {
 				Document   Document        `json:"document"`
 				Address    string          `json:"address"`
 				Invitation string          `json:"invitation"`
+				RequestID  string          `json:"requestId"`
 				Message    json.RawMessage `json:"message"`
 			}
 			decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, MaxFrame))
@@ -95,6 +96,10 @@ func (h *Hub) Handler() http.Handler {
 				err = h.Host(body.Document)
 			case "connect":
 				err = h.Connect(body.Address, body.Invitation)
+			case "approve-pairing":
+				err = h.ApprovePairing(body.RequestID)
+			case "reject-pairing":
+				err = h.RejectPairing(body.RequestID)
 			case "stop":
 				h.Stop()
 			case "send":

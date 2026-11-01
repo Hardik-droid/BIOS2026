@@ -27,6 +27,7 @@ func newRelayedHub(relayCode string, dial func(context.Context, string) (net.Con
 		return nil, err
 	}
 	hub := NewHub()
+	hub.allowShortPairing = false // Windows pairing proves the relay hop, not the remote document endpoint.
 	hub.dial = func(ctx context.Context, address string) (net.Conn, error) {
 		raw, err := dial(ctx, address)
 		if err != nil {

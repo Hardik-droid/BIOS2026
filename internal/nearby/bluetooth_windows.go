@@ -267,7 +267,9 @@ func (l *Listener) Accept() (net.Conn, error) {
 			syscall.Closesocket(syscall.Handle(handle))
 			return nil, err
 		}
-		return newConn(syscall.Handle(handle), fmt.Sprintf("%012X", binary.LittleEndian.Uint64(addr[2:10]))), nil
+		conn := newConn(syscall.Handle(handle), fmt.Sprintf("%012X", binary.LittleEndian.Uint64(addr[2:10])))
+		conn.bluetoothAuthenticated = true // Accepted by an AF_BTH socket requiring authentication and encryption.
+		return conn, nil
 	}
 }
 func (l *Listener) Addr() net.Addr { return btAddr("local-bluetooth") }
@@ -312,12 +314,14 @@ func Dial(ctx context.Context, address string) (net.Conn, error) {
 		conn.Close()
 		return nil, err
 	}
+	conn.bluetoothAuthenticated = true
 	return conn, nil
 }
 
 type Conn struct {
 	handle                      syscall.Handle
 	peer                        string
+	bluetoothAuthenticated      bool
 	mu                          sync.Mutex
 	write                       sync.Mutex
 	closed                      bool
@@ -327,6 +331,31 @@ type Conn struct {
 
 func newConn(handle syscall.Handle, peer string) *Conn {
 	return &Conn{handle: handle, peer: peer, changed: make(chan struct{})}
+}
+
+func (c *Conn) authenticatedBluetoothPeer() string {
+	c.mu.Lock()
+	closed := c.closed
+	c.mu.Unlock()
+	if !c.bluetoothAuthenticated || closed {
+		return ""
+	}
+	devices, err := PairedDevices()
+	if err != nil {
+		return ""
+	}
+	for _, device := range devices {
+		if strings.EqualFold(device.Address, c.peer) {
+			c.mu.Lock()
+			closed = c.closed
+			c.mu.Unlock()
+			if closed {
+				return ""
+			}
+			return c.peer
+		}
+	}
+	return ""
 }
 
 // Nonblocking socket operations are serialized with Close. No Winsock call can

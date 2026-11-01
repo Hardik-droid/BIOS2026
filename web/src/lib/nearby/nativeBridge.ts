@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export interface NearbyDocument { id: string; name: string }
-export interface NearbyStatus { state: 'idle' | 'listening' | 'connecting' | 'connected' | 'error'; role?: 'host' | 'join'; document?: NearbyDocument; session?: string; invitation?: string; error?: string; sentBytes?: number; receivedBytes?: number; needsResync?: boolean }
+export interface NearbyStatus { state: 'idle' | 'listening' | 'connecting' | 'connected' | 'error'; role?: 'host' | 'join'; document?: NearbyDocument; session?: string; invitation?: string; pairingCode?: string; pairingExpiresAt?: string; pairingRequest?: { id: string; address: string }; pairingError?: string; error?: string; sentBytes?: number; receivedBytes?: number; needsResync?: boolean }
 export interface NearbyMessage { fileId: string; kind: 'vector' | 'update' | 'ack'; data: string; id?: string }
 export interface NearbyWire {
   status: () => NearbyStatus
@@ -62,7 +62,7 @@ export function startNativeBridge(force = false): Promise<void> {
   })().finally(() => { refreshing = null })
   return refreshing
 }
-export async function bluetoothCommand(command: 'host' | 'connect' | 'stop', body: unknown = {}): Promise<void> {
+export async function bluetoothCommand(command: 'host' | 'connect' | 'stop' | 'approve-pairing' | 'reject-pairing', body: unknown = {}): Promise<void> {
   try {
     const status = await request<NearbyStatus>(command, body)
     useNativeNearby.setState({ status, error: '' })

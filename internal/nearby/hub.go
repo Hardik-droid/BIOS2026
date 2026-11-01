@@ -18,14 +18,18 @@ import (
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 type Status struct {
-	State         string    `json:"state"`
-	Role          string    `json:"role,omitempty"`
-	Document      *Document `json:"document,omitempty"`
-	Session       string    `json:"session,omitempty"`
-	Invitation    string    `json:"invitation,omitempty"`
-	Error         string    `json:"error,omitempty"`
-	SentBytes     uint64    `json:"sentBytes"`
-	ReceivedBytes uint64    `json:"receivedBytes"`
+	State            string          `json:"state"`
+	Role             string          `json:"role,omitempty"`
+	Document         *Document       `json:"document,omitempty"`
+	Session          string          `json:"session,omitempty"`
+	Invitation       string          `json:"invitation,omitempty"`
+	PairingCode      string          `json:"pairingCode,omitempty"`
+	PairingExpiresAt string          `json:"pairingExpiresAt,omitempty"`
+	PairingRequest   *PairingRequest `json:"pairingRequest,omitempty"`
+	PairingError     string          `json:"pairingError,omitempty"`
+	Error            string          `json:"error,omitempty"`
+	SentBytes        uint64          `json:"sentBytes"`
+	ReceivedBytes    uint64          `json:"receivedBytes"`
 }
 type Event struct {
 	Seq     uint64          `json:"seq"`
@@ -39,22 +43,28 @@ type EventBatch struct {
 	Reset  bool    `json:"reset"`
 }
 type Hub struct {
-	command    sync.Mutex
-	mu         sync.Mutex
-	write      sync.Mutex
-	status     Status
-	generation uint64
-	cancel     context.CancelFunc
-	listener   net.Listener
-	conn       *tls.Conn
-	pending    *tls.Conn
-	queue      []Event
-	queueBytes int
-	sequence   uint64
-	notify     chan struct{}
-	Token      string
-	listen     func() (net.Listener, error)
-	dial       func(context.Context, string) (net.Conn, error)
+	command                sync.Mutex
+	mu                     sync.Mutex
+	write                  sync.Mutex
+	status                 Status
+	generation             uint64
+	cancel                 context.CancelFunc
+	listener               net.Listener
+	conn                   *tls.Conn
+	pending                net.Conn
+	allowShortPairing      bool
+	pairingExpires         time.Time
+	pairingAttempts        int
+	pairingDecision        chan bool
+	pairingRequestExpires  time.Time
+	pairingApprovalTimeout time.Duration
+	queue                  []Event
+	queueBytes             int
+	sequence               uint64
+	notify                 chan struct{}
+	Token                  string
+	listen                 func() (net.Listener, error)
+	dial                   func(context.Context, string) (net.Conn, error)
 }
 
 func randomToken() string {
@@ -65,7 +75,7 @@ func randomToken() string {
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 func NewHub() *Hub {
-	return &Hub{status: Status{State: "idle"}, notify: make(chan struct{}), Token: randomToken(), listen: func() (net.Listener, error) { return Listen() }, dial: Dial}
+	return &Hub{status: Status{State: "idle"}, notify: make(chan struct{}), Token: randomToken(), listen: func() (net.Listener, error) { return Listen() }, dial: Dial, allowShortPairing: true, pairingApprovalTimeout: 30 * time.Second}
 }
 func validDocument(doc Document) bool {
 	return uuidPattern.MatchString(doc.ID) && strings.TrimSpace(doc.Name) != "" && len(doc.Name) <= 2048
@@ -112,6 +122,8 @@ func (h *Hub) reset() uint64 {
 	generation := h.generation
 	stop, listener, conn, pending := h.cancel, h.listener, h.conn, h.pending
 	h.cancel, h.listener, h.conn, h.pending = nil, nil, nil, nil
+	h.pairingExpires, h.pairingAttempts, h.pairingDecision = time.Time{}, 0, nil
+	h.pairingRequestExpires = time.Time{}
 	h.status = Status{State: "idle"}
 	h.signalLocked(nil)
 	h.mu.Unlock()
@@ -130,14 +142,14 @@ func (h *Hub) reset() uint64 {
 	return generation
 }
 func (h *Hub) Stop() { h.command.Lock(); defer h.command.Unlock(); h.reset() }
-func closeConnection(conn *tls.Conn) {
+func closeConnection(conn net.Conn) {
 	_ = conn.SetDeadline(time.Now())
 	_ = conn.Close()
 }
 
 // Own handshakes as well as established connections so Stop can interrupt auth
 // and welcome reads after the TLS handshake has finished.
-func (h *Hub) prepareConnection(ctx context.Context, generation uint64, conn *tls.Conn) bool {
+func (h *Hub) prepareConnection(ctx context.Context, generation uint64, conn net.Conn) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.generation != generation || ctx.Err() != nil {
@@ -146,7 +158,7 @@ func (h *Hub) prepareConnection(ctx context.Context, generation uint64, conn *tl
 	h.pending = conn
 	return true
 }
-func (h *Hub) clearPending(conn *tls.Conn) {
+func (h *Hub) clearPending(conn net.Conn) {
 	h.mu.Lock()
 	if h.pending == conn {
 		h.pending = nil
@@ -174,6 +186,14 @@ func (h *Hub) Host(doc Document) error {
 		h.setError(generation, err)
 		return err
 	}
+	code := ""
+	if h.allowShortPairing {
+		code, err = makePairingCode()
+		if err != nil {
+			h.setError(generation, err)
+			return err
+		}
+	}
 	listener, err := h.listen()
 	if err != nil {
 		h.setError(generation, err)
@@ -184,18 +204,35 @@ func (h *Hub) Host(doc Document) error {
 	h.cancel = cancel
 	h.listener = listener
 	h.status = Status{State: "listening", Role: "host", Document: &doc, Session: randomToken(), Invitation: invitation}
+	if code != "" {
+		h.pairingExpires = time.Now().Add(pairingCodeLifetime)
+		h.status.PairingCode = code
+		h.status.PairingExpiresAt = h.pairingExpires.UTC().Format(time.RFC3339Nano)
+	}
 	session := h.status.Session
 	h.signalLocked(nil)
 	h.mu.Unlock()
+	if code != "" {
+		go func() {
+			timer := time.NewTimer(pairingCodeLifetime)
+			defer timer.Stop()
+			select {
+			case <-timer.C:
+				h.expirePairing(generation)
+			case <-ctx.Done():
+			}
+		}()
+	}
 	go func() {
 		<-ctx.Done()
 		listener.Close()
 		h.mu.Lock()
-		var conn, pending *tls.Conn
+		var conn, pending net.Conn
 		if h.generation == generation {
 			conn, pending = h.conn, h.pending
 			h.status.State = "error"
 			h.status.Error = "Bluetooth session expired. Start sharing again to create a fresh invitation."
+			h.status.PairingCode, h.status.PairingExpiresAt, h.status.PairingRequest = "", "", nil
 			h.signalLocked(nil)
 		}
 		h.mu.Unlock()
@@ -215,7 +252,18 @@ func (h *Hub) Host(doc Document) error {
 				}
 				return
 			}
-			conn := tls.Server(raw, &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13})
+			if !h.prepareConnection(ctx, generation, raw) {
+				closeConnection(raw)
+				return
+			}
+			_ = raw.SetDeadline(time.Now().Add(12 * time.Second))
+			transport, err := h.acceptPairingOrTLS(ctx, generation, raw, invitation)
+			if err != nil {
+				closeConnection(raw)
+				h.clearPending(raw)
+				continue
+			}
+			conn := tls.Server(transport, &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13})
 			if !h.prepareConnection(ctx, generation, conn) {
 				closeConnection(conn)
 				return
@@ -248,9 +296,19 @@ func (h *Hub) Host(doc Document) error {
 	return nil
 }
 func (h *Hub) Connect(address, invitation string) error {
-	config, secret, err := clientIdentity(strings.TrimSpace(invitation))
-	if err != nil {
-		return err
+	invitation = strings.TrimSpace(invitation)
+	short := isPairingCode(invitation)
+	if short && !h.allowShortPairing {
+		return errors.New("Short pairing codes work only between directly paired Windows laptops. Use the complete invitation for a relay connection.")
+	}
+	var config *tls.Config
+	var secret string
+	var err error
+	if !short {
+		config, secret, err = clientIdentity(invitation)
+		if err != nil {
+			return err
+		}
 	}
 	h.command.Lock()
 	defer h.command.Unlock()
@@ -269,8 +327,36 @@ func (h *Hub) Connect(address, invitation string) error {
 			}
 		}()
 		for ctx.Err() == nil {
-			attempt, stop := context.WithTimeout(ctx, 25*time.Second)
+			attemptLimit := 25 * time.Second
+			if short {
+				attemptLimit = 60 * time.Second
+			}
+			attempt, stop := context.WithTimeout(ctx, attemptLimit)
 			raw, err := h.dial(attempt, address)
+			if short {
+				if err == nil {
+					if !h.prepareConnection(ctx, generation, raw) {
+						closeConnection(raw)
+						stop()
+						return
+					}
+					var resolved string
+					resolved, err = h.resolvePairing(attempt, raw, address, invitation)
+					if err == nil {
+						config, secret, err = clientIdentity(resolved)
+					}
+				}
+				if err != nil {
+					if raw != nil {
+						closeConnection(raw)
+						h.clearPending(raw)
+					}
+					stop()
+					h.setError(generation, err)
+					return // A tiny code gets one deliberate attempt, never an automatic guessing loop.
+				}
+				short = false // Only the full pinned invitation stays in this reconnect goroutine's memory.
+			}
 			if err == nil {
 				conn := tls.Client(raw, config)
 				if !h.prepareConnection(ctx, generation, conn) {
@@ -353,6 +439,11 @@ func (h *Hub) serve(ctx context.Context, generation uint64, conn *tls.Conn, doc 
 		h.pending = nil
 	}
 	h.status.State = "connected"
+	// One peer owns this session. The unused convenience code should not later
+	// expire into an alarming error while a legacy invitation is connected.
+	h.status.PairingCode, h.status.PairingExpiresAt, h.status.PairingError = "", "", ""
+	h.status.PairingRequest, h.pairingDecision = nil, nil
+	h.pairingRequestExpires = time.Time{}
 	h.status.Document = &doc
 	h.status.Session = session
 	h.status.Error = ""

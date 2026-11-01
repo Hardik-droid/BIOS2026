@@ -1,11 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createBluetoothInvitationFile, MAX_INVITATION_FILE_BYTES, normalizeBluetoothInvitation, parseBluetoothInvitation, readBluetoothInvitationFile } from './invitation'
+import { createBluetoothInvitationFile, MAX_INVITATION_FILE_BYTES, normalizeBluetoothInvitation, normalizeBluetoothPairingCode, parseBluetoothInvitation, readBluetoothInvitationFile } from './invitation'
 
 // Fixed protocol fixture, not a live session secret.
 const code = 'DBT1-' + 'A'.repeat(86)
 const exported = JSON.stringify({ format: 'diwan-bluetooth-invitation', version: 1, invitation: code })
 
 describe('Bluetooth invitation interoperability and rejection', () => {
+  it.each(['0000', '0123', '9999'])('accepts a four-digit direct pairing code without losing leading zeros: %s', value => {
+    expect(normalizeBluetoothPairingCode(' \n' + value + '\t')).toBe(value)
+    expect(parseBluetoothInvitation(' \n' + value + '\t')).toBe(value)
+  })
+
+  it.each(['', '123', '12345', 'ABC', '12 34', '12\n34', '１２３４', '١٢٣٤', '+123', '12.3', 'code: 0123'])('rejects malformed short pairing code %j', value => {
+    expect(() => normalizeBluetoothPairingCode(value)).toThrow()
+    expect(() => parseBluetoothInvitation(value)).toThrow()
+  })
+
+  it('keeps short codes out of full-invitation files and pinned identities', () => {
+    expect(() => normalizeBluetoothInvitation('0123')).toThrow()
+    expect(() => createBluetoothInvitationFile('0123')).toThrow()
+    expect(() => parseBluetoothInvitation(JSON.stringify({ format: 'diwan-bluetooth-invitation', version: 1, invitation: '0123' }))).toThrow()
+  })
+
   it('loads both the original v1 export and the exact new export without changing identity bytes', () => {
     expect(parseBluetoothInvitation(exported)).toBe(code)
     expect(parseBluetoothInvitation(createBluetoothInvitationFile(code))).toBe(code)

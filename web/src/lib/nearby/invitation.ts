@@ -2,6 +2,13 @@ export const MAX_INVITATION_FILE_BYTES = 4096
 
 const sourceInstructions = 'On the hosting laptop, open the document, choose Bluetooth → Share this document → Save invitation file. It is saved in Downloads as diwan-bluetooth-invitation.json.'
 
+/** A short code is a direct, paired-device bootstrap, never a TLS identity. */
+export function normalizeBluetoothPairingCode(value: string): string {
+  const code = value.trim()
+  if (!/^[0-9]{4}$/.test(code)) throw new Error('Enter exactly four digits, including any leading zeros, or use the full Bluetooth invitation.')
+  return code
+}
+
 /** Validate the complete opaque code; never search arbitrary files for secrets. */
 export function normalizeBluetoothInvitation(value: string): string {
   if (new TextEncoder().encode(value).byteLength > MAX_INVITATION_FILE_BYTES) throw new Error('The invitation is too large. ' + sourceInstructions)
@@ -11,11 +18,12 @@ export function normalizeBluetoothInvitation(value: string): string {
   return code
 }
 
-/** Accept the exported v1 JSON, a JSON string, or a complete plain-text code. */
+/** Accept a short direct-pairing code, or the existing full invitation formats. */
 export function parseBluetoothInvitation(text: string): string {
   if (new TextEncoder().encode(text).byteLength > MAX_INVITATION_FILE_BYTES) throw new Error('Choose the small Bluetooth invitation file, not a document or workspace backup. ' + sourceInstructions)
   const content = text.trim()
   if (!content) throw new Error('The invitation file is empty. ' + sourceInstructions)
+  if (/^[0-9]+$/.test(content)) return normalizeBluetoothPairingCode(content)
   if (/^DBT/.test(content)) return normalizeBluetoothInvitation(content)
   let data: unknown
   try { data = JSON.parse(content) } catch { throw new Error('The invitation file could not be read. Use the original downloaded JSON file or a complete DBT1- text code. ' + sourceInstructions) }

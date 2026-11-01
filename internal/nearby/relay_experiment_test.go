@@ -31,6 +31,49 @@ func TestExperimentalRelayCodeIsSeparateFromDocumentInvitation(t *testing.T) {
 	}
 }
 
+func TestExperimentalRelayRejectsShortPairingForBothRoles(t *testing.T) {
+	hub, err := NewRelayedHub("DRL1-" + base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{0x42}, 32)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(hub.Stop)
+	hub.dial = func(context.Context, string) (net.Conn, error) {
+		t.Error("short-code relay attempt reached transport")
+		return nil, net.ErrClosed
+	}
+	if err := hub.Connect(protocolHostAddress, "1234"); err == nil {
+		t.Fatal("relayed hub accepted a four-digit code")
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	paired := &pairedProtocolListener{Listener: listener}
+	hub.listen = func() (net.Listener, error) { return paired, nil }
+	if err := hub.Host(Document{ID: "97a562f0-0751-4ee1-8634-78b80914077d", Name: "Relay endpoint"}); err != nil {
+		t.Fatal(err)
+	}
+	if hub.Status().PairingCode != "" {
+		t.Fatal("relayed hub generated short-code authority")
+	}
+	raw, err := net.Dial("tcp", listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer raw.Close()
+	_ = raw.SetDeadline(time.Now().Add(time.Second))
+	if _, err := io.WriteString(raw, pairingMagic); err != nil {
+		t.Fatal(err)
+	}
+	var probe [1]byte
+	if n, err := raw.Read(probe[:]); n != 0 || err == nil {
+		t.Fatal("relay server disclosed short-pairing data")
+	}
+	if hub.Status().PairingRequest != nil {
+		t.Fatal("relay server generated a short-pairing approval request")
+	}
+}
+
 // Synthetic TCP relay for testing the DRL1 admission followed by the existing
 // end-to-end document TLS session. This is not a Bluetooth hardware test.
 type experimentalSyntheticRelay struct {
