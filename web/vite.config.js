@@ -12,7 +12,7 @@ import { licensesTxt } from './vite-plugin-licenses.js'
 // Go backend actually looks for it.
 const dir = import.meta.dirname
 const repoRoot = resolve(dir, '..')
-const distDir = resolve(repoRoot, 'dist')
+const distDir = resolve(repoRoot, process.env.DIWAN_BUILD_OFFLINE === '1' ? 'dist-offline' : 'dist')
 
 // emptyOutDir wipes dist/ on every build, including the dist/.gitkeep
 // placeholder that lets `go build` (//go:embed all:dist) compile before any

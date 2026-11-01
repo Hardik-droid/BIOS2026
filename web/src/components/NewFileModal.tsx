@@ -213,10 +213,11 @@ export default function NewFileModal({ onClose, defaultType, lockType, parentId 
           {/* ── Name field ── */}
           <Input
             label="Name"
+            maxLength={512}
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder={`Untitled ${selected?.label || 'file'}`}
-            autoFocus
+            data-autofocus
             size="md"
           />
         </Modal.Body>

@@ -1,4 +1,6 @@
 import { selectEndpoint, currentEndpoint, invalidateEndpoint } from './endpoints/index.js'
+import { OFFLINE_ONLY } from './offline/mode'
+import { localRequest } from './offline/localApi'
 
 const API_PREFIX = '/api'
 
@@ -37,6 +39,7 @@ function absolutize(url: string): string {
 }
 
 async function request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+  if (OFFLINE_ONLY) return localRequest<T>(path, options)
   const headers = { 'Content-Type': 'application/json', ...options.headers }
 
   // Session is managed via an httpOnly cookie set by the backend on login.
@@ -69,7 +72,15 @@ async function request<T = unknown>(path: string, options: RequestOptions = {}):
 export const api = {
   authStatus: () => request('/auth/status'),
   login: (password: string) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ password }) }),
+    request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        password,
+        ...(import.meta.env.VITE_DEFAULT_ACCOUNT_ID
+          ? { account_id: import.meta.env.VITE_DEFAULT_ACCOUNT_ID }
+          : {}),
+      }),
+    }),
   logout: () =>
     request('/auth/logout', { method: 'POST' }),
 
@@ -96,8 +107,8 @@ export const api = {
   // surfaces that as an error whose `.status === 409` and `.current` is the
   // newer stored file, so callers can reload + reconcile instead of losing the
   // update. A rev of 0/undefined performs an unconditional (legacy) write.
-  updateFile: (id: string, name: string, content: unknown, rev = 0) =>
-    request(`/files/${id}`, { method: 'PUT', body: JSON.stringify({ name, content, rev }) }),
+  updateFile: (id: string, name: string, content: unknown, rev = 0, replica = false) =>
+    request(`/files/${id}`, { method: 'PUT', body: JSON.stringify({ name, content, rev, ...(OFFLINE_ONLY && replica ? { replica: true } : {}) }) }),
   deleteFile: (id: string) =>
     request(`/files/${id}`, { method: 'DELETE' }),
 
@@ -297,6 +308,7 @@ export const api = {
 
   // Docs export: returns a Blob for download (PDF or DOCX)
   exportDoc: async (fileId: string, format: string): Promise<Blob> => {
+    if (OFFLINE_ONLY) throw new Error('Server-side PDF/DOCX export is not available in the offline workspace yet. Use a local export format.')
     const base = await apiBase()
     const res = await fetch(`${base}/files/${fileId}/export?format=${encodeURIComponent(format)}`, {
       credentials: 'include',
@@ -306,6 +318,7 @@ export const api = {
   },
 
   uploadImage: async (file: Blob): Promise<unknown> => {
+    if (OFFLINE_ONLY) throw new Error('Server uploads are disabled in the offline workspace. Insert an image directly into the document.')
     const form = new FormData()
     form.append('file', file)
     const base = await apiBase()

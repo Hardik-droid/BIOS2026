@@ -13,3 +13,13 @@ blob-report
 .playwright
 e2e-results
 *.log
+web/node_modules
+diwan.exe
+windows.local
+logs
+deploy
+.vercel
+.env
+.env.*
+**/.env
+**/.env.*

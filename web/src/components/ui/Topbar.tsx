@@ -30,7 +30,7 @@ export default function Topbar({ leading, title, meta, actions, className = '' }
   return (
     <header
       className={[
-        'flex items-center gap-2 h-11 px-3',
+        'flex flex-wrap flex-shrink-0 items-center gap-x-2 gap-y-1 min-h-11 px-3 py-1',
         'bg-paper border-b border-line',
         className,
       ].join(' ')}
@@ -39,8 +39,8 @@ export default function Topbar({ leading, title, meta, actions, className = '' }
       <div className="flex-1 min-w-0 flex items-center gap-2">
         {title}
       </div>
-      {meta && <div className="hidden sm:flex items-center gap-2 text-2xs text-ink-faint">{meta}</div>}
-      {actions && <div className="flex items-center gap-1 flex-shrink-0">{actions}</div>}
+      {meta && <div className="order-last w-full sm:order-none sm:w-auto flex flex-wrap items-center gap-2 text-2xs text-ink-faint">{meta}</div>}
+      {actions && <div className="flex items-center gap-1 flex-shrink-0 max-w-full overflow-x-auto">{actions}</div>}
     </header>
   )
 }

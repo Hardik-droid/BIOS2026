@@ -69,8 +69,10 @@ const Input = forwardRef(function Input(
         <input
           ref={ref}
           id={inputId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={hint || error ? `${inputId}-message` : undefined}
           className={[
-            'flex-1 bg-transparent outline-none',
+            'flex-1 min-w-0 bg-transparent outline-none',
             'px-3',
             leading ? 'pl-2' : '',
             trailing ? 'pr-2' : '',
@@ -82,7 +84,7 @@ const Input = forwardRef(function Input(
         {trailing && <span className="pr-2.5 text-ink-faint flex items-center">{trailing}</span>}
       </div>
       {(hint || error) && (
-        <p className={`mt-1.5 text-2xs ${error ? 'text-danger' : 'text-ink-faint'}`}>
+        <p id={`${inputId}-message`} className={`mt-1.5 text-2xs ${error ? 'text-danger' : 'text-ink-faint'}`}>
           {error || hint}
         </p>
       )}

@@ -27,6 +27,7 @@
  */
 
 import { bootstrapOffline } from './endpoints/offlineBootstrap.js'
+import { OFFLINE_ONLY } from './offline/mode'
 
 // True when this document is nested inside another browsing context. Reading
 // window.top is allowed cross-origin (only touching its properties would throw),
@@ -56,7 +57,7 @@ export function pwaEnabled(): boolean {
 export function registerServiceWorker(): void {
   if (!pwaEnabled()) return
   try {
-    bootstrapOffline()
+    bootstrapOffline({ networkEnabled: !OFFLINE_ONLY })
   } catch {
     /* offline boot is a progressive enhancement — ignore bootstrap errors */
   }

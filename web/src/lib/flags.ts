@@ -37,6 +37,8 @@
  * insert could land inside the wrong node and corrupt it.)
  */
 
+import { OFFLINE_ONLY } from './offline/mode'
+
 function env(name: string): string | undefined {
   try {
     // import.meta.env is replaced at build time by Vite; guard for non-Vite
@@ -68,6 +70,7 @@ function boolFlag(name: string, dflt: boolean): boolean {
  * simply never sends or applies a remote document op.
  */
 export function docsCollabEnabled() {
+  if (OFFLINE_ONLY) return false // Native nearby transport is not connected yet.
   return boolFlag('VITE_DOCS_COLLAB', true)
 }
 
@@ -82,6 +85,7 @@ export function docsCollabEnabled() {
  * src/lib/collab/updateLog.js and backend/updatelog.
  */
 export function updateLogEnabled() {
+  if (OFFLINE_ONLY) return false
   return boolFlag('VITE_UPDATE_LOG', false)
 }
 

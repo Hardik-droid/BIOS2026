@@ -48,14 +48,18 @@ function useFocusTrap(containerRef: RefObject<HTMLElement | null>, active: boole
 
     // Move focus to the first focusable element inside the dialog.
     const focusables = () =>
-      Array.from(containerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) || [])
+      Array.from(containerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) || []).filter(el => el.getClientRects().length > 0)
 
-    const first = focusables()[0]
+    const first = containerRef.current.querySelector<HTMLElement>('[data-autofocus]') || focusables()[0]
     if (first) {
       // Small rAF delay so the modal has fully painted before we move focus
       // (avoids a flicker on some browsers).
       const id = requestAnimationFrame(() => first.focus())
-      return () => cancelAnimationFrame(id)
+      return () => {
+        cancelAnimationFrame(id)
+        if (priorFocusRef.current?.isConnected) priorFocusRef.current.focus()
+        priorFocusRef.current = null
+      }
     }
   }, [active, containerRef])
 
@@ -66,20 +70,20 @@ function useFocusTrap(containerRef: RefObject<HTMLElement | null>, active: boole
       if (e.key !== 'Tab') return
       const focusables = Array.from(
         containerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) || []
-      )
-      if (focusables.length === 0) return
+      ).filter(el => el.getClientRects().length > 0)
+      if (focusables.length === 0) { e.preventDefault(); containerRef.current?.focus(); return }
       const first = focusables[0]
       const last  = focusables[focusables.length - 1]
 
       if (e.shiftKey) {
         // Shift-Tab: if we're at the first element, wrap to last.
-        if (document.activeElement === first) {
+        if (document.activeElement === first || !containerRef.current?.contains(document.activeElement)) {
           e.preventDefault()
           last.focus()
         }
       } else {
         // Tab: if we're at the last element, wrap to first.
-        if (document.activeElement === last) {
+        if (document.activeElement === last || !containerRef.current?.contains(document.activeElement)) {
           e.preventDefault()
           first.focus()
         }
@@ -146,10 +150,11 @@ function Modal({ open, onClose, title, size = 'md', children, className = '' }: 
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`bg-paper text-ink rounded-xl border border-line shadow-e3 w-full ${sizeMap[size] || sizeMap.md} overflow-hidden animate-scale-in ${className}`}
+        tabIndex={-1}
+        className={`bg-paper text-ink rounded-xl border border-line shadow-e3 w-full max-h-[calc(100dvh-2rem)] flex flex-col [&>form]:min-h-0 [&>form]:flex [&>form]:flex-col ${sizeMap[size] || sizeMap.md} overflow-hidden animate-scale-in ${className}`}
       >
         {title && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-line">
+          <div className="flex-shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-line">
             <h3 className="text-md font-semibold tracking-tightish">{title}</h3>
             <IconButton size="sm" title="Close" onClick={onClose}>
               <X size={15} />
@@ -163,12 +168,12 @@ function Modal({ open, onClose, title, size = 'md', children, className = '' }: 
 }
 
 function ModalBody({ className = '', children }: { className?: string; children?: ReactNode }) {
-  return <div className={`px-5 py-4 ${className}`}>{children}</div>
+  return <div className={`min-h-0 overflow-y-auto px-5 py-4 ${className}`}>{children}</div>
 }
 
 function ModalFooter({ className = '', children }: { className?: string; children?: ReactNode }) {
   return (
-    <div className={`px-5 py-3 border-t border-line bg-bg-elev2 flex items-center justify-end gap-2 ${className}`}>
+    <div className={`flex-shrink-0 px-5 py-3 border-t border-line bg-bg-elev2 flex flex-wrap items-center justify-end gap-2 ${className}`}>
       {children}
     </div>
   )

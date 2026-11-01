@@ -1,0 +1,498 @@
+{
+  "userDate": "2026-11-01",
+  "scope": "Windows PCs and Android phones; opt-in relays; 800 m route target, 1 km stretch, radius coverage separate",
+  "coverageMeaning": "lab-covered means an identified synthetic test exercises a limited protocol property. It does not pass hardware or production gates. This register is extensible, not exhaustive.",
+  "scenarios": [
+    {
+      "id": "LAB-01",
+      "category": "confidentiality",
+      "scenario": "Bidirectional exact payloads through 1, 2, 4, 8, 16 and 32 simulated relays",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabEndToEndAcrossMultipleHops",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-02",
+      "category": "confidentiality",
+      "scenario": "Synthetic title, document ID, encoded payload and invitation/secret markers absent from captures in each direction at every relay",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabEndToEndAcrossMultipleHops",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-03",
+      "category": "stream",
+      "scenario": "Fragmentation into 1, 7, 127 and 1024 byte writes preserves UTF-8 payload inside the authenticated stream",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabFragmentationPreservesAuthenticatedStream",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-04",
+      "category": "authentication",
+      "scenario": "Wrong endpoint certificate pin and wrong invitation secret are rejected without document access",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabEndpointAuthenticationRejectsWrongCredentials",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-05",
+      "category": "integrity",
+      "scenario": "Altered record and previous-session ciphertext substitution do not produce accepted application messages",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabOpaqueStreamAttacksFailClosed",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-06",
+      "category": "replay",
+      "scenario": "Duplicated encrypted record delivers the authentic message once then breaks the session",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabOpaqueStreamAttacksFailClosed",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-07",
+      "category": "availability",
+      "scenario": "Truncated stream plus path closure does not deliver the incomplete message",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabOpaqueStreamAttacksFailClosed",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-08",
+      "category": "availability",
+      "scenario": "Synthetic relay-off policy, exhausted synthetic byte budget, path loss and handshake cancellation do not produce received-payload counters",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabPathLossAndConsentDoNotAcknowledgeDelivery",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-09",
+      "category": "isolation",
+      "scenario": "Attempt to send another document through the selected endpoint session is rejected",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabWrongDocumentCannotCrossCircuit",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-10",
+      "category": "authentication",
+      "scenario": "Previous host invitation does not authenticate against a fresh independently generated host identity",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabFreshSessionDoesNotTrustOldInvitation",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "LAB-11",
+      "category": "authentication",
+      "scenario": "Relay presenting its own TLS certificate is rejected specifically by endpoint certificate pin validation",
+      "phase": 1,
+      "status": "lab-covered",
+      "evidenceTest": "TestRelayLabTLSLayerCannotBeTerminatedByRelay",
+      "limitation": "Synthetic protocol evidence only; no physical Bluetooth, Android, field-distance or production-security certification."
+    },
+    {
+      "id": "PENDING-01",
+      "phase": 2,
+      "category": "consent",
+      "scenario": "Fresh installation defaults relay mode off and refuses unauthorized circuits",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-02",
+      "phase": 2,
+      "category": "consent",
+      "scenario": "Relay enable/disable, stop and revocation take effect on existing and pending circuits",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-03",
+      "phase": 2,
+      "category": "hardware",
+      "scenario": "Three Windows PCs sustain simultaneous inbound and outbound RFCOMM on real adapters",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-04",
+      "phase": 2,
+      "category": "hardware",
+      "scenario": "Relay discovery rejects headsets, unpaired devices, spoofed names and unrelated services",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-05",
+      "phase": 2,
+      "category": "security",
+      "scenario": "Separate relay service UUID cannot bypass the existing document service authentication",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-06",
+      "phase": 2,
+      "category": "security",
+      "scenario": "Per-neighbor admission, byte limits, deadlines and global concurrency enforce bounded CPU and memory",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-07",
+      "phase": 2,
+      "category": "security",
+      "scenario": "Slowloris, idle handshakes and connection floods do not starve local editing",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-08",
+      "phase": 2,
+      "category": "privacy",
+      "scenario": "Real relay logs, diagnostics, crash dumps and error paths contain no document titles, invitation secrets, keys or content",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-09",
+      "phase": 2,
+      "category": "security",
+      "scenario": "Malformed route-setup fields, huge lengths, unknown versions and illegal states fail closed",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-10",
+      "phase": 2,
+      "category": "security",
+      "scenario": "Race detector, parser fuzzing, resource soak and goroutine/leak checks pass with supported toolchains",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-11",
+      "phase": 2,
+      "category": "recovery",
+      "scenario": "Physical relay reboot, radio toggle, adapter removal and Windows sleep/wake do not lose committed endpoint edits",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-12",
+      "phase": 2,
+      "category": "compatibility",
+      "scenario": "Existing direct-sharing app and old packages do not mistake experimental circuits for normal connections",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-13",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Native Android APK builds reproducibly, is signed for testing and installs without cloud dependencies",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-14",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Denied, revoked and one-time Nearby devices permissions produce clear recoverable states",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-15",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Foreground relay opt-in, ongoing notification, explicit stop and service lifecycle comply with target OS versions",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-16",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Screen off, Doze, battery saver, low battery and OEM process management are tested on named hardware",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-17",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Force-stop, process death, reboot and app removal end relay service without claiming it is available",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-18",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Windows–Android–Windows forwarding passes endpoint identity and exact payload tests on physical devices",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-19",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Android–Windows–Android forwarding passes endpoint identity and exact payload tests on physical devices",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-20",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Android endpoint TLS trust manager validates the exact intended certificate without trusting every self-signed certificate",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-21",
+      "phase": 3,
+      "category": "android",
+      "scenario": "Both endpoint roles and relay roles interoperate across supported OS/TLS provider versions",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-22",
+      "phase": 3,
+      "category": "privacy",
+      "scenario": "Android backup, logcat, notification text, WebView bridge and debug builds do not expose invitations or payloads",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-23",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Discovery authenticates peers and uses expiring opaque routing handles without document metadata",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-24",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Loops, duplicate discovery, stale routes and hop-limit exhaustion terminate within bounded work",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-25",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Maliciously small or forged hop counts cannot create unbounded forwarding",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-26",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Two or more simultaneous routes and competing documents remain isolated",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-27",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "No available next hop, missing relay software or an unpowered relay reports no route",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-28",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Relay churn, movement, route flapping and reconnection use bounded backoff and avoid flood amplification",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-29",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Sybil peers, route poisoning, blackholes and colluding relays have assessed limits and do not bypass endpoint identity",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-30",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Destination authentication fails when a relay redirects a circuit to another endpoint",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-31",
+      "phase": 4,
+      "category": "routing",
+      "scenario": "Multiple peers behind a relay, fairness and backpressure do not grow unbounded queues",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-32",
+      "phase": 4,
+      "category": "replay",
+      "scenario": "Cross-circuit, cross-direction and cross-session replay attempts are rejected end to end",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-33",
+      "phase": 4,
+      "category": "recovery",
+      "scenario": "Path replacement starts fresh authentication and merges missing edits from destination/source journals",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-34",
+      "phase": 4,
+      "category": "durability",
+      "scenario": "Only the actual destination journal commit produces a document acknowledgement",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-35",
+      "phase": 4,
+      "category": "durability",
+      "scenario": "Relay acknowledgement, link-connect state and intermediary byte receipt never count as saved/synchronized",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-36",
+      "phase": 4,
+      "category": "durability",
+      "scenario": "Endpoint crash at every journal/checkpoint/ack boundary preserves committed edits and recovers unacknowledged updates",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-37",
+      "phase": 4,
+      "category": "durability",
+      "scenario": "Disk full, quota failure, stale tabs and corrupt journals remain visibly recoverable through a relayed connection",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-38",
+      "phase": 4,
+      "category": "durability",
+      "scenario": "Simultaneous formatted edits, large updates, undo, history and Unicode converge after route failure and both endpoint restarts",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-39",
+      "phase": 4,
+      "category": "security",
+      "scenario": "Invitation distribution, revocation, expiry, clock skew and rotation have explicit threat-reviewed behavior",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-40",
+      "phase": 4,
+      "category": "security",
+      "scenario": "TLS downgrade, algorithm negotiation, resumed sessions and any future early-data behavior have an interoperability/replay review",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-41",
+      "phase": 4,
+      "category": "privacy",
+      "scenario": "Timing/size/adjacency leakage is documented; any padding design is measured and does not claim anonymity",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-42",
+      "phase": 4,
+      "category": "privacy",
+      "scenario": "No route or failure silently falls back to Wi-Fi, Internet, cloud, analytics or external DNS",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-43",
+      "phase": 4,
+      "category": "release",
+      "scenario": "Runtime flags, separate package, document compatibility, rollback and upgrade paths preserve the user-confirmed stable release",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-44",
+      "phase": 5,
+      "category": "range",
+      "scenario": "Measure every adjacent link and sustained end-to-end delivery over an 800 m route with documented node positions",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-45",
+      "phase": 5,
+      "category": "range",
+      "scenario": "Measure an optional 1 km route separately without treating it as achieved by the 800 m result",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-46",
+      "phase": 5,
+      "category": "range",
+      "scenario": "If an 800 m radius is required, verify multiple bearings and coverage gaps separately from a single straight route",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-47",
+      "phase": 5,
+      "category": "range",
+      "scenario": "Walls, concrete, floors, vegetation, rain, crowds and 2.4 GHz interference are recorded as tested conditions",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-48",
+      "phase": 5,
+      "category": "range",
+      "scenario": "Moving endpoints, moving relays, changing body orientation and hidden terminal effects are characterized",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-49",
+      "phase": 5,
+      "category": "performance",
+      "scenario": "Measure end-to-end p50/p95/p99 latency, throughput, reconnect time and loss against hop count",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-50",
+      "phase": 5,
+      "category": "performance",
+      "scenario": "Typing/save latency remains acceptable while relaying under CPU, memory and radio contention",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-51",
+      "phase": 5,
+      "category": "performance",
+      "scenario": "Overnight and multi-day relay soak records battery drain, thermals, storage, memory and disconnects",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-52",
+      "phase": 5,
+      "category": "performance",
+      "scenario": "Small updates, near-limit documents and competing traffic pass supported-load limits",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-53",
+      "phase": 5,
+      "category": "security",
+      "scenario": "Independent threat-model, cryptographic integration and adversarial implementation review resolves critical/high findings",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-54",
+      "phase": 5,
+      "category": "security",
+      "scenario": "Release-specific dependencies, native/Android toolchains and TLS providers pass vulnerability and license review",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-55",
+      "phase": 5,
+      "category": "release",
+      "scenario": "Reproducible signed installer/APK, clean offline install, crash reporting privacy, backup and rollback are exercised",
+      "status": "pending"
+    },
+    {
+      "id": "PENDING-56",
+      "phase": 5,
+      "category": "release",
+      "scenario": "Publish a supported Windows/Android hardware matrix, measured limitations and repeatable field/security evidence",
+      "status": "pending"
+    }
+  ]
+}

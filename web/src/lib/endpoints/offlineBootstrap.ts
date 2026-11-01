@@ -110,6 +110,7 @@ function wireUpdateDetection(registration: ServiceWorkerRegistration) {
  *
  */
 export type BootstrapOfflineOptions = {
+  networkEnabled?: boolean
   swPath?: string
   onBoot?: () => void
   tierHint?: () => unknown
@@ -141,7 +142,7 @@ export function bootstrapOffline(opts: BootstrapOfflineOptions = {}) {
   // 2. Prime the cloud↔LAN failover decision so the first API call has a
   //    reachable endpoint chosen. Failures are swallowed — the API client
   //    re-selects on demand.
-  selectEndpoint().catch(() => {})
+  if (opts.networkEnabled !== false) selectEndpoint().catch(() => {})
 
   // 3. Read an opt-in tier hint. Consumers that
   //    don't supply a callback get undefined and the rest of the shared

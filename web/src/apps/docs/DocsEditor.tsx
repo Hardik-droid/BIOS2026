@@ -56,8 +56,15 @@ import WordCountModal from './components/WordCountModal'
 import DocumentOutline from './components/DocumentOutline'
 import { useFilesStore, getSaveState, onSaveStateChange, type DiwanFile, type SaveState } from '../../store/filesStore'
 import { api } from '../../lib/api'
+import { OFFLINE_ONLY } from '../../lib/offline/mode'
 import { sanitizeDocHtml } from '../../lib/sanitize'
-import { readDraft, clearDraft, type Draft } from '../../lib/draftStore'
+import { readDraft, clearDraft, writeDraft, type Draft } from '../../lib/draftStore'
+import { downloadJson } from '../../lib/offline/download'
+import { enableLocalReplica, getLocalFile } from '../../lib/offline/workspace'
+import { LocalReplica } from '../../lib/nearby/replica'
+import { NearbyDocumentSync, type SyncState } from '../../lib/nearby/documentSync'
+import { nativeWire } from '../../lib/nearby/nativeBridge'
+import NearbyBluetooth from '../../components/NearbyBluetooth'
 import DocsToolbar from './DocsToolbar'
 import HistoryPanel from '../../components/HistoryPanel'
 import CommentsPanel from '../../components/CommentsPanel'
@@ -331,13 +338,31 @@ export default function DocsEditor() {
   // When OFF, Docs opens NO sync transport (no p2p fabric, no
   // invite-link join) and every collaboration affordance is hidden or explicitly
   // labelled unavailable. Read once per mount — it is a build-time constant.
-  const collabEnabled = useMemo(() => docsCollabEnabled(), [])
+  const cloudCollabEnabled = useMemo(() => docsCollabEnabled(), [])
   const { files, saveFileWithDraft, markDirty } = useFilesStore()
   const [file, setFile] = useState<DiwanFile | undefined>(files.find((f) => f.id === id))
+  const collabEnabled = cloudCollabEnabled || (OFFLINE_ONLY && file?.nearby_enabled === true)
+  const replicaRef = useRef<LocalReplica | null>(null)
+  const replicaMetaRef = useRef<() => void>(() => {})
+  const replicaSavedRef = useRef<() => void>(() => {})
+  const replicaManualRef = useRef(false)
+  const [replicaError, setReplicaError] = useState('')
+  const [nearbySync, setNearbySync] = useState<SyncState>({ phase: 'local' })
   const [title, setTitle] = useState(file?.name || 'Untitled')
   const [pendingContent, setPendingContent] = useState<string | Record<string, unknown> | null>(null)
+  const [loadError, setLoadError] = useState('')
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [saveStatus, setSaveStatus] = useState<SaveState>(getSaveState(id || ''))
   const [draft, setDraft] = useState<Draft | null>(null)           // pending draft to offer restore
+  const [draftChecked, setDraftChecked] = useState(false)
+  const saveReadyRef = useRef({ id, ready: false })
+  const activeSaveRef = useRef<string | null>(null)
+  const queuedSaveRef = useRef(false)
+  const aliveRef = useRef(true)
+  useEffect(() => {
+    aliveRef.current = true
+    return () => { aliveRef.current = false }
+  }, [])
   const [retryCount, setRetryCount] = useState(0)
   const [showHistory, setShowHistory] = useState(false)
   const [showComments, setShowComments] = useState(false)
@@ -420,7 +445,7 @@ export default function DocsEditor() {
   // Share entry point; it offers the complementary P2P E2E link path alongside.
   const [showAccountShare, setShowAccountShare] = useState(false)
   const myAccountId = useAuthStore((s) => s.accountId)
-  const p2p = useP2PCollab({ fileId: id || '', ctx: yctx, enabled: collabEnabled })
+  const p2p = useP2PCollab({ fileId: id || '', ctx: yctx, enabled: cloudCollabEnabled })
 
   // Honesty guard: an invite link was opened but live co-editing is disabled for
   // this build. The link can never connect them — say so instead of leaving them
@@ -471,6 +496,7 @@ export default function DocsEditor() {
   // for. The seed is applied once (guarded by isFragmentEmpty).
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
+    if (OFFLINE_ONLY && file?.nearby_enabled) return // The durable replica effect owns hydration.
     if (!collabEnabled) { setHydrated(false); return }
     if (!yctx || !yctx.ydoc || !yctx.schema || seedJSON == null) return
     if (hydrated) return
@@ -485,10 +511,43 @@ export default function DocsEditor() {
     setHydrated(true)
   }, [collabEnabled, yctx, seedJSON, hydrated])
 
+  useEffect(() => {
+    if (!OFFLINE_ONLY || !file?.nearby_enabled || !yctx?.schema || !id || seedJSON === null) return
+    let cancelled = false
+    let replica: LocalReplica | null = null
+    let sync: NearbyDocumentSync | null = null
+    const metadata = yctx.ydoc.getMap('diwan-meta')
+    const metaChanged = () => { if (!cancelled) { replicaMetaRef.current(); markDirty(id) } }
+    setHydrated(false); setReplicaError('')
+    void LocalReplica.open(yctx as Parameters<typeof LocalReplica.open>[0], id, file.nearby_initial ? null : seedJSON, file.name,
+      () => {
+        if (cancelled) return
+        setHydrated(!isFragmentEmpty(yctx.ydoc))
+        replicaSavedRef.current()
+      },
+      error => { if (!cancelled) { setReplicaError(error.message); setHydrated(false) } },
+      file.content && typeof file.content === 'object' ? file.content as Record<string, unknown> : undefined,
+    ).then(opened => {
+      if (cancelled) { void opened.close(); return }
+      replica = opened; replicaRef.current = opened
+      metadata.observe(metaChanged); metaChanged()
+      sync = new NearbyDocumentSync(opened, nativeWire, state => { if (!cancelled) setNearbySync(state) })
+      setHydrated(opened.hasContent)
+      if (opened.hasContent) replicaSavedRef.current()
+    }).catch((error: unknown) => { if (!cancelled) setReplicaError(error instanceof Error ? error.message : 'The local replica could not be recovered.') })
+    return () => {
+      cancelled = true; sync?.close(); metadata.unobserve(metaChanged)
+      if (replicaRef.current === replica) replicaRef.current = null
+      if (replica) void replica.close()
+    }
+  }, [collabEnabled, yctx, id, seedJSON])
+
   // The collaborative document is HYDRATED once its Y.Doc has been seeded from the
   // authoritative content. Until then the editor must stay read-only. When collab
   // is off there is nothing to wait for.
   const collabReady = !collabEnabled || hydrated
+  const documentReady = !!file && file.id === id && collabReady && draftChecked && !draft && pendingContent === null && !loadError && !replicaError
+  saveReadyRef.current = { id, ready: documentReady }
 
   // ── CRDT-native persistence, phase 1 (dual-write) ──────────────────────────
   // When the server exposes the per-file update log (persistence.updatelog) AND
@@ -514,6 +573,7 @@ export default function DocsEditor() {
 
   // Subscribe to save state changes for this file
   useEffect(() => {
+    setSaveStatus(getSaveState(id || ''))
     const unsub = onSaveStateChange(id || '', (state) => setSaveStatus({ ...state }))
     return unsub
   }, [id])
@@ -588,7 +648,7 @@ export default function DocsEditor() {
     // tiptap's own Content type doesn't accept an explicit undefined value.
     ...(collabEnabled ? {} : { content: resolveContent(file?.content) }),
     // Not editable until the collaborative document is hydrated — see collabReady.
-    editable: !collabEnabled,
+    editable: false,
     // WAVE-57: paste / drop a raster image → embed it as a bounded base64 data:
     // URI. Goes through isEmbeddableImage + fileToDataUri (raster-only, size-
     // capped, SVG refused) — the exact same gate as the toolbar picker, so no
@@ -597,7 +657,7 @@ export default function DocsEditor() {
       // P5: native browser spellcheck on the editable surface. The browser's own
       // dictionary underlines misspellings + offers corrections — no dependency,
       // works offline per the platform. Toggle updates the live DOM attr below.
-      attributes: { spellcheck: 'true' },
+      attributes: { spellcheck: 'true', role: 'textbox', 'aria-label': 'Document content', 'aria-multiline': 'true' },
       handlePaste: (view, event) => {
         const files = Array.from(event.clipboardData?.files || [])
         const img = files.find(isEmbeddableImage)
@@ -629,6 +689,8 @@ export default function DocsEditor() {
       },
     },
     onUpdate: ({ editor: ed, transaction }) => {
+      // Loading/seeding must never replace a pending recovery draft.
+      if (!aliveRef.current || !saveReadyRef.current.ready) return
       // A REMOTE peer's change arrives as a ProseMirror transaction from the sync
       // plugin. It must not be treated as a local edit: suggestion mode would
       // "undo" the peer's change and record it as this user's proposal. We still
@@ -679,7 +741,7 @@ export default function DocsEditor() {
       clearTimeout(retryTimer.current)
       setRetryCount(0)
       // doSave catches its own errors (see its try/catch) and never rejects.
-      saveTimer.current = setTimeout(() => { void doSave() }, AUTOSAVE_DELAY_MS)
+      saveTimer.current = setTimeout(() => { void doSave() }, OFFLINE_ONLY ? 250 : AUTOSAVE_DELAY_MS)
 
       // NOTE: there is no broadcast here any more. The document IS the Y.Doc —
       // y-prosemirror writes every local transaction into it, and the sessions
@@ -696,7 +758,7 @@ export default function DocsEditor() {
       const { from, to } = ed.state.selection
       if (broadcastDocCursorRef.current) broadcastDocCursorRef.current(from, to)
     },
-  })
+  }, [id, collabEnabled, ydoc])
 
   // P2/P3: hydrate page-setup + header/footer from the file's stored content.
   // They ride the doc content object as sibling keys (see doSave) so they persist
@@ -711,28 +773,42 @@ export default function DocsEditor() {
 
   // Load file from API if not in store cache
   useEffect(() => {
-    if (!file && id) {
+    let cancelled = false
+    const cached = useFilesStore.getState().files.find(item => item.id === id)
+    setLoadError('')
+    setFile(cached)
+    setSeedJSON(null)
+    setHydrated(false)
+    if (!cached && id) {
       api.getFile(id).then((f) => {
+        if (cancelled) return
         const loaded = f as DiwanFile
+        useFilesStore.setState(state => ({ files: [...state.files.filter(item => item.id !== loaded.id), loaded] }))
         setFile(loaded)
         setTitle(loaded.name)
         loadDocMeta(loaded.content)
         setPendingContent(resolveContent(loaded.content))
-      }).catch(() => navigate('/docs'))
-    } else if (file) {
-      loadDocMeta(file.content)
+      }).catch((reason: unknown) => { if (!cancelled) setLoadError(reason instanceof Error ? reason.message : 'This document could not be opened. Please try again.') })
+    } else if (cached) {
+      setTitle(cached.name)
+      loadDocMeta(cached.content)
+      setPendingContent(resolveContent(cached.content))
     }
-  }, [id])
+    return () => { cancelled = true }
+  }, [id, loadAttempt])
 
   // Check for a pending draft on mount (crash recovery)
   useEffect(() => {
     if (!id) return
+    let cancelled = false
+    setDraftChecked(false)
     // readDraft catches its own IndexedDB failures internally (draftStore.ts).
     void readDraft(id).then((d) => {
-      if (d && d.ts) {
-        setDraft(d)
-      }
+      if (cancelled) return
+      setDraft(d && d.ts ? d : null)
+      setDraftChecked(true)
     })
+    return () => { cancelled = true }
   }, [id])
 
   // Apply pending content once editor is ready.
@@ -756,7 +832,7 @@ export default function DocsEditor() {
   useEffect(() => {
     if (!collabEnabled || !editor || !id) return
     if (seedJSON !== null) return               // already computed for this doc
-    if (!file) return                           // still loading
+    if (!file || file.id !== id) return          // still loading
     // The Y sessions validate untrusted updates against the live schema.
     if (yctx && !yctx.schema) yctx.schema = editor.schema
     try {
@@ -790,8 +866,10 @@ export default function DocsEditor() {
   //     keystrokes would land in a document that is about to be replaced by the
   //     seed/bootstrap (a fork).
   useEffect(() => {
-    if (editor) editor.setEditable(!p2p.readOnly && collabReady)
-  }, [editor, p2p.readOnly, collabReady])
+    // Changing permissions is not a document edit. Tiptap emits an update by
+    // default here, which would otherwise mark a freshly loaded file dirty.
+    if (editor) editor.setEditable(!p2p.readOnly && documentReady, false)
+  }, [editor, p2p.readOnly, documentReady])
 
   // ── OFFICE-27: Suggestion mode ────────────────────────────────────────────
 
@@ -1036,7 +1114,7 @@ export default function DocsEditor() {
   const { fabric: fabricForCursors, peers: collabPeers } = useCollabFabric({
     sessionId: id || '',
     peerId: localPeerId,
-    enabled: collabEnabled,
+    enabled: cloudCollabEnabled,
   })
 
   const { remoteCursors, broadcastDocCursor } = useLiveCursors({
@@ -1103,7 +1181,7 @@ export default function DocsEditor() {
       // If the caret sits inside a commented span, focus that comment in the
       // panel (keyboard equivalent of clicking the highlight). Otherwise open
       // the panel so the user can add a comment on the current selection.
-      if ((e.key === 'm' || e.key === 'M') && e.altKey) {
+      if (!OFFLINE_ONLY && (e.key === 'm' || e.key === 'M') && e.altKey) {
         e.preventDefault()
         const ed = editorRef.current
         if (ed) {
@@ -1172,23 +1250,49 @@ export default function DocsEditor() {
   pageSetupRef.current = pageSetup
   const headerFooterRef = useRef(headerFooter)
   headerFooterRef.current = headerFooter
+  replicaMetaRef.current = () => {
+    if (!ydoc) return
+    const meta = ydoc.getMap('diwan-meta')
+    const sharedTitle = meta.get('title')
+    if (typeof sharedTitle === 'string' && sharedTitle.trim() && sharedTitle.length <= 512) { titleRef.current = sharedTitle; setTitle(sharedTitle) }
+    const setup = meta.get('pageSetup')
+    if (setup && typeof setup === 'object') { const normalized = normalizePageSetup(setup); pageSetupRef.current = normalized; setPageSetup(normalized) }
+    const bands = meta.get('headerFooter')
+    if (bands && typeof bands === 'object') { const normalized = normalizeHeaderFooter(bands); headerFooterRef.current = normalized; setHeaderFooter(normalized) }
+  }
 
   const doSave = useCallback(async (retryNum = 0) => {
-    if (!editor || !id) return
+    if (!aliveRef.current || !editor || editor.isDestroyed || !id || saveReadyRef.current.id !== id || !saveReadyRef.current.ready) return
+    if (activeSaveRef.current === id) { queuedSaveRef.current = true; return }
+    activeSaveRef.current = id
     try {
       // P2/P3: persist page setup + headers/footers as sibling keys on the doc
       // content object. TipTap's setContent ignores unknown top-level keys, so
       // this round-trips cleanly (load reads them back via loadDocMeta).
-      const content = {
-        ...editor.getJSON(),
-        pageSetup: pageSetupRef.current,
-        headerFooter: headerFooterRef.current,
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const replica = replicaRef.current
+        if (replica) {
+          await replica.flush()
+          await replica.pull() // Merge other local tabs before creating a display snapshot.
+          replicaMetaRef.current()
+          const current = await getLocalFile(id)
+          useFilesStore.setState(state => ({ files: state.files.map(entry => entry.id === id ? current : entry) }))
+        }
+        const content = { ...editor.getJSON(), pageSetup: pageSetupRef.current, headerFooter: headerFooterRef.current }
+        try {
+          if (replica) await saveFileWithDraft(id, titleRef.current, content, { replica: true })
+          else await saveFileWithDraft(id, titleRef.current, content)
+          break
+        }
+        catch (error) { if (!replica || (error as { status?: number }).status !== 409 || attempt === 2) throw error }
       }
-      await saveFileWithDraft(id, titleRef.current, content)
       setRetryCount(0)
-    } catch {
-      // Schedule retry with backoff (up to 3 retries)
-      if (retryNum < 3) {
+    } catch (error) {
+      if (replicaRef.current) setSaveStatus({ status: 'error', error: error instanceof Error ? error.message : 'Local replica save failed.' })
+      // Conflicts require reconciliation, not repeated snapshot overwrites.
+      const status = (error as { status?: number }).status
+      const retryable = ![400, 403, 404, 409, 413, 501].includes(status || 0) && (error as Error).name !== 'QuotaExceededError'
+      if (aliveRef.current && retryable && retryNum < 3) {
         const delay = RETRY_DELAY_MS * (retryNum + 1)
         retryTimer.current = setTimeout(() => {
           setRetryCount(retryNum + 1)
@@ -1196,7 +1300,117 @@ export default function DocsEditor() {
         }, delay)
       }
     }
+    finally {
+      if (activeSaveRef.current === id) activeSaveRef.current = null
+      if (queuedSaveRef.current && saveReadyRef.current.id === id) {
+        queuedSaveRef.current = false
+        saveTimer.current = setTimeout(() => { void doSave() }, 0)
+      }
+    }
   }, [editor, id, saveFileWithDraft])
+  replicaSavedRef.current = () => {
+    if (!id) return
+    markDirty(id)
+    if (replicaManualRef.current) return
+    clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => { void doSave() }, 0)
+  }
+
+  const prepareNearby = async () => {
+    if (!id || !editor || !documentReady) throw new Error('Wait for the document to open and finish recovery before sharing.')
+    await doSave()
+    if (getSaveState(id).status !== 'saved') throw new Error('Save the document successfully before sharing it over Bluetooth.')
+    const current = await getLocalFile(id)
+    if (new TextEncoder().encode(JSON.stringify(current.content)).length > 512 * 1024) throw new Error('This Bluetooth preview supports document snapshots up to 512 KiB. Your local document is unchanged.')
+    if (!current.nearby_enabled) {
+      const enabled = await enableLocalReplica(id)
+      setSeedJSON(null); setHydrated(false); setFile(enabled)
+      useFilesStore.setState(state => ({ files: state.files.map(entry => entry.id === id ? enabled : entry) }))
+    }
+    return { id, name: current.name }
+  }
+  const restoreNearbyVersion = async (version: { name: string; content?: unknown }) => {
+    const replica = replicaRef.current
+    if (!replica || !editor || !id || !version.content || !documentReady) throw new Error('Open the shared document and finish recovery before restoring history.')
+    if (getSaveState(id).status === 'saving') throw new Error('Wait for the current save to finish, then restore this version.')
+    clearTimeout(saveTimer.current)
+    replicaManualRef.current = true
+    try {
+    editor.commands.setContent(resolveContent(version.content), false)
+    const content = version.content as Record<string, unknown>
+    const meta = replica.context.ydoc.getMap('diwan-meta')
+    replica.context.ydoc.transact(() => {
+      meta.set('title', version.name)
+      meta.set('pageSetup', normalizePageSetup(content.pageSetup))
+      meta.set('headerFooter', normalizeHeaderFooter(content.headerFooter))
+    })
+    markDirty(id)
+    await replica.flush()
+    clearTimeout(saveTimer.current)
+    await doSave()
+    if (getSaveState(id).status !== 'saved') throw new Error('The restored replica is not saved yet. Keep this editor open and choose Save.')
+    return getLocalFile(id)
+    } finally { replicaManualRef.current = false }
+  }
+
+  useEffect(() => {
+    const resume = () => {
+      if (getSaveState(id || '').status === 'error' || getSaveState(id || '').status === 'dirty') void doSave()
+    }
+    window.addEventListener('online', resume)
+    return () => {
+      window.removeEventListener('online', resume)
+      clearTimeout(saveTimer.current)
+      clearTimeout(retryTimer.current)
+      queuedSaveRef.current = false
+    }
+  }, [id, doSave])
+
+  // Keep an interrupted in-app navigation recoverable, even before autosave's
+  // debounce fires. Browser exits also receive a warning while work is pending.
+  useEffect(() => {
+    if (!OFFLINE_ONLY || !editor || !id) return
+    const pending = () => ['dirty', 'saving', 'error'].includes(getSaveState(id).status)
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!pending()) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    const hidden = () => { if (document.visibilityState === 'hidden' && pending()) void doSave() }
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        clearTimeout(saveTimer.current)
+        void doSave()
+      }
+    }
+    const updateWarning = () => {
+      window.removeEventListener('beforeunload', warn)
+      if (pending()) window.addEventListener('beforeunload', warn)
+    }
+    updateWarning()
+    const unsubscribe = onSaveStateChange(id, updateWarning)
+    document.addEventListener('visibilitychange', hidden)
+    window.addEventListener('keydown', shortcut)
+    return () => {
+      window.removeEventListener('beforeunload', warn)
+      unsubscribe()
+      document.removeEventListener('visibilitychange', hidden)
+      window.removeEventListener('keydown', shortcut)
+      if (pending()) {
+        const content = { ...editor.getJSON(), pageSetup: pageSetupRef.current, headerFooter: headerFooterRef.current }
+        void writeDraft(id, titleRef.current, content)
+      }
+    }
+  }, [editor, id, doSave])
+
+  const downloadRecovery = () => {
+    if (!editor || !id) return
+    const now = new Date().toISOString()
+    const content = file?.nearby_enabled && !replicaRef.current && !hydrated ? file.content : { ...editor.getJSON(), pageSetup: pageSetupRef.current, headerFooter: headerFooterRef.current }
+    const recovery = { id, name: titleRef.current.trim() || 'Recovered document', type: 'doc', content, rev: 1, owner: 'self', parent_id: '', starred: false, trashed: false, created_at: now, updated_at: now }
+    downloadJson(JSON.stringify({ format: 'diwan-local-workspace', version: 1, exported_at: now, files: [recovery], folders: [], versions: [] }), `diwan-recovery-${now.slice(0, 10)}.json`)
+  }
 
   const handleSave = () => {
     clearTimeout(saveTimer.current)
@@ -1208,6 +1422,7 @@ export default function DocsEditor() {
   // ── P3: page setup ────────────────────────────────────────────────────────
   const applyPageSetup = useCallback((next: PageSetup) => {
     setPageSetup(normalizePageSetup(next))
+    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap('diwan-meta').set('pageSetup', normalizePageSetup(next))
     markDirty(id || '')
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => { void doSave() }, 800)
@@ -1216,6 +1431,7 @@ export default function DocsEditor() {
   // ── P2: headers & footers ─────────────────────────────────────────────────
   const applyHeaderFooter = useCallback((next: HeaderFooterConfig) => {
     setHeaderFooter(normalizeHeaderFooter(next))
+    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap('diwan-meta').set('headerFooter', normalizeHeaderFooter(next))
     markDirty(id || '')
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => { void doSave() }, 800)
@@ -1260,6 +1476,7 @@ export default function DocsEditor() {
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
+    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap('diwan-meta').set('title', newTitle)
     markDirty(id || '')
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => { void doSave() }, 1500)
@@ -1267,14 +1484,16 @@ export default function DocsEditor() {
 
   const handleRestoreDraft = () => {
     if (!draft || !editor) return
+    loadDocMeta(draft.content)
     editor.commands.setContent(resolveContent(draft.content), false)
     if (draft.name) setTitle(draft.name)
     setDraft(null)
     markDirty(id || '')
+    saveTimer.current = setTimeout(() => { void doSave() }, 0)
   }
 
   const handleDiscardDraft = () => {
-    void clearDraft(id || '') // catches its own errors (draftStore.ts)
+    void clearDraft(id || '', draft?.token)
     setDraft(null)
   }
 
@@ -1295,7 +1514,13 @@ export default function DocsEditor() {
   // <SaveStatus> (a breathing dot + quiet label). We only compute the retry text
   // override here; the component owns the crafted visual + a11y announcement.
   const saveStatusText =
-    saveStatus.status === 'error' && retryCount > 0 ? `Retrying ${retryCount}/3` : undefined
+    saveStatus.status === 'error' && retryCount > 0 ? `Retrying ${retryCount}/3`
+      : OFFLINE_ONLY && (saveStatus.status === 'saved' || (saveStatus.status === 'idle' && documentReady)) ? 'Saved on this device' : undefined
+  const visibleNearbySync: SyncState = replicaError
+    ? { phase: 'error', error: replicaError }
+    : nearbySync.phase === 'acknowledged' && saveStatus.status !== 'saved'
+      ? { phase: 'syncing' }
+      : nearbySync
 
   if (!editor) {
     // Paper-shaped skeleton (not a bare spinner) so the open feels like a
@@ -1328,7 +1553,7 @@ export default function DocsEditor() {
           bootstrap lands would put the draft into an empty document that the seed
           then arrives alongside — i.e. the document twice. */}
       {draft && collabReady && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-warning-bg border-b border-line text-xs text-warning animate-fade-in">
+        <div className="flex flex-wrap flex-shrink-0 items-center gap-3 px-4 py-2 bg-warning-bg border-b border-line text-xs text-warning animate-fade-in">
           <AlertCircle size={14} className="flex-shrink-0" />
           <span className="flex-1 text-ink-muted">
             Unsaved changes from a previous session were found.
@@ -1338,11 +1563,20 @@ export default function DocsEditor() {
         </div>
       )}
 
-      {/*
-        Save errors are reported in the meta-line of the topbar (statusInfo);
-        we deliberately do NOT show a big red banner — that's a Mercury-style
-        restraint: errors stay surfaced, never alarming, with action via Save.
-      */}
+      {loadError && <div role="alert" className="flex-shrink-0 p-3 bg-danger-bg text-danger text-sm">
+        <p>Could not open this document. {loadError}</p>
+        <Button className="mt-2" onClick={() => setLoadAttempt(value => value + 1)}>Try opening again</Button>
+      </div>}
+      {replicaError && <div role="alert" className="flex-shrink-0 p-3 bg-danger-bg text-danger text-sm">
+        <p>Local replica storage needs attention. {replicaError}</p>
+        <Button className="mt-2" onClick={downloadRecovery}>Download recovery copy</Button>
+      </div>}
+      {OFFLINE_ONLY && file?.nearby_initial && !hydrated && !replicaError && <p role="status" className="flex-shrink-0 p-3 text-sm">Waiting for the shared document over Bluetooth. Keep the hosting laptop connected.</p>}
+      {OFFLINE_ONLY && saveStatus.status === 'error' && <div role="alert" className="flex-shrink-0 p-3 bg-danger-bg text-danger text-sm">
+        <p>Your latest changes have not been saved. {saveStatus.error}</p>
+        <p className="mt-1">Keep this document open. You can download your current work and restore it using Restore backup.</p>
+        <Button className="mt-2" onClick={downloadRecovery}>Download recovery copy</Button>
+      </div>}
 
       {/* Top bar — composed from the design system */}
       <Topbar
@@ -1356,6 +1590,9 @@ export default function DocsEditor() {
         title={
           <input
             value={title}
+            aria-label="Document title"
+            maxLength={512}
+            readOnly={!documentReady || p2p.readOnly}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Untitled document"
             className={[
@@ -1369,21 +1606,17 @@ export default function DocsEditor() {
         }
         meta={
           <>
-            {saveStatus.status && (
+            {(documentReady || saveStatus.status !== 'idle') && (
               <SaveStatus
-                // filesStore's SaveStatus vocabulary ('idle'|'dirty'|'saving'|'saved'|
-                // 'error') and the shared UI SaveStatus component's SaveStatusKind
-                // ('saved'|'saving'|'dirty'|'error'|'offline', not exported) don't
-                // quite line up — 'idle' isn't a SaveStatusKind. That already fell
-                // through unchecked before this file was typed: the component's own
-                // `MAP[status] || MAP.saved` renders 'idle' as "Saved" today, and
-                // this cast preserves that exact (pre-existing) fallback rather than
-                // changing it.
-                status={saveStatus.status as 'saved' | 'saving' | 'dirty' | 'error' | 'offline'}
+                status={saveStatus.status === 'idle' ? 'saved' : saveStatus.status}
                 text={saveStatusText}
                 title={saveStatus.error || undefined}
               />
             )}
+            {OFFLINE_ONLY && <NearbyBluetooth prepare={prepareNearby} sync={visibleNearbySync} />}
+            {OFFLINE_ONLY && file?.nearby_enabled && <span role="status" title={visibleNearbySync.error} className="text-xs">
+              {visibleNearbySync.phase === 'error' ? `Bluetooth sync error: ${visibleNearbySync.error}` : saveStatus.status === 'dirty' || saveStatus.status === 'saving' ? 'Saving local changes before peer acknowledgement…' : visibleNearbySync.phase === 'acknowledged' ? 'Other laptop acknowledged this version' : visibleNearbySync.phase === 'syncing' ? 'Synchronizing over Bluetooth…' : 'Bluetooth link offline · local edits retained'}
+            </span>}
             {/* Live co-editing is OFF for this build: say so plainly. Without
                 this the topbar simply shows no collaborators, which reads as
                 "nobody else is here" — a lie of omission when the truth is that
@@ -1462,7 +1695,7 @@ export default function DocsEditor() {
                 <History size={14} />
               </IconButton>
             </Tooltip>
-            <Tooltip label="Activity">
+            {!OFFLINE_ONLY && <><Tooltip label="Activity">
               <IconButton size="sm" active={showActivity} onClick={() => setShowActivity((v) => !v)}>
                 <Activity size={14} />
               </IconButton>
@@ -1494,11 +1727,12 @@ export default function DocsEditor() {
                 </IconButton>
               </Tooltip>
             )}
+            </>}
             {/* Share entry point. Opens account-based sharing (named users,
                 role-scoped, ACL-enforced) which also offers the complementary
                 P2P end-to-end-encrypted link path. Hidden for ro peers who
                 joined via a view-only link (they cannot re-share). */}
-            {!p2p.readOnly && (
+            {!OFFLINE_ONLY && !p2p.readOnly && (
               <Tooltip label="Share — with people (accounts) or via an E2E link">
                 <IconButton
                   size="sm"
@@ -1513,7 +1747,7 @@ export default function DocsEditor() {
               variant="primary"
               size="sm"
               onClick={handleSave}
-              disabled={saveStatus.status === 'saving'}
+              disabled={!documentReady || p2p.readOnly || saveStatus.status === 'saving'}
             >
               {saveStatus.status === 'saving'
                 ? <Loader2 size={13} className="animate-spin" />
@@ -1588,11 +1822,11 @@ export default function DocsEditor() {
             className="doc-pages paper-grain mx-auto bg-paper border border-line rounded-lg shadow-e2 relative"
             style={{
               maxWidth: `${geo.pageWidthPx}px`,
-              paddingLeft: `${geo.marginLeftPx}px`,
-              paddingRight: `${geo.marginRightPx}px`,
+              paddingLeft: `min(${geo.marginLeftPx}px, var(--doc-screen-gutter, ${geo.marginLeftPx}px))`,
+              paddingRight: `min(${geo.marginRightPx}px, var(--doc-screen-gutter, ${geo.marginRightPx}px))`,
               paddingTop: `${geo.marginTopPx}px`,
               paddingBottom: `${geo.marginBottomPx}px`,
-              ['--page-pad-x' as string]: `${geo.marginLeftPx}px`,
+              ['--page-pad-x' as string]: `min(${geo.marginLeftPx}px, var(--doc-screen-gutter, ${geo.marginLeftPx}px))`,
             }}
           >
             {/* P2: first-page header/footer bands (rendered inside the margins).
@@ -1636,10 +1870,16 @@ export default function DocsEditor() {
         {showHistory && (
           <HistoryPanel
             fileId={id || ''}
+            restoreVersion={OFFLINE_ONLY && file?.nearby_enabled ? restoreNearbyVersion : undefined}
             onClose={() => setShowHistory(false)}
             onRestore={(updated) => {
               const u = updated as { content?: unknown; name?: string } | null | undefined
-              if (editor && u?.content) {
+              if (updated && typeof (updated as DiwanFile).rev === 'number') {
+                const restored = updated as DiwanFile
+                setFile(restored)
+                useFilesStore.setState(state => ({ files: state.files.map(item => item.id === restored.id ? restored : item) }))
+              }
+              if (editor && u?.content && !replicaRef.current) {
                 editor.commands.setContent(resolveContent(u.content), false)
               }
               if (u?.name) setTitle(u.name)

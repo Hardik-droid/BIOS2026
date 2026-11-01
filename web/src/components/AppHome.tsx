@@ -18,8 +18,9 @@ import NewFileModal from './NewFileModal'
 import AccountShareModal from './AccountShareModal'
 import { importFromUrl, importFile, detectType } from '../lib/importFile'
 import { api } from '../lib/api'
+import { OFFLINE_ONLY } from '../lib/offline/mode'
 import { timeAgo, formatBytes } from '../lib/format'
-import { Button, IconButton, Input, Card, Tooltip, useToast, DocThumb, Skeleton, Avatar, hueFor, ThemeSwitch } from './ui'
+import { Button, IconButton, Input, Card, Tooltip, useToast, DocThumb, Skeleton, Avatar, hueFor, ThemeSwitch, Modal } from './ui'
 
 // ─── Local shapes — `api.searchDocs` returns `unknown` by design; this
 // documents just what this panel reads (see lib/api.ts searchDocs comment). ──
@@ -116,7 +117,7 @@ export default function AppHome({ type }: AppHomeProps) {
   const navigate = useNavigate()
   const { showToast, toast } = useToast()
   const {
-    files, folders, loading, fetchFiles, fetchFolders, deleteFile, renameFile,
+    files, folders, loading, loadError, fetchFiles, fetchFolders, deleteFile, renameFile,
     toggleStar, trashFile, restoreFile, moveFile, createFolder, renameFolder,
     trashFolder, deleteFolder, sharedWithMe, fetchSharedWithMe,
   } = useFilesStore()
@@ -125,6 +126,23 @@ export default function AppHome({ type }: AppHomeProps) {
   const [showNew, setShowNew] = useState(false)
   // The file currently open in the account-share dialog (or null).
   const [sharing, setSharing] = useState<DiwanFile | null>(null)
+  const [deleting, setDeleting] = useState<{ id: string; name: string; folder: boolean } | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const askDelete = (id: string, folder = false) => {
+    const target = folder ? folders.find(entry => entry.id === id) : files.find(entry => entry.id === id)
+    if (target) { setDeleteError(''); setDeleting({ id, name: target.name, folder }) }
+  }
+  const confirmDelete = async () => {
+    if (!deleting || deleteBusy) return
+    setDeleteBusy(true); setDeleteError('')
+    try {
+      if (deleting.folder) { await deleteFolder(deleting.id); await fetchFolders() }
+      else await deleteFile(deleting.id)
+      setDeleting(null); setMenuOpen(null)
+    } catch (reason) { setDeleteError(reason instanceof Error ? reason.message : 'Could not delete. Your file has been kept.') }
+    finally { setDeleteBusy(false) }
+  }
   const [search, setSearch] = useState('')
   // Global full-text search across the caller's ACL-scoped documents (owned +
   // shared). Fires against the backend, debounced, when the query is >= 2 chars.
@@ -183,7 +201,7 @@ export default function AppHome({ type }: AppHomeProps) {
   // Each of these self-catches (filesStore.ts / localFilesStore.ts) and never
   // rejects — a failure clears `loading` and/or leaves its section empty.
   useEffect(() => { void fetchFiles(); void fetchFolders(); void fetchSharedWithMe() }, [])
-  useEffect(() => { if (!scanned) void scan() }, [scanned])
+  useEffect(() => { if (!OFFLINE_ONLY && !scanned) void scan() }, [scanned])
 
   // Debounced backend full-text search (content, not just names). Scoped to this
   // app's type so a Docs search doesn't surface Sheets. The server enforces ACL
@@ -455,7 +473,11 @@ export default function AppHome({ type }: AppHomeProps) {
             </div>
           )}
 
-          {!loading && isEmpty && (
+          {loadError && <div role="alert" className="p-4 my-3 border border-danger rounded-lg text-sm text-danger">
+            <p>Your files could not be opened. {loadError}</p>
+            <Button className="mt-2" onClick={() => void fetchFiles()}>Try opening files again</Button>
+          </div>}
+          {!loading && !loadError && isEmpty && (
             <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
               <div className={`w-16 h-16 ${cfg.bgCn} rounded-xl flex items-center justify-center mb-4`}>
                 <Icon size={28} className={`${cfg.iconCn} opacity-40`} />
@@ -505,7 +527,7 @@ export default function AppHome({ type }: AppHomeProps) {
                     onRenameCommit={() => void commitRenameFolder(folder.id)}
                     onTrash={wrap('Trash folder', () => trashFolder(folder.id, true))}
                     onRestore={wrap('Restore folder', () => trashFolder(folder.id, false))}
-                    onDelete={wrap('Delete folder', () => deleteFolder(folder.id))}
+                    onDelete={() => askDelete(folder.id, true)}
                   />
                 ))}
               </div>
@@ -540,7 +562,7 @@ export default function AppHome({ type }: AppHomeProps) {
                       onShare={() => { setSharing(file); setMenuOpen(null) }}
                       onTrash={wrap('Trash', () => trashFile(file.id))}
                       onRestore={wrap('Restore', () => restoreFile(file.id))}
-                      onDelete={wrap('Delete', () => deleteFile(file.id))}
+                      onDelete={() => askDelete(file.id)}
                     />
                   ))}
                 </div>
@@ -564,7 +586,7 @@ export default function AppHome({ type }: AppHomeProps) {
                   onShare={(file) => { setSharing(file); setMenuOpen(null) }}
                   onTrash={(id) => wrap('Trash', () => trashFile(id))()}
                   onRestore={(id) => wrap('Restore', () => restoreFile(id))()}
-                  onDelete={(id) => wrap('Delete', () => deleteFile(id))()}
+                  onDelete={(id) => askDelete(id)}
                 />
               )}
             </>
@@ -697,6 +719,17 @@ export default function AppHome({ type }: AppHomeProps) {
           onClose={() => { setSharing(null); void fetchSharedWithMe() }}
         />
       )}
+      <Modal open={!!deleting} title="Delete permanently?" onClose={() => { if (!deleteBusy) setDeleting(null) }}>
+        <Modal.Body className="text-sm space-y-3">
+          <p className="break-words">{deleting?.name}</p>
+          <p>{deleting?.folder ? 'The folder will be removed. Its files and child folders will move back to the main file list.' : 'This removes the file and its version history from this workspace. You will need a backup to recover it.'}</p>
+          {deleteError && <p role="alert" className="text-danger">{deleteError}</p>}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button disabled={deleteBusy} onClick={() => setDeleting(null)}>Cancel</Button>
+          <Button variant="destructive" disabled={deleteBusy} onClick={() => void confirmDelete()}>{deleteBusy ? 'Deleting…' : 'Delete permanently'}</Button>
+        </Modal.Footer>
+      </Modal>
       {menuOpen && <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />}
       {toast}
     </div>
@@ -814,7 +847,7 @@ function FolderCard({
   const key = 'folder:' + folder.id
   const menuKey = 'foldermenu:' + folder.id
   return (
-    <div className="group bg-paper rounded-lg border border-line hover:border-line-strong hover:shadow-e2 transition-[box-shadow,border-color] duration-base ease-out overflow-hidden">
+    <div className={`group bg-paper rounded-lg border border-line hover:border-line-strong hover:shadow-e2 transition-[box-shadow,border-color] duration-base ease-out ${menuOpen === menuKey ? 'relative z-20 overflow-visible' : 'overflow-hidden'}`}>
       <div className="flex items-center gap-2.5 p-3">
         <button
           className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
@@ -841,7 +874,7 @@ function FolderCard({
         <div className="relative flex-shrink-0" onClick={e => e.stopPropagation()}>
           <button
             onClick={() => setMenuOpen(menuOpen === menuKey ? null : menuKey)}
-            className="p-0.5 rounded-sm hover:bg-accent-tint text-ink-faint opacity-0 group-hover:opacity-100 transition-[opacity,background] duration-fast"
+            className="p-1 rounded-sm hover:bg-accent-tint text-ink-faint opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background] duration-fast"
             aria-label="Folder actions"
           >
             <MoreVertical size={12} />
@@ -911,7 +944,7 @@ function FileCard({
 }: FileCardProps) {
   const inTrash = view === 'trash'
   return (
-    <div className="group bg-paper rounded-lg border border-line hover:border-line-strong hover:shadow-e2 hover:-translate-y-0.5 transition-[transform,box-shadow,border-color] duration-base ease-out cursor-pointer overflow-hidden">
+    <div className={`group bg-paper rounded-lg border border-line hover:border-line-strong hover:shadow-e2 hover:-translate-y-0.5 transition-[transform,box-shadow,border-color] duration-base ease-out cursor-pointer ${menuOpen === file.id ? 'relative z-20 overflow-visible' : 'overflow-hidden'}`}>
       <div
         className="h-28 relative border-b border-line cursor-pointer rounded-t-lg focus-visible:outline-none focus-visible:shadow-focus focus-visible:z-10"
         onClick={inTrash ? undefined : onOpen}
@@ -965,7 +998,7 @@ function FileCard({
           <div className="relative" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setMenuOpen(menuOpen === file.id ? null : file.id)}
-              className="p-0.5 rounded-sm hover:bg-accent-tint text-ink-faint opacity-0 group-hover:opacity-100 transition-[opacity,background] duration-fast"
+              className="p-1 rounded-sm hover:bg-accent-tint text-ink-faint opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background] duration-fast"
               aria-label="File actions"
             >
               <MoreVertical size={12} />
@@ -979,7 +1012,7 @@ function FileCard({
                   </>
                 ) : (
                   <>
-                    <MenuItem onClick={onShare}><Share2 size={12} className="text-ink-faint" /> Share</MenuItem>
+                    {!OFFLINE_ONLY && <MenuItem onClick={onShare}><Share2 size={12} className="text-ink-faint" /> Share</MenuItem>}
                     <MenuItem onClick={onStar}>
                       <Star size={12} className="text-ink-faint" /> {file.starred ? 'Unstar' : 'Star'}
                     </MenuItem>
@@ -1026,8 +1059,9 @@ function FileListTable({
   onStar, onMove, onShare, onTrash, onRestore, onDelete,
 }: FileListTableProps) {
   const inTrash = view === 'trash'
+  const activeMenu = files.some(file => file.id === menuOpen)
   return (
-    <Card>
+    <Card className={activeMenu ? 'relative z-20' : ''} style={{ overflow: activeMenu ? 'visible' : 'hidden' }}>
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-line bg-bg-elev2">
@@ -1085,7 +1119,7 @@ function FileListTable({
                         </>
                       ) : (
                         <>
-                          <MenuItem onClick={() => onShare(file)}><Share2 size={12} className="text-ink-faint" /> Share</MenuItem>
+                          {!OFFLINE_ONLY && <MenuItem onClick={() => onShare(file)}><Share2 size={12} className="text-ink-faint" /> Share</MenuItem>}
                           <MenuItem onClick={() => onStar(file.id)}>
                             <Star size={12} className="text-ink-faint" /> {file.starred ? 'Unstar' : 'Star'}
                           </MenuItem>

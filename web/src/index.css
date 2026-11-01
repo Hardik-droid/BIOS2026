@@ -832,6 +832,11 @@
  * break is a gap band with a hairline + "page N" label so pages read as real.
  * ========================================================================== */
 .doc-pages { position: relative; }
+/* Reflow the editing surface on phones/zoomed windows. Stored page geometry
+   remains unchanged for print and export. */
+@media (max-width: 640px) {
+  .doc-desk { --doc-screen-gutter: 20px; padding: 16px 12px; }
+}
 .doc-page-break {
   position: absolute;
   left: 0;

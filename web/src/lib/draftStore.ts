@@ -1,85 +1,56 @@
-/**
- * draftStore — crash-safe draft persistence via IndexedDB.
- *
- * Before every network write, we persist the draft locally.
- * On a successful write we clear the draft.
- * On reload we expose any pending draft so editors can offer a restore prompt.
- *
- * Shape stored per file:
- *   { id, name, content, ts }
- */
-
+/** Last-resort recovery drafts. Old save acknowledgements cannot clear newer drafts. */
 const DB_NAME = 'diwan-drafts'
 const STORE_NAME = 'drafts'
-const DB_VERSION = 1
+export type Draft = { id: string; name: string; content: unknown; ts: number; token?: string }
 
-export type Draft = { id: string; name: string; content: unknown; ts: number }
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION)
-    req.onupgradeneeded = () => {
-      const db = req.result
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' })
-      }
-    }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error ?? new Error('draftStore: indexedDB.open failed'))
+async function transaction<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore, result: (value: T) => void) => void): Promise<T> {
+  const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1)
+    request.onupgradeneeded = () => request.result.createObjectStore(STORE_NAME, { keyPath: 'id' })
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
   })
-}
-
-/** Persist a draft before the network write. */
-export async function writeDraft(id: string, name: string, content: unknown): Promise<void> {
   try {
-    const db = await openDB()
-    // MUST `await` the inner Promise here, not just `return` it: a bare
-    // `return new Promise(...)` hands the (still-pending) promise back to the
-    // caller and this function's own execution — and its enclosing try —
-    // completes immediately. A later `tx.onerror` rejection then fires with no
-    // frame left to catch it, so it propagates to the CALLER uncaught, exactly
-    // contradicting this catch block's "silently ignore" comment. Awaiting
-    // keeps the rejection inside this function's own try/catch.
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite')
-      tx.objectStore(STORE_NAME).put({ id, name, content, ts: Date.now() })
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => reject(tx.error ?? new Error('draftStore: writeDraft transaction failed'))
+    return await new Promise<T>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, mode)
+      let value: T
+      tx.oncomplete = () => resolve(value)
+      tx.onabort = () => reject(tx.error || new Error('Draft transaction aborted.'))
+      tx.onerror = () => reject(tx.error || new Error('Draft transaction failed.'))
+      try { run(tx.objectStore(STORE_NAME), result => { value = result }) }
+      catch (error) { tx.abort(); reject(error) }
     })
-  } catch {
-    // IndexedDB unavailable (or the transaction itself failed) — silently
-    // ignore so we don't block saves.
-  }
+  } finally { db.close() }
 }
 
-/** Remove draft after a successful network write. */
-export async function clearDraft(id: string): Promise<void> {
+export async function writeDraft(id: string, name: string, content: unknown): Promise<string | null> {
   try {
-    const db = await openDB()
-    // See writeDraft's comment: must await, or tx.onerror rejects uncaught.
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite')
-      tx.objectStore(STORE_NAME).delete(id)
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => reject(tx.error ?? new Error('draftStore: clearDraft transaction failed'))
+    const token = crypto.randomUUID()
+    return await transaction('readwrite', (store, result) => {
+      store.put({ id, name, content, ts: Date.now(), token } satisfies Draft)
+      result(token)
     })
-  } catch {
-    // ignore
-  }
+  } catch { return null }
 }
 
-/** Read a pending draft (returns null if none). */
+/** With a token, clear only that draft. Without one, this is explicit discard. */
+export async function clearDraft(id: string, token?: string): Promise<void> {
+  try {
+    await transaction<void>('readwrite', (store, result) => {
+      if (token === undefined) { store.delete(id); result(undefined); return }
+      store.get(id).onsuccess = event => {
+        const draft = (event.target as IDBRequest<Draft | undefined>).result
+        if (draft?.token === token) store.delete(id)
+        result(undefined)
+      }
+    })
+  } catch { /* A failed cleanup preserves the recovery draft. */ }
+}
+
 export async function readDraft(id: string): Promise<Draft | null> {
   try {
-    const db = await openDB()
-    // See writeDraft's comment: must await, or req.onerror rejects uncaught.
-    return await new Promise<Draft | null>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly')
-      const req = tx.objectStore(STORE_NAME).get(id)
-      req.onsuccess = () => resolve((req.result as Draft | undefined) || null)
-      req.onerror = () => reject(req.error ?? new Error('draftStore: readDraft transaction failed'))
+    return await transaction('readonly', (store, result) => {
+      store.get(id).onsuccess = event => result((event.target as IDBRequest<Draft | undefined>).result || null)
     })
-  } catch {
-    return null
-  }
+  } catch { return null }
 }

@@ -23,6 +23,7 @@ import { Button, IconButton, Modal, LoadingState, EmptyState, ErrorState } from 
 // ─── Local shapes — `api` returns `unknown` by design; these document just
 // what this panel reads. ────────────────────────────────────────────────────
 interface Version {
+  content?: unknown
   id: string
   label?: string
   name: string
@@ -228,12 +229,13 @@ function DiffModal({ fileId, version, onClose }: DiffModalProps) {
 
 // ─── HistoryPanel ─────────────────────────────────────────────────────────────
 interface HistoryPanelProps {
+  restoreVersion?: ((version: Version) => Promise<unknown>) | undefined
   fileId: string
   onRestore?: (updated: unknown) => void
   onClose?: () => void
 }
 
-export default function HistoryPanel({ fileId, onRestore, onClose }: HistoryPanelProps) {
+export default function HistoryPanel({ fileId, onRestore, onClose, restoreVersion }: HistoryPanelProps) {
   const [versions, setVersions] = useState<Version[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -268,7 +270,7 @@ export default function HistoryPanel({ fileId, onRestore, onClose }: HistoryPane
     setConfirmVersion(null)
     setRestoring(v.id)
     try {
-      const updated = await api.restoreVersion(fileId, v.id)
+      const updated = restoreVersion ? await restoreVersion(v) : await api.restoreVersion(fileId, v.id)
       showToast('Version restored')
       onRestore?.(updated)
       await load()

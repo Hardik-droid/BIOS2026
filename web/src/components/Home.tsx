@@ -11,6 +11,7 @@ import { useLocalFilesStore } from '../store/localFilesStore'
 import type { LocalFileEntry } from '../store/localFilesStore'
 import { importFromUrl } from '../lib/importFile'
 import { timeAgo, formatBytes } from '../lib/format'
+import { OFFLINE_ONLY } from '../lib/offline/mode'
 import NewFileModal from './NewFileModal'
 import { Card, Button, Tooltip, useToast, Skeleton, DocThumb } from './ui'
 
@@ -83,7 +84,7 @@ const quickStarts: QuickStart[] = [
 export default function Home() {
   const navigate = useNavigate()
   const { showToast, toast } = useToast()
-  const { files, loading: filesLoading, fetchFiles } = useFilesStore()
+  const { files, loading: filesLoading, loadError, fetchFiles } = useFilesStore()
   const { files: localFiles, loading: localLoading, scanned, scan } = useLocalFilesStore()
   const [showLocalAll, setShowLocalAll] = useState(false)
   const [importing, setImporting] = useState<string | null>(null)
@@ -91,9 +92,9 @@ export default function Home() {
   const [newType, setNewType] = useState<string | null>(null)
 
   useEffect(() => { void fetchFiles() }, [])
-  useEffect(() => { if (!scanned) void scan() }, [scanned])
+  useEffect(() => { if (!OFFLINE_ONLY && !scanned) void scan() }, [scanned])
 
-  const recentFiles = files.filter(f => typeInfo[f.type]).slice(0, 12)
+  const recentFiles = files.filter(f => typeInfo[f.type] && !f.trashed).slice(0, 12)
   const visibleLocal = (showLocalAll ? localFiles : localFiles.slice(0, 8)) as HomeLocalFile[]
 
   const openNew = (type: string) => { setNewType(type); setShowNew(true) }
@@ -150,6 +151,10 @@ export default function Home() {
         </section>
 
         {/* ── Recent documents ── */}
+        {loadError && <div role="alert" className="p-4 border border-danger rounded-lg text-danger">
+          <p>Your files could not be opened. {loadError}</p>
+          <Button className="mt-2" onClick={() => void fetchFiles()}>Try opening files again</Button>
+        </div>}
         {filesLoading && (
           <section aria-label="Loading recent documents" role="status">
             <p className="mono-label mb-3.5">Recent</p>
@@ -203,7 +208,7 @@ export default function Home() {
         )}
 
         {/* ── Empty state — gentle serif tagline over a crafted preview trio ── */}
-        {!filesLoading && recentFiles.length === 0 && (
+        {!filesLoading && !loadError && recentFiles.length === 0 && (
           <section className="flex flex-col items-center justify-center py-14 text-center">
             <div className="relative h-24 w-48 mb-6" aria-hidden>
               <div className="absolute left-1/2 top-1 -translate-x-1/2 -rotate-6 w-20 h-24 rounded-lg border border-line overflow-hidden shadow-e1 opacity-70">
@@ -229,7 +234,7 @@ export default function Home() {
         )}
 
         {/* ── Local files from disk ── */}
-        <section>
+        {!OFFLINE_ONLY && <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <HardDrive size={12} className="text-ink-faint" />
@@ -320,7 +325,7 @@ export default function Home() {
               )}
             </>
           )}
-        </section>
+        </section>}
       </div>
 
       {showNew && (

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import LoginScreen from './components/LoginScreen'
@@ -6,18 +6,21 @@ import Layout from './components/Layout'
 import { LoadingState } from './components/ui'
 import Home from './components/Home'
 import AppHome from './components/AppHome'
-import DocsEditor from './apps/docs/DocsEditor'
-import SheetsEditor from './apps/sheets/SheetsEditor'
-import SlidesEditor from './apps/slides/SlidesEditor'
-import WhiteboardEditor from './apps/whiteboard/WhiteboardEditor'
-import PDFEditor from './apps/pdf/PDFEditor'
-import SigningSetup from './apps/pdf/SigningSetup'
-import Settings from './components/Settings'
-import SignView from './apps/pdf/SignView'
-import EnvelopeDashboard from './components/EnvelopeDashboard'
-import Verify from './components/Verify'
-import AnonDocView from './components/AnonDocView'
 import InstallPrompt from './lib/InstallPrompt'
+
+// Do not execute every office engine just to show the file list. The offline
+// build still bundles and precaches all chunks for later use without internet.
+const DocsEditor = lazy(() => import('./apps/docs/DocsEditor'))
+const SheetsEditor = lazy(() => import('./apps/sheets/SheetsEditor'))
+const SlidesEditor = lazy(() => import('./apps/slides/SlidesEditor'))
+const WhiteboardEditor = lazy(() => import('./apps/whiteboard/WhiteboardEditor'))
+const PDFEditor = lazy(() => import('./apps/pdf/PDFEditor'))
+const SigningSetup = lazy(() => import('./apps/pdf/SigningSetup'))
+const Settings = lazy(() => import('./components/Settings'))
+const SignView = lazy(() => import('./apps/pdf/SignView'))
+const EnvelopeDashboard = lazy(() => import('./components/EnvelopeDashboard'))
+const Verify = lazy(() => import('./components/Verify'))
+const AnonDocView = lazy(() => import('./components/AnonDocView'))
 
 // Office is documents-only. Chat/video and calendar/contacts are THIRD-PARTY
 // (not Vulos products) and are deliberately not launched or redirected to from
@@ -87,11 +90,11 @@ export default function App() {
   // Render public routes immediately — no auth check, no Layout shell.
   if (isPublicRoute(location.pathname)) {
     return (
-      <Routes>
+      <Suspense fallback={<LoadingState label="Opening document…" />}><Routes>
         <Route path="/sign/:token" element={<SignView />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/view/:token" element={<AnonDocView />} />
-      </Routes>
+      </Routes></Suspense>
     )
   }
 
@@ -109,7 +112,7 @@ export default function App() {
 
   return (
     <Layout>
-      <Routes>
+      <Suspense fallback={<LoadingState label="Opening workspace…" />}><Routes>
         <Route path="/" element={<Home />} />
         <Route path="/docs" element={<AppHome type="doc" />} />
         <Route path="/sheets" element={<AppHome type="sheet" />} />
@@ -126,7 +129,7 @@ export default function App() {
         <Route path="/pdf/:id" element={<PDFEditor />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      </Routes></Suspense>
       <InstallPrompt />
     </Layout>
   )

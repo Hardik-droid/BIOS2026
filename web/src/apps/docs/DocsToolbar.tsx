@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import type { Editor } from '@tiptap/react'
 import { api } from '../../lib/api'
+import { OFFLINE_ONLY } from '../../lib/offline/mode'
 import { Menu, ToolbarButton, UrlPopover } from '../../components/ui'
 import { exportToDocx, exportToPdf, exportToMarkdown, exportToHtml } from './docsExport'
 import { exportToOdt } from './odtExport'
@@ -853,11 +854,11 @@ export default function DocsToolbar({
 
         {/* ── Insert ─────────────────────────────────────────────────── */}
         {/* Image: file upload */}
-        <Btn title="Insert image (upload)" onClick={() => imgInput.current?.click()}>
+        <Btn title={OFFLINE_ONLY ? 'Insert image from device' : 'Insert image (upload)'} onClick={() => imgInput.current?.click()}>
           <Image size={15} />
         </Btn>
         {/* Image: from URL — inline anchored popover (no native prompt) */}
-        <div className="relative">
+        {!OFFLINE_ONLY && <div className="relative">
           <Btn title="Insert image from URL" onClick={() => setImgUrlOpen((v) => !v)}>
             <span className="text-2xs font-bold">URL</span>
           </Btn>
@@ -879,7 +880,7 @@ export default function DocsToolbar({
               onClose={() => setImgUrlOpen(false)}
             />
           )}
-        </div>
+        </div>}
 
         {/* Table: NxM picker */}
         <InsertTableMenu editor={editor} />

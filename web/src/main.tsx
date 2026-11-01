@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import AppErrorBoundary from './components/AppErrorBoundary'
 import './index.css'
 // configure() MUST run before any other endpoints-module import touches
 // localStorage so existing user state under 'vulos.office.endpoints.v1'
@@ -26,9 +27,9 @@ import { registerServiceWorker } from './lib/pwa.js'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <AppErrorBoundary><BrowserRouter>
       <App />
-    </BrowserRouter>
+    </BrowserRouter></AppErrorBoundary>
   </React.StrictMode>
 )
 

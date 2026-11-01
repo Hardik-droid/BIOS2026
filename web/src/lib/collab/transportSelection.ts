@@ -60,6 +60,7 @@
  */
 
 import { probePeeringAvailable } from './peeringAvailability.js'
+import { OFFLINE_ONLY } from '../offline/mode'
 import { resolveRendezvousUrl, resolveBuiltinRendezvousPrefix } from './reachableBase.js'
 
 export const TRANSPORT_HOST_PEERING = 'host-peering' as const
@@ -112,6 +113,7 @@ export async function selectCollabTransport({
   const none = {
     transport: TRANSPORT_LOCAL_ONLY, rendezvousBaseUrl: '', rendezvousPrefix: '', builtin: false,
   }
+  if (OFFLINE_ONLY) return none
 
   let hostAvailable = false
   try {

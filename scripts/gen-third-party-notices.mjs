@@ -91,14 +91,16 @@ function findNotice(pkgDir) {
 
 function collectNpm(startDir) {
   const start = resolve(startDir)
-  const bin = join(start, 'node_modules', '.bin', 'license-checker-rseidelsohn')
+  // Run the JavaScript entry point with Node so this also works on Windows,
+  // where execFileSync cannot execute npm's shell shims directly.
+  const bin = join(start, 'node_modules', 'license-checker-rseidelsohn', 'bin', 'license-checker-rseidelsohn.js')
   if (!existsSync(bin)) {
     throw new Error(
       `license-checker-rseidelsohn not found at ${bin}. It is a devDependency ` +
         'of this package -- run `npm install` first.',
     )
   }
-  const json = execFileSync(bin, ['--production', '--json', '--start', start], {
+  const json = execFileSync(process.execPath, [bin, '--production', '--json', '--start', start], {
     encoding: 'utf8',
     maxBuffer: 512 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'inherit'],

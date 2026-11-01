@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react'
 import { Download, X, WifiOff } from 'lucide-react'
 import { isEmbedded } from './pwa.js'
+import { OFFLINE_ONLY } from './offline/mode'
 
 const DISMISS_KEY = 'vulos.office.pwa.install-dismissed.v1'
 
@@ -107,7 +108,7 @@ export default function InstallPrompt() {
 
   return (
     <>
-      {offline && (
+      {offline && !OFFLINE_ONLY && (
         <div
           role="status"
           aria-live="polite"

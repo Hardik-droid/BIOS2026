@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { api } from '../lib/api'
 import { writeDraft, clearDraft } from '../lib/draftStore'
+import { OFFLINE_ONLY } from '../lib/offline/mode'
 
 /** A file record as returned by the /files API. Fields beyond the ones this
  *  store itself reads are passed through untouched (index signature). */
@@ -16,6 +17,8 @@ export interface DiwanFile {
   owner?: string
   updated_at?: string
   created_at?: string
+  nearby_enabled?: boolean
+  nearby_initial?: boolean
   [key: string]: unknown
 }
 
@@ -35,6 +38,7 @@ interface ApiError extends Error {
 }
 
 interface UpdateFileOpts {
+  replica?: boolean
   rev?: number | undefined
   onConflict?: ((current: DiwanFile | undefined, content: unknown) => boolean | Promise<boolean> | void | Promise<void>) | undefined
   _retried?: boolean
@@ -44,6 +48,7 @@ interface FilesState {
   files: DiwanFile[]
   folders: DiwanFolder[]
   loading: boolean
+  loadError: string | null
   sharedWithMe: DiwanFile[]
   fetchFiles: () => Promise<void>
   fetchSharedWithMe: () => Promise<void>
@@ -60,7 +65,7 @@ interface FilesState {
   updateFile: (id: string, name: string, content: unknown, opts?: UpdateFileOpts) => Promise<DiwanFile>
   deleteFile: (id: string) => Promise<void>
   renameFile: (id: string, name: string) => Promise<void>
-  saveFileWithDraft: (id: string, name: string, content: unknown) => Promise<DiwanFile>
+  saveFileWithDraft: (id: string, name: string, content: unknown, opts?: { replica?: boolean }) => Promise<DiwanFile>
   markDirty: (id: string) => void
 }
 
@@ -93,6 +98,7 @@ type SaveStateListener = (state: SaveState) => void
 // that only care about their own file's state.
 const saveStateListeners = new Map<string, Set<SaveStateListener>>()
 const saveStates = new Map<string, SaveState>()
+const dirtyGenerations = new Map<string, number>()
 
 export function getSaveState(id: string): SaveState {
   return saveStates.get(id) || { status: 'idle', error: null }
@@ -114,20 +120,21 @@ export const useFilesStore = create<FilesState>((set, get) => ({
   files: [],
   folders: [],
   loading: false,
+  loadError: null,
   // Files shared TO the current user by others (owned files excluded). Loaded
   // from the ACL-safe /shared-files endpoint. Each entry carries { owner, role }.
   sharedWithMe: [],
 
   fetchFiles: async () => {
-    set({ loading: true })
+    set({ loading: true, loadError: null })
     try {
       const files = await api.listFiles()
       // Coerce to an array: `files` feeds .filter/.map/.slice across AppHome and
       // the app-shell rail, so a malformed/non-array response must never poison
       // it (that would crash the whole shell, not just this list).
       set({ files: Array.isArray(files) ? (files as DiwanFile[]) : [], loading: false })
-    } catch {
-      set({ loading: false })
+    } catch (reason) {
+      set({ loading: false, loadError: reason instanceof Error ? reason.message : 'Your files could not be opened. Try again.' })
     }
   },
 
@@ -230,12 +237,14 @@ export const useFilesStore = create<FilesState>((set, get) => ({
     const known = get().files.find((f) => f.id === id)
     const rev = opts.rev ?? known?.rev ?? 0
     try {
-      const file = await api.updateFile(id, name, content, rev) as DiwanFile
+      const file = await (opts.replica ? api.updateFile(id, name, content, rev, true) : api.updateFile(id, name, content, rev)) as DiwanFile
       set({ files: get().files.map((f) => (f.id === id ? file : f)) })
       return file
     } catch (err) {
       const apiErr = err as ApiError
       if (apiErr?.status !== 409) throw err
+      // Snapshot overwrites are not a substitute for CRDT merging between tabs.
+      if (OFFLINE_ONLY) throw err
       // Adopt the server's newer file so state carries the latest rev + content.
       const current = apiErr.current
       if (current) set({ files: get().files.map((f) => (f.id === id ? current : f)) })
@@ -273,25 +282,31 @@ export const useFilesStore = create<FilesState>((set, get) => ({
    *  3. Attempt network write; on success clear draft + mark saved.
    *  4. On failure keep draft, mark error, and throw so callers can retry.
    */
-  saveFileWithDraft: async (id, name, content) => {
+  saveFileWithDraft: async (id, name, content, opts = {}) => {
+    const generation = dirtyGenerations.get(id) || 0
     setSaveState(id, 'saving')
     // Write draft first — survives a tab-close mid-flight
-    await writeDraft(id, name, content)
+    const draftToken = await writeDraft(id, name, content)
     try {
       // Route through the rev-aware updateFile so a concurrent editor's save
       // triggers the 409 reload+reconcile+retry path instead of a lost update.
-      const file = await get().updateFile(id, name, content)
-      await clearDraft(id)
-      setSaveState(id, 'saved')
+      const file = await get().updateFile(id, name, content, opts)
+      if (draftToken) await clearDraft(id, draftToken)
+      setSaveState(id, (dirtyGenerations.get(id) || 0) === generation ? 'saved' : 'dirty')
       return file
     } catch (err) {
       // Draft survives in IndexedDB; surface error state
-      setSaveState(id, 'error', (err as Error)?.message || 'Save failed')
+      const reason = err as Error
+      const detail = OFFLINE_ONLY && reason?.name === 'QuotaExceededError'
+        ? 'Your device storage is full. Download a recovery copy, free some space, then choose Save again.'
+        : reason?.message || 'Save failed. Keep this document open and try again.'
+      setSaveState(id, 'error', detail)
       throw err
     }
   },
 
   markDirty: (id) => {
+    dirtyGenerations.set(id, (dirtyGenerations.get(id) || 0) + 1)
     const current = getSaveState(id)
     if (current.status !== 'saving') setSaveState(id, 'dirty')
   },

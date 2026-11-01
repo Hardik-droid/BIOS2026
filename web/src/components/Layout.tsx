@@ -35,6 +35,8 @@ import { useAuthStore } from '../store/authStore'
 import { useFilesStore } from '../store/filesStore'
 import type { DiwanFile } from '../store/filesStore'
 import { useNotificationsStore } from '../store/notificationsStore'
+import { OFFLINE_ONLY } from '../lib/offline/mode'
+import OfflineWorkspaceBar from './OfflineWorkspaceBar'
 import NewFileModal from './NewFileModal'
 import NotificationsPanel from './NotificationsPanel'
 import { Sidebar, IconButton, Tooltip, ThemeSwitch, DiwanMark } from './ui'
@@ -95,7 +97,7 @@ function SidebarContent({ collapsed, onNavigate, onNewFile, onSetMode }: Sidebar
   const unread = notifs.filter((n) => !n.read).length
   const fileTypeOf = (id: string) => files.find((f) => f.id === id)?.type
 
-  const recentFiles = files.slice(0, 5)
+  const recentFiles = files.filter(file => !file.trashed).slice(0, 5)
   const TYPE_ROUTE: Record<string, string> = { doc: 'docs', sheet: 'sheets', slide: 'slides', whiteboard: 'whiteboards' }
   const typeRoute = (f: DiwanFile) => `/${TYPE_ROUTE[f.type] || 'docs'}/${f.id}`
 
@@ -289,6 +291,7 @@ function Shell({ children }: { children?: ReactNode }) {
       )}
 
       <main className="relative flex-1 flex flex-col min-w-0 overflow-hidden bg-bg">
+        {OFFLINE_ONLY && <OfflineWorkspaceBar />}
         {/* Mobile header — only below lg, where the rail is off-canvas */}
         <header className="lg:hidden flex items-center gap-2.5 h-12 px-2 border-b border-line bg-bg-elev2 flex-shrink-0">
           <IconButton size="md" onClick={() => setMobileOpen(true)} title="Open navigation">

@@ -39,3 +39,9 @@ dist-office/
 *.njsproj
 *.sln
 *.sw?
+
+# Generated deployment bundles and provider project links
+/deploy/
+/.vercel/
+/dist-offline/
+/offline-package/
