@@ -28,7 +28,7 @@ func writeCfg(t *testing.T, body string) string {
 }
 
 func TestDefault_BuiltinRendezvousOn(t *testing.T) {
-	// A bare `diwan` binary must be able to introduce two browsers to each other
+	// A bare `localfirst` binary must be able to introduce two browsers to each other
 	// without another product being deployed. That is what this default IS.
 	if !Default().Collab.BuiltinRendezvous {
 		t.Fatal("builtin_rendezvous must default to true")
@@ -84,7 +84,7 @@ func TestApplyEnvOverrides_BuiltinRendezvous(t *testing.T) {
 
 // A MISSING config file is a supported deployment (a container or PaaS image
 // configured entirely from the environment). The env overrides used not to be
-// applied on that branch, which silently ignored every VULOS_*/DIWAN_* variable
+// applied on that branch, which silently ignored every VULOS_*/LOCALFIRST_* variable
 // in exactly the deployment that had nothing else to configure with.
 func TestLoad_MissingFileStillAppliesEnvOverrides(t *testing.T) {
 	t.Setenv("VULOS_RENDEZVOUS_URL", "https://relay.example.org")

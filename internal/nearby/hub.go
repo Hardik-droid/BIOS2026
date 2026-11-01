@@ -23,6 +23,7 @@ type Status struct {
 	Document         *Document       `json:"document,omitempty"`
 	Session          string          `json:"session,omitempty"`
 	Invitation       string          `json:"invitation,omitempty"`
+	PeerAddress      string          `json:"peerAddress,omitempty"`
 	PairingCode      string          `json:"pairingCode,omitempty"`
 	PairingExpiresAt string          `json:"pairingExpiresAt,omitempty"`
 	PairingRequest   *PairingRequest `json:"pairingRequest,omitempty"`
@@ -439,6 +440,7 @@ func (h *Hub) serve(ctx context.Context, generation uint64, conn *tls.Conn, doc 
 		h.pending = nil
 	}
 	h.status.State = "connected"
+	h.status.PeerAddress = conn.RemoteAddr().String()
 	// One peer owns this session. The unused convenience code should not later
 	// expire into an alarming error while a legacy invitation is connected.
 	h.status.PairingCode, h.status.PairingExpiresAt, h.status.PairingError = "", "", ""
@@ -491,6 +493,7 @@ func (h *Hub) serve(ctx context.Context, generation uint64, conn *tls.Conn, doc 
 	h.mu.Lock()
 	if h.generation == generation && h.conn == conn {
 		h.conn = nil
+		h.status.PeerAddress = ""
 		if ctx.Err() == nil {
 			h.status.State = "error"
 			if h.status.Role == "host" {

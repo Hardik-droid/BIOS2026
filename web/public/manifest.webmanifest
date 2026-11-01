@@ -1,17 +1,21 @@
 {
   "id": "/",
-  "name": "Diwan",
-  "short_name": "Diwan",
-  "description": "Diwan — a warm, real-time collaborative office suite: documents, spreadsheets, slides and whiteboards.",
+  "name": "LocalFirst",
+  "short_name": "LocalFirst",
+  "description": "Your workspace. Your data. Your control. Documents, spreadsheets, presentations, whiteboards and PDF tools, built for local work.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "lang": "en",
   "dir": "ltr",
-  "background_color": "#FBF7F1",
-  "theme_color": "#D0471F",
-  "categories": ["productivity", "office", "business"],
+  "background_color": "#F8FAFC",
+  "theme_color": "#4F46E5",
+  "categories": [
+    "productivity",
+    "office",
+    "business"
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

@@ -23,11 +23,11 @@ import (
 	"sync"
 	"testing"
 
-	"diwan/backend/billing"
-	"diwan/backend/fileacl"
-	"diwan/backend/middleware"
-	"diwan/backend/models"
-	"diwan/backend/seam"
+	"localfirst/backend/billing"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/middleware"
+	"localfirst/backend/models"
+	"localfirst/backend/seam"
 
 	"github.com/gin-gonic/gin"
 )

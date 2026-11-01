@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"diwan/backend/models"
+	"localfirst/backend/models"
 )
 
 // P2 — optimistic concurrency (lost-update prevention).

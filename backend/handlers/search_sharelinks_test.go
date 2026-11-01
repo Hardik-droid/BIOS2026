@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/audit"
-	"diwan/backend/config"
-	"diwan/backend/fileacl"
-	"diwan/backend/middleware"
-	"diwan/backend/models"
-	"diwan/backend/signing"
-	"diwan/backend/storage"
+	"localfirst/backend/audit"
+	"localfirst/backend/config"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/middleware"
+	"localfirst/backend/models"
+	"localfirst/backend/signing"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 )

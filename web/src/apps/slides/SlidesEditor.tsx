@@ -21,7 +21,7 @@ import {
   ChevronDown as ChevronDownIcon, Type as TypeIcon, LayoutGrid, X, Square, Share2,
 } from 'lucide-react'
 import { sanitizeSlideHtml as sanitize } from '../../lib/sanitize'
-import { useFilesStore, type DiwanFile } from '../../store/filesStore'
+import { useFilesStore, type LocalFirstFile } from '../../store/filesStore'
 import { api } from '../../lib/api'
 import SlidePreview from './SlidePreview'
 import { exportSlidesToPdf, exportSlidesToPptx } from './slidesExport'
@@ -52,6 +52,7 @@ import ConnectionPill from '../../components/ConnectionPill.jsx'
 import { useCollabFabric } from '../../lib/collab/useCollabFabric.js'
 import { getCollabIdentity, identityColor, deriveStatusPill, countLivePeers, type CollabIdentity } from '../../lib/collab/presenceCommon.js'
 import { Button, IconButton, Tooltip, Topbar, Menu, UrlPopover, LoadingState, SaveStatus } from '../../components/ui'
+import { EditorIdentity, EditorTitle, EditorStatusBar } from '../../components/editor/EditorChrome'
 import AccountShareModal from '../../components/AccountShareModal.jsx'
 import { useAuthStore } from '../../store/authStore'
 import ThemeGallery from './ThemeGallery.jsx'
@@ -288,7 +289,7 @@ export default function SlidesEditor(_props: SlidesEditorProps) {
   const navigate = useNavigate()
   const { files, updateFile } = useFilesStore()
   const stored = files.find((f) => f.id === id)
-  const [file, setFile] = useState<DiwanFile | undefined>(stored)
+  const [file, setFile] = useState<LocalFirstFile | undefined>(stored)
 
   const fileContent = file?.content as DeckData | undefined
   const defaultData: DeckData = fileContent && fileContent.slides
@@ -411,7 +412,7 @@ export default function SlidesEditor(_props: SlidesEditorProps) {
   // ── Load file ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!file && id) {
-      (api.getFile(id) as Promise<DiwanFile>).then((f) => {
+      (api.getFile(id) as Promise<LocalFirstFile>).then((f) => {
         setFile(f)
         setTitle(f.name)
         const content = f.content as DeckData | undefined
@@ -937,29 +938,24 @@ export default function SlidesEditor(_props: SlidesEditorProps) {
   const importLoss = slideImportLossItems(slidesData?.importNotes)
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-bg">
+    <div className="lf-editor lf-editor-slides flex-1 flex flex-col overflow-hidden bg-bg">
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
       <Topbar
+        className="lf-editor-topbar"
         leading={
-          <Tooltip label="Back to Slides">
+          <><Tooltip label="Back to Slides">
             <IconButton size="sm" onClick={() => void navigate('/slides')}>
               <ArrowLeft size={15} />
             </IconButton>
-          </Tooltip>
+          </Tooltip><EditorIdentity kind="slide" /></>
         }
         title={
-          <input
+          <EditorTitle
+            kind="slide"
             value={title}
-            onChange={(e) => { setTitle(e.target.value); setSaved(false) }}
+            onChange={value => { setTitle(value); setSaved(false) }}
             placeholder="Untitled presentation"
-            aria-label="Presentation title"
-            className={[
-              'flex-1 min-w-0 text-sm font-semibold tracking-tightish',
-              'bg-transparent border border-transparent rounded-sm px-2 py-1',
-              'text-ink placeholder:text-ink-faint',
-              'hover:border-line focus:border-line-strong focus:bg-paper',
-              'transition-[border-color,background] duration-fast ease-out outline-none',
-            ].join(' ')}
+            label="Presentation title"
           />
         }
         meta={
@@ -1827,6 +1823,11 @@ export default function SlidesEditor(_props: SlidesEditorProps) {
           )}
         </div>
       )}
+
+      {!presenting && <EditorStatusBar leading={<span>Presentation workspace</span>}>
+        <span>Slide {Math.min(activeIdx + 1, slidesData.slides.length)} of {slidesData.slides.length}</span>
+        <span>{saving ? 'Saving changes…' : saved ? 'Changes saved' : 'Unsaved changes'}</span>
+      </EditorStatusBar>}
 
       {/* ── Modals ──────────────────────────────────────────────────────── */}
       {showThemeGallery && (

@@ -1,4 +1,4 @@
-# Frontend testing — Diwan
+# Frontend testing — LocalFirst
 
 Two complementary layers cover the React app. Both are hermetic (no Go backend,
 no relay): the API surface is mocked.
@@ -19,7 +19,7 @@ no relay): the API surface is mocked.
 │     reveal.js rendering, real toolbar + menu interaction.           │
 ├─────────────────────────────────────────────────────────────────────┤
 │ Layer 3 — Real P2P integration      npm run test:e2e:p2p             │
-│   • NOTHING mocked, and nothing external: one real diwan binary     │
+│   • NOTHING mocked, and nothing external: one real localfirst binary     │
 │     serving its OWN discovery surface + two real browsers + real    │
 │     WebRTC. Cannot be skipped — it depends on this repo only.       │
 │   • proves peer-to-peer collaboration with no other product at all. │
@@ -81,7 +81,7 @@ comments, suggestions). The `officePage` fixture attaches it automatically;
 
 The one layer with **no mocks at all**. It exists because the repo's central
 architectural claim — *two people collaborate peer-to-peer through one bare
-`diwan` binary, with no Vulos OS, no Pier, no relay and no account* — was
+`localfirst` binary, with no Vulos OS, no Pier, no relay and no account* — was
 otherwise covered only by selector unit tests with a fake fabric.
 
 ```bash
@@ -91,14 +91,14 @@ npm run test:e2e:p2p
 Two files, and the distinction matters:
 
 **`builtin-rendezvous-p2p.e2e.js` — the DEFAULT path. Cannot be skipped.**
-It boots ONE standalone `diwan` serving its own discovery surface at
+It boots ONE standalone `localfirst` serving its own discovery surface at
 `/api/rendezvous/*`, plus a second instance with discovery disabled for the
 negative control. Two browser contexts load the first one. Everything it needs it
 builds from this repository, so there is no condition under which it silently
 does not run — which matters because a guard that can be skipped is absent
 exactly when something has broken.
 
-It asserts: a standalone Diwan serves no `/api/peering/*` but does advertise
+It asserts: a standalone LocalFirst serves no `/api/peering/*` but does advertise
 `builtin_rendezvous_prefix`; the surface refuses an unsigned write over real HTTP
 *and stores nothing*; both browsers speak the protocol to that origin; the
 **server's own presence state** knows the Ed25519 key each browser signed an
@@ -110,11 +110,11 @@ discovery disabled and no relay, the editor still works, speaks no discovery
 protocol, and says "Offline" honestly.
 
 **`rendezvous-p2p.e2e.js` — the OPTIONAL external-relay posture.** Two standalone
-`diwan` servers with their built-in surface **off**, both pointed at a real
+`localfirst` servers with their built-in surface **off**, both pointed at a real
 `vulos-relayd`, so the premise "nothing of ours is in the discovery path" is
 exactly true. It also pins the relay's CORS contract (`Allow-Origin: *`, a
 preflight that succeeds, no `Allow-Credentials`) both by header inspection and by
-fetching the relay from a real Chromium page on a Diwan origin, since only a
+fetching the relay from a real Chromium page on a LocalFirst origin, since only a
 browser enforces CORS — plus offline divergence merging as a union on reconnect.
 
 This file **skips** unless `VULOS_RELAYD_BIN` names a prebuilt relayd, and it
@@ -125,7 +125,7 @@ it was meant to guard went unchecked.
 
 | Requirement | Notes |
 |-------------|-------|
-| Go toolchain | builds the Diwan binary (`go build`) after `vite build`, since the binary embeds `dist/` |
+| Go toolchain | builds the LocalFirst binary (`go build`) after `vite build`, since the binary embeds `dist/` |
 | `VULOS_RELAYD_BIN` | optional, and only for the external-relay file. Never inferred from a sibling directory; nothing is cloned or built from another repo. |
 | Chromium flags | `playwright.p2p.config.js` sets `--disable-features=WebRtcHideLocalIpsWithMdns` so two loopback contexts can actually see each other's host candidates. This affects candidate visibility only — no protocol, signaling path or crypto changes. |
 

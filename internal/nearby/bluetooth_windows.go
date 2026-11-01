@@ -132,12 +132,17 @@ func checkedCall(name string, args ...uintptr) error {
 
 // SOCKADDR_BTH is explicitly packed to 30 bytes in Microsoft's ws2bth.h.
 func addressBytes(address uint64, port uint32, service bool) [30]byte {
+	if service {
+		return addressBytesForService(address, port, serviceID)
+	}
+	return addressBytesForService(address, port, [16]byte{})
+}
+
+func addressBytesForService(address uint64, port uint32, id [16]byte) [30]byte {
 	var result [30]byte
 	binary.LittleEndian.PutUint16(result[:2], 32)
 	binary.LittleEndian.PutUint64(result[2:10], address)
-	if service {
-		copy(result[10:26], serviceID[:])
-	}
+	copy(result[10:26], id[:])
 	binary.LittleEndian.PutUint32(result[26:30], port)
 	return result
 }
@@ -190,6 +195,7 @@ type querySet struct {
 }
 type Listener struct {
 	handle   syscall.Handle
+	service  [16]byte
 	address  [30]byte
 	info     csAddrInfo
 	query    querySet
@@ -202,6 +208,44 @@ type Listener struct {
 }
 
 func Listen() (*Listener, error) {
+	return ListenService(serviceID, "LocalFirst offline document collaboration")
+}
+
+// newServiceListener owns all memory referenced by its SDP query. Building it
+// does not open a socket or inspect a radio, including for invalid input.
+func newServiceListener(id [16]byte, name string) (*Listener, error) {
+	if id == ([16]byte{}) {
+		return nil, errors.New("Bluetooth service UUID must not be zero.")
+	}
+	if strings.TrimSpace(name) == "" {
+		return nil, errors.New("Bluetooth service name must not be empty.")
+	}
+	// Bound allocation as well as the encoded SDP name (256 UTF-16 code units,
+	// excluding its terminator). Four UTF-8 bytes can encode at most two units.
+	if len(name) > 4*256 {
+		return nil, errors.New("Bluetooth service name is too long.")
+	}
+	encodedName, err := syscall.UTF16FromString(name)
+	if err != nil {
+		return nil, errors.New("Bluetooth service name must not contain NUL.")
+	}
+	if len(encodedName) > 257 {
+		return nil, errors.New("Bluetooth service name is too long.")
+	}
+	l := &Listener{service: id, name: encodedName, address: addressBytes(0, 0xffffffff, false), changed: make(chan struct{})}
+	l.info = csAddrInfo{Local: socketAddress{uintptr(unsafe.Pointer(&l.address)), 30}, Remote: socketAddress{uintptr(unsafe.Pointer(&l.address)), 30}, SocketType: 1, Protocol: 3}
+	l.query = querySet{Size: uint32(unsafe.Sizeof(querySet{})), Name: uintptr(unsafe.Pointer(&l.name[0])), ClassID: uintptr(unsafe.Pointer(&l.service)), Namespace: 16, NumberAddresses: 1, Addresses: uintptr(unsafe.Pointer(&l.info))}
+	return l, nil
+}
+
+// ListenService advertises an independent RFCOMM service while retaining the
+// authenticated, encrypted transport used by Listen. id uses Windows GUID byte
+// order. The caller must retain and close the returned listener.
+func ListenService(id [16]byte, name string) (*Listener, error) {
+	l, err := newServiceListener(id, name)
+	if err != nil {
+		return nil, err
+	}
 	if status := RadioStatus(); !status.Available {
 		return nil, errors.New(status.Error)
 	}
@@ -209,7 +253,7 @@ func Listen() (*Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	l := &Listener{handle: handle, address: addressBytes(0, 0xffffffff, false), changed: make(chan struct{})}
+	l.handle = handle
 	fail := func(err error) (*Listener, error) { syscall.Closesocket(handle); return nil, err }
 	if err := checkedCall("bind", uintptr(handle), uintptr(unsafe.Pointer(&l.address)), 30); err != nil {
 		return fail(err)
@@ -222,9 +266,6 @@ func Listen() (*Listener, error) {
 	if err := checkedCall("listen", uintptr(handle), 1); err != nil {
 		return fail(err)
 	}
-	l.name, _ = syscall.UTF16FromString("Diwan offline document collaboration")
-	l.info = csAddrInfo{Local: socketAddress{uintptr(unsafe.Pointer(&l.address)), 30}, Remote: socketAddress{uintptr(unsafe.Pointer(&l.address)), 30}, SocketType: 1, Protocol: 3}
-	l.query = querySet{Size: uint32(unsafe.Sizeof(querySet{})), Name: uintptr(unsafe.Pointer(&l.name[0])), ClassID: uintptr(unsafe.Pointer(&serviceID)), Namespace: 16, NumberAddresses: 1, Addresses: uintptr(unsafe.Pointer(&l.info))}
 	if err := checkedCall("WSASetServiceW", uintptr(unsafe.Pointer(&l.query)), 0, 0); err != nil {
 		return fail(err)
 	}
@@ -274,8 +315,17 @@ func (l *Listener) Accept() (net.Conn, error) {
 }
 func (l *Listener) Addr() net.Addr { return btAddr("local-bluetooth") }
 func Dial(ctx context.Context, address string) (net.Conn, error) {
+	return DialService(ctx, address, serviceID)
+}
+
+// DialService connects to a separately advertised service on an OS-paired
+// device. id uses Windows GUID byte order; no pairing is performed implicitly.
+func DialService(ctx context.Context, address string, id [16]byte) (net.Conn, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if id == ([16]byte{}) {
+		return nil, errors.New("Bluetooth service UUID must not be zero.")
 	}
 	if len(address) != 12 || strings.ContainsAny(address, ":- ") {
 		return nil, errors.New("Choose a paired Bluetooth device.")
@@ -302,7 +352,7 @@ func Dial(ctx context.Context, address string) (net.Conn, error) {
 		return nil, err
 	}
 	conn := newConn(handle, address)
-	addr := addressBytes(value, 0, true)
+	addr := addressBytesForService(value, 0, id)
 	err = checkedCall("connect", uintptr(handle), uintptr(unsafe.Pointer(&addr)), 30)
 	if errors.Is(err, syscall.Errno(10035)) { // WSAEWOULDBLOCK: connect is pending.
 		err = conn.finishConnect(ctx)

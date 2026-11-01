@@ -1,7 +1,7 @@
 /**
  * manifest.test.ts — vitest tests for /public/manifest.webmanifest
  *
- * Validates that the PWA manifest for Diwan:
+ * Validates that the PWA manifest for LocalFirst:
  *   1. Parses as valid JSON.
  *   2. Contains the required fields: name, short_name, start_url, display, theme_color, icons.
  *   3. Has at least two icon entries with src, sizes, and type.
@@ -33,7 +33,7 @@ interface Manifest {
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const manifestPath = resolve(__dirname, '../public/manifest.webmanifest')
 
-describe('Diwan manifest.webmanifest', () => {
+describe('LocalFirst manifest.webmanifest', () => {
   let manifest: Manifest
 
   it('parses as valid JSON', () => {
@@ -46,8 +46,8 @@ describe('Diwan manifest.webmanifest', () => {
     const raw = readFileSync(manifestPath, 'utf-8')
     manifest = JSON.parse(raw) as Manifest
 
-    expect(manifest.name).toBe('Diwan')
-    expect(manifest.short_name).toBe('Diwan')
+    expect(manifest.name).toBe('LocalFirst')
+    expect(manifest.short_name).toBe('LocalFirst')
     expect(manifest.start_url).toBe('/')
     expect(manifest.display).toBe('standalone')
     expect(manifest.theme_color).toBe('#D0471F')

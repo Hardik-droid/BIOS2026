@@ -2,13 +2,13 @@ package storage
 
 import (
 	"errors"
+	appbrand "localfirst/internal/brand"
 	"log"
-	"os"
 	"strings"
 	"time"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
 )
 
 // ErrRevConflict is returned by UpdateFile when the caller supplied a stale rev
@@ -22,10 +22,10 @@ var ErrRevConflict = errors.New("revision conflict")
 // Either variable selects the Postgres backend and sets the schema to "office"
 // so all products can share a single Neon / Postgres instance.
 func databaseURL() string {
-	if v := strings.TrimSpace(os.Getenv("DATABASE_URL")); v != "" {
+	if v := strings.TrimSpace(appbrand.Getenv("DATABASE_URL")); v != "" {
 		return v
 	}
-	return strings.TrimSpace(os.Getenv("VULOS_DATABASE_URL"))
+	return strings.TrimSpace(appbrand.Getenv("VULOS_DATABASE_URL"))
 }
 
 // DefaultVersionCap is the maximum number of versions retained per file.

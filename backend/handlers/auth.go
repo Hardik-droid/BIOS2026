@@ -3,20 +3,20 @@ package handlers
 import (
 	"crypto/sha256"
 	"crypto/subtle"
+	appbrand "localfirst/internal/brand"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"diwan/backend/audit"
-	"diwan/backend/billing"
-	"diwan/backend/config"
-	"diwan/backend/invites"
-	"diwan/backend/middleware"
-	"diwan/backend/models"
-	"diwan/backend/userauth"
+	"localfirst/backend/audit"
+	"localfirst/backend/billing"
+	"localfirst/backend/config"
+	"localfirst/backend/invites"
+	"localfirst/backend/middleware"
+	"localfirst/backend/models"
+	"localfirst/backend/userauth"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -57,7 +57,7 @@ type AuthHandler struct {
 	// authenticated account (no longer self-asserted by the client).
 	creds userauth.Store
 	// invites mints/consumes single-use registration invite tokens (additive to
-	// the static DIWAN_REGISTRATION_TOKEN + admin-JWT paths).
+	// the static LOCALFIRST_REGISTRATION_TOKEN + admin-JWT paths).
 	invites invites.Store
 	// audit records registration / invite-consume events (append-only).
 	audit audit.Store
@@ -356,7 +356,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // gates registration once the instance is bootstrapped (≥1 user) so a stranger
 // cannot register new accounts on a running multi-user instance. The token is
 // supplied by the client via the X-Registration-Token header.
-const EnvRegistrationToken = "DIWAN_REGISTRATION_TOKEN"
+const EnvRegistrationToken = "LOCALFIRST_REGISTRATION_TOKEN"
 
 // reservedPrivilegedID reports whether accountID looks like a privileged /
 // system identity that must NOT be self-registered by an unauthenticated or
@@ -423,7 +423,7 @@ func passwordPolicyError(pw string) string {
 //     is allowed).
 //   - valid=true → the supplied X-Registration-Token matched (constant-time).
 func registrationTokenOK(c *gin.Context) (configured, valid bool) {
-	want := strings.TrimSpace(os.Getenv(EnvRegistrationToken))
+	want := strings.TrimSpace(appbrand.Getenv(EnvRegistrationToken))
 	if want == "" {
 		return false, false
 	}

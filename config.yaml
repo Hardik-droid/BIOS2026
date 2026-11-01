@@ -1,9 +1,9 @@
 # no-broker-dep:allow-file: names vulos-relayd/Pier twice below describing the OPTIONAL
 # rendezvous_url override (shipped default: rendezvous_url: "", empty) — the actual default
-# path is builtin_rendezvous: true, Diwan's OWN self-hosted discovery surface. Verified by
+# path is builtin_rendezvous: true, LocalFirst's OWN self-hosted discovery surface. Verified by
 # backend/config/config_test.go's TestDefault_RendezvousURLEmpty.
 
-# Diwan Configuration
+# LocalFirst Configuration
 
 server:
   addr: ":8080"
@@ -25,7 +25,7 @@ storage:
     port: 5432
     user: "postgres"
     password: ""
-    database: "diwan"
+    database: "localfirst"
     sslmode: "disable"
 
 persistence:
@@ -36,15 +36,15 @@ persistence:
   # this never loses a document. The store backend follows storage.type
   # (local/s3 -> filesystem <data_dir>/updates/<id>/; postgres -> office.file_updates
   # + office.file_update_snapshots). Frame appends are storage-quota metered.
-  # Env override: VULOS_PERSISTENCE_UPDATELOG / DIWAN_UPDATE_LOG.
+  # Env override: VULOS_PERSISTENCE_UPDATELOG / LOCALFIRST_UPDATE_LOG.
   updatelog: false
 
 collab:
-  # Serve Diwan's OWN peer-discovery surface from this binary, at
+  # Serve LocalFirst's OWN peer-discovery surface from this binary, at
   # /api/rendezvous/* (backend/rendezvous). ON by default, and that default is
   # the point: WebRTC cannot introduce two browsers unaided, so before this
-  # existed a standalone Diwan had no peer-to-peer at all unless the operator
-  # also ran a vulos-relayd (Pier) and set rendezvous_url below. One Diwan on
+  # existed a standalone LocalFirst had no peer-to-peer at all unless the operator
+  # also ran a vulos-relayd (Pier) and set rendezvous_url below. One LocalFirst on
   # one box is now sufficient by itself.
   #
   # It carries NO document content — payloads are opaque bytes sealed under a
@@ -55,7 +55,7 @@ collab:
   #
   # Set false to serve no discovery yourself: sessions then use rendezvous_url
   # if set, else stay honestly local-only (the editor keeps working and says so).
-  # Env override: VULOS_BUILTIN_RENDEZVOUS / DIWAN_BUILTIN_RENDEZVOUS.
+  # Env override: VULOS_BUILTIN_RENDEZVOUS / LOCALFIRST_BUILTIN_RENDEZVOUS.
   builtin_rendezvous: true
 
   # Base URL of any vulos-relayd's OPEN rendezvous surface (announce/resolve/
@@ -65,7 +65,7 @@ collab:
   # for its TURN/NAT-traversal help (e.g. "https://relay.example.org"). Leave
   # blank (default) to use the built-in surface. Exposed read-only to the browser
   # at GET /api/reachability.
-  # Env override: VULOS_RENDEZVOUS_URL / DIWAN_RENDEZVOUS_URL.
+  # Env override: VULOS_RENDEZVOUS_URL / LOCALFIRST_RENDEZVOUS_URL.
   # See docs/COLLABORATION.md §3 and docs/CONFIGURATION.md.
   rendezvous_url: ""
 
@@ -74,7 +74,7 @@ collab:
   # These exist so a RELEASE BINARY or container image can be pointed at a
   # coturn without rebuilding the frontend — the VITE_STUN_URLS / VITE_TURN_*
   # variables are baked into the JS bundle at build time and are out of reach for
-  # an operator who just downloaded Diwan. Leave empty (default) and the browser
+  # an operator who just downloaded LocalFirst. Leave empty (default) and the browser
   # answers from its own build-time config exactly as before.
   #
   # The /ice endpoint is UNAUTHENTICATED (a browser needs ICE servers before it

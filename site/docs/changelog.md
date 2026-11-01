@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to Diwan are documented here.  
+All notable changes to LocalFirst are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
-Diwan uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+LocalFirst uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
@@ -14,16 +14,16 @@ Nothing yet.
 
 ## [0.1.0] - 2026-08-06
 
-Diwan's first release: a documents suite (Docs, Sheets, Slides, PDF/Signing)
+LocalFirst's first release: a documents suite (Docs, Sheets, Slides, PDF/Signing)
 with genuine peer-to-peer collaboration — no central document server — and an
 honest, self-hostable single binary. This entry consolidates the project's
 pre-release development history into one changelog record for the version
 actually being tagged.
 
-### Added — Diwan serves its own peer discovery: real P2P from one bare binary
+### Added — LocalFirst serves its own peer discovery: real P2P from one bare binary
 
 - **The problem.** WebRTC cannot introduce two browsers to each other unaided —
-  something has to carry the first offer/answer/ICE frames. Diwan could only get
+  something has to carry the first offer/answer/ICE frames. LocalFirst could only get
   that from *another product*: a Vulos OS / Ephor host mounting
   `/api/peering/*`, or an operator-run `vulos-relayd` named in
   `collab.rendezvous_url`. With neither, every session fell through to
@@ -31,7 +31,7 @@ actually being tagged.
   product's central claim was conditional on a second deployment.
 - **`backend/rendezvous`** now serves that protocol from this binary, at
   `/api/rendezvous/*`, **on by default** (`collab.builtin_rendezvous`). One
-  `diwan` on one box is sufficient for two people: no Vulos OS, no Ephor, no
+  `localfirst` on one box is sufficient for two people: no Vulos OS, no Ephor, no
   relay, no account, nothing to configure. Ephor remains supported and still
   takes precedence when configured — it is a choice now, not a prerequisite.
 - It carries **no document content**. Every payload is opaque bytes sealed under
@@ -100,7 +100,7 @@ actually being tagged.
 
 ### Changed — Collaboration is always peer-to-peer; there is no central document server
 
-- **Diwan's differentiator is that co-editing is genuinely distributed
+- **LocalFirst's differentiator is that co-editing is genuinely distributed
   peer-to-peer** — unlike Collabora/OnlyOffice, which route every edit through a
   central document server. The codebase went through a server-mediated collab
   path during development (an SSE op-relay + authoritative SQLite op-log +
@@ -219,7 +219,7 @@ actually being tagged.
 ### Fixed — env config was ignored when there was no config.yaml
 
 - `config.Load` returned `Default()` on a missing file **without** applying the
-  env overrides, so every `VULOS_*` / `DIWAN_*` variable was silently dropped in
+  env overrides, so every `VULOS_*` / `LOCALFIRST_*` variable was silently dropped in
   exactly the deployment that had nothing else to configure with — a container or
   PaaS image configured entirely from the environment.
 
@@ -332,13 +332,13 @@ actually being tagged.
   text color).
 - **PPTX** export (via pptxgenjs) alongside PDF.
 
-### Added — Whiteboards, a Diwan document type
+### Added — Whiteboards, a LocalFirst document type
 
-- **Vulos Board is a first-class Diwan document type.** The Excalidraw-based
+- **Vulos Board is a first-class LocalFirst document type.** The Excalidraw-based
   collaborative whiteboard is a `whiteboard` file type alongside doc/sheet/slide/
   PDF — "**New → Whiteboard**" from the launcher, the app rail, and the file
   browser.
-- **It rides Diwan's own distributed peer-to-peer collab engine** — the exact
+- **It rides LocalFirst's own distributed peer-to-peer collab engine** — the exact
   same `YP2PCollabSession` + WebRTC transport, E2E-encrypted room, content-blind
   signalling and TURN-only-on-hard-NAT fallback that Docs uses. There is no
   separate whiteboard/collab server and no second collab stack. The scene is a
@@ -354,7 +354,7 @@ actually being tagged.
   [`@excalidraw/excalidraw`](https://github.com/excalidraw/excalidraw) editor
   (attribution in THIRD-PARTY-NOTICES).
 
-### Added — Diwan interop (import + export fidelity)
+### Added — LocalFirst interop (import + export fidelity)
 
 - **Unified Open flow**: drag-and-drop + file-picker on every app home detects the
   format (.docx/.xlsx/.pptx/.odt/.ods/.odp/.md/.txt/.html/.csv/.pdf) and routes to
@@ -405,7 +405,7 @@ actually being tagged.
 
 ### Added — Standalone, server-honest Settings + admin surface
 
-A self-hoster running Diwan standalone gets a Settings surface that reports what
+A self-hoster running LocalFirst standalone gets a Settings surface that reports what
 the instance is **actually** doing, instead of hardcoded placeholders.
 
 - **`GET /api/system/info`** — honest runtime facts: build version, storage
@@ -432,7 +432,7 @@ the instance is **actually** doing, instead of hardcoded placeholders.
   cross-compiles linux/amd64 and linux/arm64, builds the frontend, generates
   SHA-256 checksums, and creates a GitHub Release; it verifies the tag matches
   `web/package.json`'s version before proceeding.
-- **Observability**: `backend/obs/` provides Prometheus metrics (`diwan_*`) and
+- **Observability**: `backend/obs/` provides Prometheus metrics (`localfirst_*`) and
   OpenTelemetry tracing.
 - **`@vulos/office-client` library**: a multi-entry Vite build
   (`vite.config.lib.js`) exporting `docs`, `sheets`, `slides`, `pdf` as
@@ -447,7 +447,7 @@ the instance is **actually** doing, instead of hardcoded placeholders.
 ### Changed — self-contained: no dependency on another Vulos product's package
 
 - Removed the `@vulos/relay-client` npm dependency (`third_party/relay-client`)
-  entirely. Diwan does not depend on any other Vulos product's package.
+  entirely. LocalFirst does not depend on any other Vulos product's package.
 - **Endpoint selection** (cloud↔LAN failover used by the API client, PWA
   bootstrap, and `main.jsx`/`office.jsx` entry points) is first-party code at
   `src/lib/endpoints/` (`index.js`, `offlineBootstrap.js`) plus
@@ -455,7 +455,7 @@ the instance is **actually** doing, instead of hardcoded placeholders.
 - The `FabricClient` WebRTC transport (plus signalling/rendezvous/prekey/
   relay-box support code) is first-party source at `src/lib/collab/webrtc/`
   rather than a vendored package dependency. Unused subpaths the SDK shipped
-  but Diwan never imported (a Node health-check export, region-aware PoP
+  but LocalFirst never imported (a Node health-check export, region-aware PoP
   selection, audio/video calling signalling) were dropped rather than carried
   along.
 
@@ -486,13 +486,13 @@ the instance is **actually** doing, instead of hardcoded placeholders.
 
 ### Changed — the identity/access surface is documents-only
 
-Diwan is scoped to **documents only** (Docs, Sheets, Slides, PDF/Signing).
+LocalFirst is scoped to **documents only** (Docs, Sheets, Slides, PDF/Signing).
 Real-time chat + Spaces, video calling/meetings, calendar and contacts were
 developed in this repository at various points and have all been split out:
 
 - **Vulos Meet** (video calling/meetings) and **Vulos Talk** (team chat +
-  Spaces) are separate products, combined with Diwan by the **wede** shell.
-  Diwan's sidebar keeps an **external** launcher link to Talk
+  Spaces) are separate products, combined with LocalFirst by the **wede** shell.
+  LocalFirst's sidebar keeps an **external** launcher link to Talk
   (`talk.vulos.org`) — a cross-product link, not an in-process surface.
 - **Calendar and Contacts** are served by the **mail connector** (lilmail
   CalDAV/CardDAV + `/v1/calendar` + `/v1/contacts` + `@vulos/mail-ui`) instead

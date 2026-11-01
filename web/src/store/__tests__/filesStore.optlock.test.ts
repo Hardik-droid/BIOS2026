@@ -19,11 +19,11 @@ vi.mock('../../lib/draftStore', () => ({
 }))
 
 import { api } from '../../lib/api'
-import { useFilesStore, type DiwanFile } from '../filesStore'
+import { useFilesStore, type LocalFirstFile } from '../filesStore'
 
 const updateFile = vi.mocked(api.updateFile)
 
-function seed(files: DiwanFile[]) {
+function seed(files: LocalFirstFile[]) {
   useFilesStore.setState({ files })
 }
 

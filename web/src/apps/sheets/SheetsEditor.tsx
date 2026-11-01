@@ -9,7 +9,7 @@ import {
   ChevronDown, BarChart2, Filter, Table2, Tag, Sliders, Keyboard, Search,
   Lock, MessageSquarePlus, X, MoreHorizontal, ListChecks, Share2, Shield,
 } from 'lucide-react'
-import { useFilesStore, getSaveState, onSaveStateChange, type DiwanFile } from '../../store/filesStore'
+import { useFilesStore, getSaveState, onSaveStateChange, type LocalFirstFile } from '../../store/filesStore'
 import { api } from '../../lib/api'
 import { readDraft, clearDraft, type Draft } from '../../lib/draftStore'
 import { exportSheetsToXlsx, exportSheetsToCsv, exportSheetsToOds, exportNeedsConfirm, type ExportSheet } from './sheetsExport'
@@ -42,6 +42,7 @@ import ConnectionPill from '../../components/ConnectionPill.jsx'
 import { useCollabFabric } from '../../lib/collab/useCollabFabric.js'
 import { getCollabIdentity, identityColor, deriveStatusPill, countLivePeers } from '../../lib/collab/presenceCommon.js'
 import { Button, IconButton, Tooltip, Topbar, Menu, useToast, useDialogA11y, SaveStatus } from '../../components/ui'
+import { EditorIdentity, EditorTitle, EditorStatusBar } from '../../components/editor/EditorChrome'
 import AccountShareModal from '../../components/AccountShareModal.jsx'
 import { useAuthStore } from '../../store/authStore'
 import { useSheetKeyboardShortcuts, KeyboardShortcutsHelp, useShortcutsHelp, type KSSheet } from './KeyboardShortcuts.jsx'
@@ -160,7 +161,7 @@ interface SelectionRect { r0: number; r1: number; c0: number; c1: number }
  * the name box rendered "A1:NaN" on a fresh/empty sheet. Providing them yields a
  * valid A1 selection and a stable grid.
  */
-function normalizeSheets(sheets: unknown): Sheet[] {
+export function normalizeSheets(sheets: unknown): Sheet[] {
   // `sheets` is untrusted, freshly-loaded document content — Array.isArray
   // narrows it to `any[]`, not `Sheet[]`, so the per-element cast below is
   // where the boundary is actually crossed (same pattern as the file's own
@@ -170,10 +171,27 @@ function normalizeSheets(sheets: unknown): Sheet[] {
     : [{ name: 'Sheet1', celldata: [], config: {} }]
   return arr.map((raw, i) => {
     const sh = raw as Sheet
+    // Fortune emits its edited cells as a dense `data` matrix and removes
+    // `celldata`. On mount it does the reverse: it recreates the matrix FROM
+    // celldata, even when a persisted matrix already exists. Supplying [] on
+    // reload therefore erased the visible grid, then autosaved that blank grid.
+    // Keep one sparse representation outside the engine. An explicit matrix
+    // is authoritative, including an empty/all-null matrix after deletions.
+    const { data: matrix, ...metadata } = sh
+    let cells = Array.isArray(sh.celldata) ? sh.celldata : []
+    if (Array.isArray(matrix)) {
+      cells = []
+      matrix.forEach((row: unknown, r: number) => {
+        if (!Array.isArray(row)) return
+        row.forEach((value: unknown, c: number) => {
+          if (value !== null && value !== undefined) cells.push({ r, c, v: value as Exclude<SheetCellEntry['v'], undefined> })
+        })
+      })
+    }
     return {
-    ...sh,
+    ...metadata,
     name: sh.name || `Sheet${i + 1}`,
-    celldata: sh.celldata || [],
+    celldata: cells,
     config: sh.config || {},
     id: sh.id || `sheet_${i + 1}`,
     order: typeof sh.order === 'number' ? sh.order : i,
@@ -469,7 +487,7 @@ export default function SheetsEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { files, saveFileWithDraft, markDirty } = useFilesStore()
-  const [file, setFile] = useState<DiwanFile | undefined>(files.find((f) => f.id === id))
+  const [file, setFile] = useState<LocalFirstFile | undefined>(files.find((f) => f.id === id))
   const [title, setTitle] = useState(file?.name || 'Untitled Sheet')
   // Account-based sharing (named users, role-scoped, ACL-enforced).
   const [showShare, setShowShare] = useState(false)
@@ -841,7 +859,7 @@ export default function SheetsEditor() {
   useEffect(() => {
     if (!file && id) {
       api.getFile(id).then((f) => {
-        const df = f as DiwanFile
+        const df = f as LocalFirstFile
         setFile(df)
         setTitle(df.name)
         loadDocument(loadContent(df.content))
@@ -956,7 +974,9 @@ export default function SheetsEditor() {
     // round-trip). The user's own CF rules (no marker) are kept.
     // `unknown` already subsumes `Sheet[]` here — this stays genuinely unknown
     // until the Array.isArray narrow below, then gets an explicit per-branch cast.
-    let newData: unknown = newDataRaw
+    // Normalize the engine's matrix at ingress as well as at load time. The
+    // app's overlays and CRDT adapter all consume the same sparse cell model.
+    let newData: unknown = Array.isArray(newDataRaw) ? normalizeSheets(newDataRaw) : newDataRaw
     if (Array.isArray(newData)) {
       newData = (newData as Sheet[]).map((sheet) => {
         const cf = sheet?.luckysheet_conditionformat_save
@@ -1323,7 +1343,7 @@ export default function SheetsEditor() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-bg">
+    <div className="lf-editor lf-editor-sheets flex-1 flex flex-col overflow-hidden bg-bg">
       {/* Hidden file inputs for import */}
       <input ref={importInputRef} type="file" className="hidden" accept=".csv,.tsv,.xlsx,.xls,.ods" onChange={(e) => {
         const name = (e.target.files?.[0]?.name || '').toLowerCase()
@@ -1359,24 +1379,19 @@ export default function SheetsEditor() {
 
       {/* Top bar */}
       <Topbar
+        className="lf-editor-topbar"
         leading={
-          <Tooltip label="Back to Sheets">
+          <><Tooltip label="Back to Sheets">
             <IconButton size="sm" onClick={() => void navigate('/sheets')}><ArrowLeft size={15} /></IconButton>
-          </Tooltip>
+          </Tooltip><EditorIdentity kind="sheet" /></>
         }
         title={
-          <input
+          <EditorTitle
+            kind="sheet"
             value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
+            onChange={handleTitleChange}
             placeholder="Untitled sheet"
-            aria-label="Sheet title"
-            className={[
-              'flex-1 min-w-0 text-sm font-semibold tracking-tightish',
-              'bg-transparent border border-transparent rounded-sm px-2 py-1',
-              'text-ink placeholder:text-ink-faint',
-              'hover:border-line focus:border-line-strong focus:bg-paper',
-              'transition-[border-color,background] duration-fast ease-out outline-none',
-            ].join(' ')}
+            label="Sheet title"
           />
         }
         meta={
@@ -1740,6 +1755,11 @@ export default function SheetsEditor() {
           />
         )}
       </div>
+
+      <EditorStatusBar leading={<span>Spreadsheet workspace</span>}>
+        <span>{data.length} {data.length === 1 ? 'sheet' : 'sheets'}</span>
+        <span>{saveStatus.status === 'saving' ? 'Saving changes…' : saveStatus.status === 'dirty' ? 'Unsaved changes' : saveStatus.status === 'error' ? 'Save needs attention' : saveStatus.status === 'saved' ? 'Changes saved' : 'Ready'}</span>
+      </EditorStatusBar>
 
       {/* Modals */}
       <Suspense fallback={null}>

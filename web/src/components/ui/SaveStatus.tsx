@@ -21,6 +21,7 @@
  * their own save state machine; this only renders it.
  */
 
+import { OFFLINE_ONLY } from '../../lib/offline/mode'
 type SaveStatusKind = 'saved' | 'saving' | 'dirty' | 'error' | 'offline'
 
 const MAP: Record<SaveStatusKind, { dot: string; text: string; tone: string }> = {
@@ -53,7 +54,7 @@ export default function SaveStatus({ status = 'saved', text, title, className = 
       ].join(' ')}
     >
       <span aria-hidden className={`save-dot ${info.dot}`.trim()} />
-      {text || info.text}
+      {text || (status === 'saved' && OFFLINE_ONLY ? 'Saved locally' : info.text)}
     </span>
   )
 }

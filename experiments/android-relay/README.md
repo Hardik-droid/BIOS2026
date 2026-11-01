@@ -1,4 +1,4 @@
-# Diwan fixed-route Android relay experiment
+# LocalFirst fixed-route Android relay experiment
 
 This is a separate development artifact, not a production release or a measured-range claim. The known working Windows app stays on port 8765 and its existing ZIP/launcher is unchanged. The experimental Windows receiver uses port 8768 and a separate browser document store. The Android app is a relay only; it is not an Android document editor.
 
@@ -7,8 +7,8 @@ Available test hardware reported by the user: two Windows laptops, a Samsung A36
 ## First physical trial: Windows host → phone → Windows receiver
 
 1. Install the experimental APK on one phone. Pair that phone with both laptops through their OS Bluetooth Settings. Grant Nearby devices and notification access in the app. No location, Internet, scanning, storage or contacts permissions are requested.
-2. On the hosting laptop use the existing working Diwan release, open a small test document, choose Bluetooth → Share this document, and keep it open. Transfer its **DBT1 document invitation directly to the receiver laptop**. Never put DBT1 on a relay phone.
-3. On the phone choose the receiver laptop as **Incoming device**, and the hosting laptop as **Outgoing device**. Leave **Outgoing device is another Diwan relay phone** off. Check explicit consent and choose **Start experimental relay**. An ongoing notification must show Stop.
+2. On the hosting laptop use the existing working LocalFirst release, open a small test document, choose Bluetooth → Share this document, and keep it open. Transfer its **DBT1 document invitation directly to the receiver laptop**. Never put DBT1 on a relay phone.
+3. On the phone choose the receiver laptop as **Incoming device**, and the hosting laptop as **Outgoing device**. Leave **Outgoing device is another LocalFirst relay phone** off. Check explicit consent and choose **Start experimental relay**. An ongoing notification must show Stop.
 4. The phone shows a new **DRL1 relay access code**. Give that code to the incoming receiver laptop. This code admits a byte stream to this phone; it is not a document key or document invitation.
 5. On the receiver laptop extract the complete experimental Windows package and run `Start-Relay-Windows-Experiment.cmd`. Enter the phone's DRL1 code at the hidden prompt. It opens `http://127.0.0.1:8768` with an experimental banner. In Bluetooth sharing select the paired **phone**, then enter the original host's **DBT1** document invitation. Choose Connect over Bluetooth and Open shared document.
 6. Make a harmless edit in each direction. Check actual endpoint journal acknowledgements and equivalent contents on both laptops. A phone byte counter or connected radio is not proof that a document was committed.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"diwan/backend/services/sheets_export"
+	"localfirst/backend/services/sheets_export"
 )
 
 // These tests assert on the REAL EXPORTED BYTES: they unzip the .xlsx and read the

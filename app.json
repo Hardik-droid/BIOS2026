@@ -1,6 +1,6 @@
 {
-  "id": "diwan",
-  "name": "Diwan",
+  "id": "localfirst",
+  "name": "LocalFirst",
   "icon": "📄",
   "description": "Documents, spreadsheets, slides, and PDF with server-side persistence",
   "version": "1.0.0",

@@ -1,5 +1,5 @@
 /**
- * Button — Diwan design system
+ * Button — LocalFirst design system
  * ----------------------------------------------------------------------------
  * Variants:
  *   - primary      Accent (deep teal) — the one "yes" affordance per surface
@@ -28,8 +28,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-7 px-2.5 text-xs gap-1.5',
-  md: 'h-8 px-3 text-sm gap-2',
+  sm: 'h-8 px-2.5 text-xs gap-1.5',
+  md: 'h-9 px-3 text-sm gap-2',
   lg: 'h-10 px-4 text-md gap-2',
 }
 
@@ -45,7 +45,7 @@ const base =
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-accent text-white shadow-e1 ' +
+    'bg-accent text-[var(--ink-on-accent)] shadow-e1 ' +
     'hover:bg-accent-hover ' +
     'active:bg-accent-press',
   secondary:

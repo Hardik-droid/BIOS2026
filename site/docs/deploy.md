@@ -1,59 +1,65 @@
-# Diwan – Deployment Guide
+# LocalFirst – Deployment Guide
 
 ## Requirements
 
 - Linux host or container runtime
-- Go 1.21+
-- Node.js 20+ (for frontend build)
+- Go 1.25+ (the module may download its pinned toolchain)
+- Node.js 22.12+ or 20.19+ (for frontend build)
 - PostgreSQL (optional; defaults to SQLite)
 
 ## Quick Start (Docker)
 
 ```sh
+# Run from this repository root.
+docker build -t localfirst:local .
 docker run -d \
-  --name diwan \
+  --name localfirst \
   -p 8080:8080 \
-  -v office-data:/data \
-  ghcr.io/vul-os/diwan:latest
+  -v office-data:/srv/data \
+  -v office-uploads:/srv/uploads \
+  localfirst:local
 ```
 
 ## Building from Source
 
 ```sh
-git clone https://github.com/vul-os/diwan.git
-cd diwan
+git clone https://github.com/Vasu-Gupta105/BIOS2026.git localfirst
+cd localfirst
 
 # Build frontend
-npm ci && npm run build
+npm --prefix web ci
+npm --prefix web run build:frontend
 
 # Build backend (no CGO required)
-CGO_ENABLED=0 go build -trimpath -o diwan .
-./diwan
+CGO_ENABLED=0 go build -trimpath -o localfirst .
+./localfirst
 ```
 
 ## Configuration
 
-Copy `config.yaml.example` to `config.yaml` and edit:
+Create `config.yaml` in the server working directory (or adapt the tracked `config.yaml`) and set the real configuration fields:
 
 ```yaml
 server:
   addr: ":8080"
-  uploads_dir: "/data/uploads"
+  data_dir: "./data"
+  uploads_dir: "./uploads"
 auth:
   enabled: true
-  jwt_secret: "<secret>"
-database:
-  driver: sqlite   # or postgres
-  dsn: "/data/office.db"
+  password: "<strong-bootstrap-password>"
+storage:
+  type: local
 ```
+
+Set `LOCALFIRST_JWT_SECRET` to a strong random secret in the process environment. For PostgreSQL, configure `DATABASE_URL`; there is no `database.driver` YAML field.
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTel OTLP endpoint (optional) |
-| `DIWAN_JWT_SECRET` | HS256 signing secret (required when auth enabled) |
-| `DIWAN_REGISTRATION_TOKEN` | Static fallback registration token (optional; prefer invite tokens) |
+| `LOCALFIRST_JWT_SECRET` | HS256 signing secret (required when auth enabled) |
+| `LOCALFIRST_REGISTRATION_TOKEN` | Static fallback registration token (optional; prefer invite tokens) |
 | `VULOS_USERAUTH_DB` | Per-user credential SQLite DSN (default `./data/userauth.db`) |
 | `VULOS_INVITES_DB` | Invite-token SQLite DSN (default `./data/invites.db`) |
 | `VULOS_AUDIT_DB` | Append-only audit-log SQLite DSN (default `./data/audit.db`) |
@@ -65,7 +71,7 @@ database:
   users are registered, the instance is in OSS single-user mode and the legacy
   shared `auth.password` still authenticates.
 - **Registration** on a bootstrapped instance (≥1 user) requires authorization:
-  an admin JWT, the static `DIWAN_REGISTRATION_TOKEN`, **or** a
+  an admin JWT, the static `LOCALFIRST_REGISTRATION_TOKEN`, **or** a
   single-use/expiring **invite token** minted by an admin
   (`POST /api/admin/invites`, or the Admin Console UI). Invite tokens are stored
   hashed; the raw token is shown once at mint time.
@@ -74,7 +80,7 @@ database:
 
 ## Observability
 
-- `GET /metrics` — Prometheus `diwan_*` metrics.
+- `GET /metrics` — Prometheus `localfirst_*` metrics.
 - OTel traces when `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 
 ## Upgrading
@@ -93,10 +99,10 @@ to seed the first per-user credential from your existing shared password:
 
 ```bash
 # Uses auth.password from config.yaml unless -password is given.
-./diwan migrate-credential -admin you@vulos.org
+./localfirst migrate-credential -admin you@vulos.org
 
 # Or pass an explicit password / DB path:
-./diwan migrate-credential -admin you@vulos.org -password 's3cret' -db /data/userauth.db
+./localfirst migrate-credential -admin you@vulos.org -password 's3cret' -db /data/userauth.db
 ```
 
 The command is **idempotent** — it is a no-op once any user exists, so it is

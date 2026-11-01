@@ -94,7 +94,7 @@ export function updateLogEnabled() {
  * (`@vul-os/kotva-sync`, an LWW register per §4.4 of the substrate's SYNC.md)
  * rather than the hand-rolled LWW map in src/lib/crdt/grid.js.
  *
- * DEFAULT: ON. Two Diwan replicas must converge because they run the SAME
+ * DEFAULT: ON. Two LocalFirst replicas must converge because they run the SAME
  * compiled algebra — the one the substrate's frozen vectors pin — not because two
  * separate implementations happen to agree most of the time. Shipping the shared
  * engine behind an off-by-default flag meant the engine was PRESENT but was not

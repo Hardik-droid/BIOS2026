@@ -1,5 +1,5 @@
 // backendconfig.go — per-account S3 storage-backend config resolver for
-// diwan (TASK: OFFICE-STORE-01).
+// localfirst (TASK: OFFICE-STORE-01).
 //
 // The office backend persists CRDT snapshots, op-logs, and file attachments to
 // an S3-compatible object store. This file provides the resolver layer so the
@@ -26,10 +26,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	appbrand "localfirst/internal/brand"
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -143,11 +143,11 @@ func isPrivateOrLoopbackHost(host string) bool {
 // OfficeTigrisDefaults returns an OfficeBackendConfig pre-filled from the
 // canonical Tigris environment variables.
 func OfficeTigrisDefaults() OfficeBackendConfig {
-	endpoint := os.Getenv("TIGRIS_ENDPOINT")
+	endpoint := appbrand.Getenv("TIGRIS_ENDPOINT")
 	if endpoint == "" {
 		endpoint = "https://fly.storage.tigris.dev"
 	}
-	region := os.Getenv("TIGRIS_REGION")
+	region := appbrand.Getenv("TIGRIS_REGION")
 	if region == "" {
 		region = "auto"
 	}
@@ -155,8 +155,8 @@ func OfficeTigrisDefaults() OfficeBackendConfig {
 		Kind:            OfficeBEKindTigris,
 		Endpoint:        endpoint,
 		Region:          region,
-		AccessKeyID:     os.Getenv("TIGRIS_ACCESS_KEY_ID"),
-		SecretAccessKey: os.Getenv("TIGRIS_SECRET_ACCESS_KEY"),
+		AccessKeyID:     appbrand.Getenv("TIGRIS_ACCESS_KEY_ID"),
+		SecretAccessKey: appbrand.Getenv("TIGRIS_SECRET_ACCESS_KEY"),
 	}
 }
 
@@ -187,19 +187,19 @@ func NewOfficeS3Client(cfg OfficeBackendConfig) (*OfficeS3Client, error) {
 	// Fill Tigris env-defaults.
 	if cfg.Kind == OfficeBEKindTigris {
 		if cfg.Endpoint == "" {
-			cfg.Endpoint = os.Getenv("TIGRIS_ENDPOINT")
+			cfg.Endpoint = appbrand.Getenv("TIGRIS_ENDPOINT")
 		}
 		if cfg.Endpoint == "" {
 			cfg.Endpoint = "https://fly.storage.tigris.dev"
 		}
 		if cfg.Region == "" {
-			cfg.Region = os.Getenv("TIGRIS_REGION")
+			cfg.Region = appbrand.Getenv("TIGRIS_REGION")
 		}
 		if cfg.AccessKeyID == "" {
-			cfg.AccessKeyID = os.Getenv("TIGRIS_ACCESS_KEY_ID")
+			cfg.AccessKeyID = appbrand.Getenv("TIGRIS_ACCESS_KEY_ID")
 		}
 		if cfg.SecretAccessKey == "" {
-			cfg.SecretAccessKey = os.Getenv("TIGRIS_SECRET_ACCESS_KEY")
+			cfg.SecretAccessKey = appbrand.Getenv("TIGRIS_SECRET_ACCESS_KEY")
 		}
 	}
 	if cfg.Region == "" {

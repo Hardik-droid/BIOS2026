@@ -3,7 +3,7 @@ import mammoth from 'mammoth'
 import type { NavigateFunction } from 'react-router-dom'
 import { api } from './api'
 import { useFilesStore } from '../store/filesStore'
-import type { DiwanFile } from '../store/filesStore'
+import type { LocalFirstFile } from '../store/filesStore'
 import { assertFileSize, assertArchiveBounds, ImportError } from './importBounds'
 import { importWorkbook } from '../apps/sheets/sheetsImport'
 import { csvToSheet } from '../apps/sheets/csvImport'
@@ -11,8 +11,8 @@ import { odtToHtml } from '../apps/docs/odtImport'
 import { pptxToSlides, odpToSlides } from '../apps/slides/slidesImport'
 import { sanitizeObjects } from '../apps/slides/slideObjects'
 
-export type DocType = 'doc' | 'sheet' | 'slide' | 'pdf'
-type CreatedFile = DiwanFile
+export type DocType = 'doc' | 'sheet' | 'slide' | 'pdf' | 'whiteboard'
+type CreatedFile = LocalFirstFile
 
 // ── Format detection / routing ────────────────────────────────────────────────
 // Every supported inbound format maps to exactly one app. The unified Open flow
@@ -22,13 +22,14 @@ export const SUPPORTED_EXTS = [
   'xlsx', 'xls', 'csv', 'tsv', 'ods',                        // sheets
   'pptx', 'ppt', 'odp',                                      // slides
   'pdf',                                                     // pdf
+  'excalidraw',
 ]
 
 // Extensions we can genuinely OPEN with real fidelity (used by the Open dialog's
 // accept filter). Legacy binary .doc/.xls/.ppt are intentionally excluded — see
 // the deferred note; they fall through to a plain-text/no-op path if forced.
 export const OPENABLE_ACCEPT =
-  '.md,.txt,.docx,.rtf,.html,.htm,.odt,.xlsx,.xls,.csv,.tsv,.ods,.pptx,.odp,.pdf'
+  '.md,.txt,.docx,.rtf,.html,.htm,.odt,.xlsx,.xls,.csv,.tsv,.ods,.pptx,.odp,.pdf,.excalidraw'
 
 export function detectType(filename: string): DocType | null {
   const ext = (filename.split('.').pop() || '').toLowerCase()
@@ -36,6 +37,7 @@ export function detectType(filename: string): DocType | null {
   if (['xlsx', 'xls', 'csv', 'tsv', 'ods'].includes(ext)) return 'sheet'
   if (['pptx', 'ppt', 'odp'].includes(ext)) return 'slide'
   if (ext === 'pdf') return 'pdf'
+  if (ext === 'excalidraw') return 'whiteboard'
   return null
 }
 
@@ -43,6 +45,7 @@ export function typeToRoute(type: string): string | null {
   if (type === 'doc') return 'docs'
   if (type === 'sheet') return 'sheets'
   if (type === 'slide') return 'slides'
+  if (type === 'whiteboard') return 'whiteboards'
   return null
 }
 
@@ -205,6 +208,11 @@ export async function importFile(file: File, navigate: NavigateFunction): Promis
   if (type === 'doc') content = await convertToDocContent(file)
   else if (type === 'sheet') content = await convertToSheetContent(file)
   else if (type === 'slide') content = await convertToSlideContent(file)
+  else if (type === 'whiteboard') {
+    const scene = JSON.parse(await file.text()) as { type?: string; elements?: unknown; files?: unknown }
+    if (scene.type !== 'excalidraw' || !Array.isArray(scene.elements) || scene.elements.length > 50000) throw new ImportError('Choose a valid Excalidraw whiteboard file.')
+    content = { type: 'excalidraw', elements: scene.elements, files: scene.files && typeof scene.files === 'object' && !Array.isArray(scene.files) ? scene.files : {} }
+  }
 
   const created = await api.createFile(baseName, type, content) as CreatedFile
   useFilesStore.setState({ files: [created, ...useFilesStore.getState().files.filter((f: CreatedFile) => f.id !== created.id)] })

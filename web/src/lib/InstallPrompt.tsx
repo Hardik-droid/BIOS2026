@@ -140,7 +140,7 @@ export default function InstallPrompt() {
       {visible && (
         <div
           role="dialog"
-          aria-label="Install Diwan"
+          aria-label="Install LocalFirst"
           data-testid="install-prompt"
           style={{
             position: 'fixed',

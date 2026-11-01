@@ -4,6 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import AppErrorBoundary from './components/AppErrorBoundary'
 import './index.css'
+import { migrateBrandPreferences } from './lib/brandCompatibility'
+migrateBrandPreferences()
+// Set this before the lazy whiteboard engine loads. Fonts stay on this origin.
+Object.assign(window, { EXCALIDRAW_ASSET_PATH: new URL(import.meta.env.DEV ? '/node_modules/@excalidraw/excalidraw/dist/prod/' : '/assets/excalidraw/', window.location.origin).href })
 // configure() MUST run before any other endpoints-module import touches
 // localStorage so existing user state under 'vulos.office.endpoints.v1'
 // survives (do NOT change the key — that would wipe office users' cached

@@ -12,6 +12,7 @@ import {
   Upload, RotateCw, FilePlus, Trash, FileSignature,
 } from 'lucide-react'
 import { Button, IconButton, Tabs, Topbar, Tooltip } from '../../components/ui'
+import { EditorIdentity, EditorTitle, EditorStatusBar } from '../../components/editor/EditorChrome'
 import { extractFields, fieldsToAnnotations, type FormField } from './formFields'
 // SOVEREIGNTY: cursive signature fonts vendored locally via @fontsource
 // (self-hosted woff2) instead of an @import from fonts.googleapis.com at
@@ -1172,10 +1173,11 @@ export default function PDFEditor(_props: PDFEditorProps) {
 
   // ─── Render ───────────────────────────────────────────────
   return (
-    <div className="flex-1 flex flex-col bg-bg text-ink overflow-hidden">
+    <div className="lf-editor lf-editor-pdf flex-1 flex flex-col bg-bg text-ink overflow-hidden">
 
       {/* Topbar */}
       <Topbar
+        className="lf-editor-topbar"
         leading={
           <>
             <Tooltip label="Back">
@@ -1183,21 +1185,10 @@ export default function PDFEditor(_props: PDFEditorProps) {
                 <ArrowLeft size={15} />
               </IconButton>
             </Tooltip>
-            <span aria-hidden className="h-5 w-px bg-line" />
-            <div className="flex items-center gap-2 text-ink">
-              <div className="w-7 h-7 rounded-md bg-accent text-white flex items-center justify-center">
-                <FileSignature size={14} />
-              </div>
-              <span className="text-sm font-semibold tracking-tightish">PDF</span>
-            </div>
-            {filename && (
-              <span className="text-2xs text-ink-faint truncate max-w-[18ch] font-serif italic">
-                — {filename}
-              </span>
-            )}
+            <EditorIdentity kind="pdf" />
           </>
         }
-        title={null}
+        title={<EditorTitle kind="pdf" value={filename || 'Open a PDF to begin'} label="PDF filename" readOnly />}
         meta={
           pdfJsDoc && (
             <span className="text-2xs text-ink-faint tracking-tightish">
@@ -1258,7 +1249,7 @@ export default function PDFEditor(_props: PDFEditorProps) {
       />
 
       {/* Tool toolbar */}
-      <div className="bg-paper border-b border-line h-11 flex items-center gap-1 px-3 flex-shrink-0">
+      <div className="lf-pdf-tools bg-paper border-b border-line h-11 flex items-center gap-1 px-3 flex-shrink-0" role="toolbar" aria-label="PDF annotation tools">
         <span className="text-2xs font-semibold text-ink-faint tracking-eyebrow uppercase mr-1">
           Tools
         </span>
@@ -1771,7 +1762,7 @@ export default function PDFEditor(_props: PDFEditorProps) {
       </div>
 
       {/* STATUS BAR — quiet hairline */}
-      <div className="bg-paper border-t border-line h-7 flex items-center gap-4 px-3 flex-shrink-0">
+      <EditorStatusBar leading={<span>PDF workspace</span>}>
         {[
           ['Tool', activeTool.charAt(0).toUpperCase() + activeTool.slice(1)],
           ['Zoom', Math.round(zoom * 100) + '%'],
@@ -1782,11 +1773,10 @@ export default function PDFEditor(_props: PDFEditorProps) {
             {k}: <span className="text-ink-muted">{v}</span>
           </div>
         ))}
-        <div className="flex-1" />
-        <span className="text-2xs text-ink-faint tracking-tightish">
+        <span className="hidden xl:inline text-2xs text-ink-faint tracking-tightish">
           V · Select &nbsp; T · Text &nbsp; S · Signature &nbsp; D · Draw &nbsp; Del · Delete
         </span>
-      </div>
+      </EditorStatusBar>
 
       {/* SIGNATURE MODAL */}
       {sigModalOpen && (

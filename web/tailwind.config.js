@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 // -----------------------------------------------------------------------------
-// Diwan — Tailwind reads from src/design/tokens.css via CSS variables; the
+// LocalFirst — Tailwind reads from src/design/tokens.css via CSS variables; the
 // source of truth is the tokens file, not this config.  We expose token-backed
 // utilities (`bg-paper`, `text-ink`, `border-line`, `bg-accent`, `font-serif`,
 // `bg-ember-600`, …) and a few signal classes so app code never reaches for raw
@@ -19,7 +19,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Diwan signature accent scale. `--ember-*` is the source of truth;
+        // LocalFirst signature accent scale. `--ember-*` is the source of truth;
         // `teal-*` / `brand-*` are back-compat aliases that resolve to it.
         ember: {
           50:  'var(--ember-50)',
@@ -78,6 +78,7 @@ export default {
         paper:      'var(--bg-elev-1)',
         clay:       'var(--bg-elev-2)',
         ink:        'var(--ink)',
+        'ink-soft': 'var(--ink-muted)',
         'ink-muted':'var(--ink-muted)',
         'ink-faint':'var(--ink-faint)',
         'ink-ghost':'var(--ink-ghost)',

@@ -12,8 +12,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"diwan/backend/billing"
-	"diwan/backend/seam"
+	"localfirst/backend/billing"
+	"localfirst/backend/seam"
 )
 
 const xssSVG = `<svg xmlns="http://www.w3.org/2000/svg" onload="alert(document.domain)">` +

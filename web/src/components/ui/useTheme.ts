@@ -2,8 +2,8 @@
  * useTheme — tiny hook for explicit light/dark/system theme toggling.
  *
  * Storage:
- *   localStorage 'diwan.theme' = 'light' | 'dark' | 'system'
- *   DEFAULT is 'light' — Diwan ships light out of the box (a workspace should
+ *   localStorage 'localfirst.theme' = 'light' | 'dark' | 'system'
+ *   DEFAULT is 'light' — LocalFirst ships light out of the box (a workspace should
  *   feel like daylight). System/Dark are opt-in via the selector.
  *
  * Side-effects:
@@ -13,7 +13,7 @@
 
 import { useEffect, useState, useCallback, type Dispatch, type SetStateAction } from 'react'
 
-const STORE_KEY = 'diwan.theme'
+const STORE_KEY = 'localfirst.theme'
 // Back-compat: honour a previously-persisted key from the old brand.
 const LEGACY_KEY = 'vulos.theme'
 
@@ -34,12 +34,12 @@ function applyTheme(theme: string): void {
 
 export function useTheme(): { theme: string, setTheme: Dispatch<SetStateAction<string>>, cycle: () => void } {
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem(STORE_KEY) || localStorage.getItem(LEGACY_KEY) || 'light' } catch { return 'light' }
+    try { return localStorage.getItem(STORE_KEY) || localStorage.getItem('diwan.theme') || localStorage.getItem(LEGACY_KEY) || 'light' } catch { return 'light' }
   })
 
   useEffect(() => {
     applyTheme(theme)
-    try { localStorage.setItem(STORE_KEY, theme) } catch {}
+    try { localStorage.setItem(STORE_KEY, theme); window.dispatchEvent(new CustomEvent('localfirst:theme-changed', { detail: theme })) } catch {}
     // In 'system' mode, follow live OS theme changes.
     if (theme !== 'system') return
     let mq: MediaQueryList
@@ -49,6 +49,11 @@ export function useTheme(): { theme: string, setTheme: Dispatch<SetStateAction<s
     return () => mq.removeEventListener?.('change', onChange)
   }, [theme])
 
+  useEffect(() => {
+    const change = (event: Event) => { const next = (event as CustomEvent<string>).detail; if (next === 'light' || next === 'dark' || next === 'system') setTheme(next) }
+    window.addEventListener('localfirst:theme-changed', change)
+    return () => window.removeEventListener('localfirst:theme-changed', change)
+  }, [])
   const cycle = useCallback(() => {
     setTheme((t) => (t === 'light' ? 'dark' : t === 'dark' ? 'system' : 'light'))
   }, [])

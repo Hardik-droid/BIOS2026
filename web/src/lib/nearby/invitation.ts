@@ -1,6 +1,7 @@
+import { LEGACY } from '../brandCompatibility'
 export const MAX_INVITATION_FILE_BYTES = 4096
 
-const sourceInstructions = 'On the hosting laptop, open the document, choose Bluetooth → Share this document → Save invitation file. It is saved in Downloads as diwan-bluetooth-invitation.json.'
+const sourceInstructions = 'On the hosting laptop, open the document, choose Bluetooth → Share this document → Save invitation file. It is saved in Downloads as localfirst-bluetooth-invitation.json.'
 
 /** A short code is a direct, paired-device bootstrap, never a TLS identity. */
 export function normalizeBluetoothPairingCode(value: string): string {
@@ -30,16 +31,16 @@ export function parseBluetoothInvitation(text: string): string {
   if (typeof data === 'string') return normalizeBluetoothInvitation(data)
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('This is not a Bluetooth invitation. ' + sourceInstructions)
   const entry = data as Record<string, unknown>
-  if (entry.format === 'diwan-local-workspace') throw new Error('This is a workspace backup, not a Bluetooth invitation. Keep it for restoring documents. ' + sourceInstructions)
-  if (entry.format === 'diwan-bluetooth-connection-report') throw new Error('This is a connection report, not a Bluetooth invitation. ' + sourceInstructions)
-  if (entry.format !== 'diwan-bluetooth-invitation') throw new Error('This is not a Diwan Bluetooth invitation file. ' + sourceInstructions)
+  if ((entry.format === LEGACY.backupFormat || entry.format === 'localfirst-local-workspace')) throw new Error('This is a workspace backup, not a Bluetooth invitation. Keep it for restoring documents. ' + sourceInstructions)
+  if ((entry.format === LEGACY.connectionFormat || entry.format === 'localfirst-bluetooth-connection-report')) throw new Error('This is a connection report, not a Bluetooth invitation. ' + sourceInstructions)
+  if (entry.format !== LEGACY.invitationFormat && entry.format !== 'localfirst-bluetooth-invitation') throw new Error('This is not a LocalFirst Bluetooth invitation file. ' + sourceInstructions)
   if (entry.version !== 1) throw new Error('This invitation file uses an unsupported version. Run the same updated offline package on both laptops and save a fresh invitation.')
   if (typeof entry.invitation !== 'string') throw new Error('The invitation file has no invitation code. ' + sourceInstructions)
   return normalizeBluetoothInvitation(entry.invitation)
 }
 
 export function createBluetoothInvitationFile(invitation: string): string {
-  return JSON.stringify({ format: 'diwan-bluetooth-invitation', version: 1, invitation: normalizeBluetoothInvitation(invitation) }, null, 2)
+  return JSON.stringify({ format: 'localfirst-bluetooth-invitation', version: 1, invitation: normalizeBluetoothInvitation(invitation) }, null, 2)
 }
 
 export async function readBluetoothInvitationFile(file: Pick<File, 'size' | 'text'>): Promise<string> {

@@ -1,2 +1,4 @@
-# Generated print output; rebuild from the Markdown with the local renderer.
-/exports/
+# Keep the judges' guide and its verification manifest available on GitHub.
+/exports/*
+!/exports/BIOS2026-Project-and-Judges-Guide.pdf
+!/exports/manifest.json

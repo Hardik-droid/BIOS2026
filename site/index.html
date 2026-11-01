@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Diwan — a real, self-hostable collaborative office suite you own</title>
+<title>LocalFirst — a real, self-hostable collaborative office suite you own</title>
 <meta name="description" content="Documents, spreadsheets, slides and whiteboards in one warm, self-hosted suite. CRDT-native, peer-to-peer, one Go binary, on your own storage. No cloud account, no telemetry, no lock-in.">
   <link rel="canonical" href="https://vulos.org/projects/diwan/">
   <meta name="color-scheme" content="dark light">
-  <meta property="og:site_name" content="Diwan">
+  <meta property="og:site_name" content="LocalFirst">
   <meta property="og:url" content="https://vulos.org/projects/diwan/">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Diwan — a real, self-hostable collaborative office suite you own">
+  <meta name="twitter:title" content="LocalFirst — a real, self-hostable collaborative office suite you own">
   <meta name="twitter:description" content="Documents, spreadsheets, slides and whiteboards in one warm, self-hosted suite. CRDT-native, peer-to-peer, one Go binary, on your own storage. No cloud account, no telemetry, no lock-in.">
 <meta name="theme-color" content="#FBF7F1">
-<link rel="icon" href="./assets/diwan-mark.svg">
+<link rel="icon" href="./assets/localfirst-mark.svg">
 <link rel="preload" href="./assets/fonts/bricolage-grotesque-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="./assets/fonts/schibsted-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<meta property="og:title" content="Diwan — a real, self-hostable collaborative office suite you own">
+<meta property="og:title" content="LocalFirst — a real, self-hostable collaborative office suite you own">
 <meta property="og:description" content="Docs, sheets, slides and whiteboards. CRDT-native, peer-to-peer, one Go binary, on your own storage.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="./screenshots/home-light.png">
@@ -28,7 +28,7 @@
     // with zero flash — see .navtoggle / .navlinks in the stylesheet below.
     document.documentElement.classList.add('js');
     try {
-      var s = localStorage.getItem('diwan.site-theme');
+      var s = localStorage.getItem('localfirst.site-theme');
       var t = s || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       document.documentElement.setAttribute('data-theme', t);
     } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
@@ -36,7 +36,7 @@
 </script>
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
-   Diwan — website
+   LocalFirst — website
    Set on the product's own "Warm Workshop" theme (src/design/tokens.css):
    warm ivory paper, ember terracotta, exactly one accent, soft geometry.
    Fonts are vendored locally — the same sovereignty rule the product keeps.
@@ -516,7 +516,7 @@ h2.head{
 .foot .links{display:flex;flex-wrap:wrap;gap:22px}
 .foot .links a{font-size:14.5px;color:var(--ink-muted)}
 .foot .links a:hover{color:var(--accent)}
-/* The Vulos attribution is a tier below the Diwan mark, not a sibling of it.
+/* The Vulos attribution is a tier below the LocalFirst mark, not a sibling of it.
    Scoped here rather than edited into the shared suite-chrome block below, so
    that block stays byte-identical across every product landing. Two-class
    specificity (0,2,0) beats the chrome rule (0,1,0) regardless of order. */
@@ -577,9 +577,9 @@ h2.head{
 
 <!-- ═══ The spine ═════════════════════════════════════════════════════════ -->
 <aside class="spine" aria-hidden="true">
-  <img class="spine-mark" src="./assets/diwan-mark.svg" alt="">
+  <img class="spine-mark" src="./assets/localfirst-mark.svg" alt="">
   <div class="spine-rule"></div>
-  <div class="spine-title"><b>Diwan</b> <span>Office suite</span></div>
+  <div class="spine-title"><b>LocalFirst</b> <span>Office suite</span></div>
   <div class="spine-rule"></div>
   <div class="eyebrow v">v0.1.0</div>
 </aside>
@@ -590,7 +590,7 @@ h2.head{
 <header class="topbar">
   <div class="bar">
     <a class="brand" href="./index.html">
-      <span class="tile"><img src="./assets/diwan-mark.svg" alt=""></span>Diwan
+      <span class="tile"><img src="./assets/localfirst-mark.svg" alt=""></span>LocalFirst
       <span class="ar" lang="ar" dir="rtl">ديوان</span>
     </a>
     <div class="spacer"></div>
@@ -620,13 +620,13 @@ h2.head{
 <section class="hero">
   <div class="wrap stagger">
     <p class="eyebrow" style="margin:0">No account · No telemetry · No lock&#8209;in</p>
-    <h1 class="wordmark">Diwan<span class="ar" lang="ar" dir="rtl">ديوان</span></h1>
+    <h1 class="wordmark">LocalFirst<span class="ar" lang="ar" dir="rtl">ديوان</span></h1>
     <p class="tagline">A real, self-hostable collaborative office suite you own.</p>
     <p class="blurb">Documents, spreadsheets, slides and whiteboards in one warm, modern web app — shipped as a single Go binary with the entire frontend embedded. Real-time co-editing is peer-to-peer and CRDT-native: there is no central document server. Your files live in your own storage.</p>
     <div class="cta">
       <a class="btn btn-primary" href="#install">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
-        Get Diwan
+        Get LocalFirst
       </a>
       <a class="btn btn-ghost" href="./docs.html">Read the docs</a>
       <a class="btn btn-ghost" href="https://github.com/vul-os/diwan" target="_blank" rel="noopener">
@@ -645,8 +645,8 @@ h2.head{
   <div class="wrap hero-shot">
     <div class="window">
       <div class="chrome"><u></u><u></u><u></u><em>localhost:8080 — your workspace</em></div>
-      <img class="shot-light" src="./screenshots/home-light.png" alt="The Diwan workspace: a warm ivory home screen with Docs, Sheets, Slides, Whiteboards and PDF in the left rail, and recent files listed on the right.">
-      <img class="shot-dark" src="./screenshots/home-dark.png" alt="The Diwan workspace in its warm dark theme.">
+      <img class="shot-light" src="./screenshots/home-light.png" alt="The LocalFirst workspace: a warm ivory home screen with Docs, Sheets, Slides, Whiteboards and PDF in the left rail, and recent files listed on the right.">
+      <img class="shot-dark" src="./screenshots/home-dark.png" alt="The LocalFirst workspace in its warm dark theme.">
     </div>
   </div>
 </section>
@@ -692,8 +692,8 @@ h2.head{
         <div class="pane" id="p-docs" role="tabpanel" aria-labelledby="t-docs">
           <div class="window">
             <div class="chrome"><u></u><u></u><u></u><em>Docs — Architecture Decision Record</em></div>
-            <img class="shot-light" src="./screenshots/docs-editor-light.png" loading="lazy" alt="The Diwan document editor: rich text with a live outline, anchored comments and a formatting toolbar.">
-            <img class="shot-dark" src="./screenshots/docs-editor-dark.png" loading="lazy" alt="The Diwan document editor in the warm dark theme.">
+            <img class="shot-light" src="./screenshots/docs-editor-light.png" loading="lazy" alt="The LocalFirst document editor: rich text with a live outline, anchored comments and a formatting toolbar.">
+            <img class="shot-dark" src="./screenshots/docs-editor-dark.png" loading="lazy" alt="The LocalFirst document editor in the warm dark theme.">
           </div>
           <p class="caption"><b>Docs.</b> Headings, tables, inline images, footnotes, task lists and links. Anchored comments, suggestions with accept and reject, version history with restore, find and replace, a live outline and a word count.</p>
         </div>
@@ -701,8 +701,8 @@ h2.head{
         <div class="pane" id="p-sheets" role="tabpanel" aria-labelledby="t-sheets" hidden>
           <div class="window">
             <div class="chrome"><u></u><u></u><u></u><em>Sheets — Revenue Tracker H1</em></div>
-            <img class="shot-light" src="./screenshots/sheets-editor-light.png" loading="lazy" alt="The Diwan spreadsheet editor: a full grid with a formula bar and toolbar.">
-            <img class="shot-dark" src="./screenshots/sheets-editor-dark.png" loading="lazy" alt="The Diwan spreadsheet editor in the warm dark theme.">
+            <img class="shot-light" src="./screenshots/sheets-editor-light.png" loading="lazy" alt="The LocalFirst spreadsheet editor: a full grid with a formula bar and toolbar.">
+            <img class="shot-dark" src="./screenshots/sheets-editor-dark.png" loading="lazy" alt="The LocalFirst spreadsheet editor in the warm dark theme.">
           </div>
           <p class="caption"><b>Sheets.</b> A full grid — formulas, number formats, conditional formatting, data validation, charts, filters, pivot tables, named ranges and freeze panes.</p>
         </div>
@@ -710,8 +710,8 @@ h2.head{
         <div class="pane" id="p-slides" role="tabpanel" aria-labelledby="t-slides" hidden>
           <div class="window">
             <div class="chrome"><u></u><u></u><u></u><em>Slides — Product Overview</em></div>
-            <img class="shot-light" src="./screenshots/slides-editor-light.png" loading="lazy" alt="The Diwan slide editor: a positioned-object canvas with a slide sorter.">
-            <img class="shot-dark" src="./screenshots/slides-editor-dark.png" loading="lazy" alt="The Diwan slide editor in the warm dark theme.">
+            <img class="shot-light" src="./screenshots/slides-editor-light.png" loading="lazy" alt="The LocalFirst slide editor: a positioned-object canvas with a slide sorter.">
+            <img class="shot-dark" src="./screenshots/slides-editor-dark.png" loading="lazy" alt="The LocalFirst slide editor in the warm dark theme.">
           </div>
           <p class="caption"><b>Slides.</b> A from-scratch positioned-object canvas — free drag, resize and rotate of text, shapes and images; per-element animations, themes, editable master slides, per-slide transitions, and a presenter view with notes and a timer.</p>
         </div>
@@ -719,8 +719,8 @@ h2.head{
         <div class="pane" id="p-board" role="tabpanel" aria-labelledby="t-board" hidden>
           <div class="window">
             <div class="chrome"><u></u><u></u><u></u><em>Whiteboard — Architecture Sketch</em></div>
-            <img class="shot-light" src="./screenshots/whiteboard-editor-light.png" loading="lazy" alt="The Diwan whiteboard: an infinite hand-drawn canvas with shapes, arrows and freehand strokes.">
-            <img class="shot-dark" src="./screenshots/whiteboard-editor-dark.png" loading="lazy" alt="The Diwan whiteboard in the warm dark theme.">
+            <img class="shot-light" src="./screenshots/whiteboard-editor-light.png" loading="lazy" alt="The LocalFirst whiteboard: an infinite hand-drawn canvas with shapes, arrows and freehand strokes.">
+            <img class="shot-dark" src="./screenshots/whiteboard-editor-dark.png" loading="lazy" alt="The LocalFirst whiteboard in the warm dark theme.">
           </div>
           <p class="caption"><b>Whiteboards.</b> An infinite hand-drawn canvas built on the MIT-licensed Excalidraw editor — shapes, arrows, freehand, text and images. The scene is a Yjs CRDT synced over the same end-to-end-encrypted peer-to-peer engine as Docs.</p>
         </div>
@@ -728,8 +728,8 @@ h2.head{
         <div class="pane" id="p-pdf" role="tabpanel" aria-labelledby="t-pdf" hidden>
           <div class="window">
             <div class="chrome"><u></u><u></u><u></u><em>PDF — Brand Guidelines.pdf</em></div>
-            <img class="shot-light" src="./screenshots/pdf-editor-light.png" loading="lazy" alt="The Diwan PDF viewer with annotation and signing tools.">
-            <img class="shot-dark" src="./screenshots/pdf-editor-dark.png" loading="lazy" alt="The Diwan PDF viewer in the warm dark theme.">
+            <img class="shot-light" src="./screenshots/pdf-editor-light.png" loading="lazy" alt="The LocalFirst PDF viewer with annotation and signing tools.">
+            <img class="shot-dark" src="./screenshots/pdf-editor-dark.png" loading="lazy" alt="The LocalFirst PDF viewer in the warm dark theme.">
           </div>
           <p class="caption"><b>PDF.</b> View, annotate, fill AcroForm fields and sign — including multi-party signing envelopes with a cryptographic audit trail. Import and export <code>.docx</code>, <code>.xlsx</code>, <code>.csv</code>, <code>.pptx</code>, Markdown, HTML and PDF.</p>
         </div>
@@ -788,7 +788,7 @@ h2.head{
         </div>
         <div>
           <h4>Standalone, always</h4>
-          <p>Point Diwan at any self-hosted rendezvous service and peer-to-peer co-editing works with no other software and no host box required. Set nothing, and it stays local-only. Nothing is hosted for you unless you choose it.</p>
+          <p>Point LocalFirst at any self-hosted rendezvous service and peer-to-peer co-editing works with no other software and no host box required. Set nothing, and it stays local-only. Nothing is hosted for you unless you choose it.</p>
         </div>
       </div>
     </div>
@@ -800,22 +800,22 @@ h2.head{
   <div class="wrap">
     <div class="folio"><span class="n">03</span><span class="t">Install</span><span class="r"></span></div>
     <h2 class="head">One binary, your storage</h2>
-    <p class="lead">Diwan runs by itself — no account, no cloud, no external service required. No database server either, unless you want one.</p>
+    <p class="lead">LocalFirst runs by itself — no account, no cloud, no external service required. No database server either, unless you want one.</p>
 
     <div class="install">
       <div class="term">
         <div class="chrome"><u></u><u></u><u></u><em>bash</em></div>
 <pre><span class="c"># Docker — one line</span>
-<span class="p">$</span> docker run -d --name diwan \
+<span class="p">$</span> docker run -d --name localfirst \
     -p 8080:8080 \
-    -v diwan-data:/srv/data \
-    <span class="s">ghcr.io/vul-os/diwan:latest</span>
+    -v localfirst-data:/srv/data \
+    <span class="s">ghcr.io/vul-os/localfirst:latest</span>
 
 <span class="c"># …or build the single binary from source</span>
 <span class="p">$</span> git clone https://github.com/vul-os/diwan.git
-<span class="p">$</span> cd diwan
+<span class="p">$</span> cd localfirst
 <span class="p">$</span> npm install &amp;&amp; npm run build
-<span class="p">$</span> ./diwan</pre>
+<span class="p">$</span> ./localfirst</pre>
       </div>
 
       <ol class="steps">
@@ -832,7 +832,7 @@ h2.head{
   <div class="wrap">
     <div class="folio"><span class="n">04</span><span class="t">The register</span><span class="r"></span></div>
     <h2 class="head">What you actually get</h2>
-    <p class="lead">Plainly, and without the marketing. If it is not in this register, Diwan does not do it.</p>
+    <p class="lead">Plainly, and without the marketing. If it is not in this register, LocalFirst does not do it.</p>
 
     <dl class="ledger">
       <div class="lrow"><dt>Storage</dt><dd>Local filesystem by default. <em>Optionally</em> PostgreSQL, or any S3-compatible bucket you control.</dd></div>
@@ -840,7 +840,7 @@ h2.head{
       <div class="lrow"><dt>Accounts</dt><dd>None. Auth is off by default and single-user; turn on a password when you want one.</dd></div>
       <div class="lrow"><dt>Telemetry</dt><dd>None. Nothing phones home. Fonts are self-hosted, so a self-hosted install leaks no address either.</dd></div>
       <div class="lrow"><dt>Collaboration</dt><dd>Peer-to-peer over WebRTC, end-to-end encrypted, CRDT-native. A content-blind relay only as a hard-NAT fallback.</dd></div>
-      <div class="lrow"><dt>Deliberately absent</dt><dd><em>Chat, video calls and mail.</em> Diwan is a documents product; those belong to other tools.</dd></div>
+      <div class="lrow"><dt>Deliberately absent</dt><dd><em>Chat, video calls and mail.</em> LocalFirst is a documents product; those belong to other tools.</dd></div>
       <div class="lrow"><dt>Runtime</dt><dd>One Go 1.25 binary with a React 18 frontend embedded. No Node at runtime, no database server required.</dd></div>
       <div class="lrow"><dt>Licence</dt><dd>MIT <em>or</em> Apache-2.0, at your option. Fork it, ship it, keep it.</dd></div>
     </dl>
@@ -885,8 +885,8 @@ h2.head{
       </div>
 
       <div class="mark-note">
-        <button class="turn" id="turn" type="button" aria-label="Turn the Diwan mark a quarter turn to see the D">
-          <img src="./assets/diwan-mark.svg" alt="">
+        <button class="turn" id="turn" type="button" aria-label="Turn the LocalFirst mark a quarter turn to see the D">
+          <img src="./assets/localfirst-mark.svg" alt="">
         </button>
         <p class="caption">
           <b>The mark is an iwan</b> — the vaulted portal at the heart of Persian
@@ -907,7 +907,7 @@ h2.head{
   <div class="wrap">
     <div class="row">
       <a class="brand" href="./index.html">
-        <span class="tile"><img src="./assets/diwan-mark.svg" alt=""></span>Diwan
+        <span class="tile"><img src="./assets/localfirst-mark.svg" alt=""></span>LocalFirst
         <span class="ar" lang="ar" dir="rtl">ديوان</span>
       </a>
       <div class="links">
@@ -933,7 +933,7 @@ h2.head{
     btn.addEventListener('click', function () {
       var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      try { localStorage.setItem('diwan.site-theme', next); } catch (e) {}
+      try { localStorage.setItem('localfirst.site-theme', next); } catch (e) {}
       var meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', next === 'dark' ? '#17130E' : '#FBF7F1');
     });
@@ -1023,7 +1023,7 @@ h2.head{
   var turn = document.getElementById('turn');
   var turnCap = document.getElementById('turn-cap');
   if (turn) {
-    var CAPS = ['Give it a quarter turn — it becomes a D', 'There it is — the D of Diwan'];
+    var CAPS = ['Give it a quarter turn — it becomes a D', 'There it is — the D of LocalFirst'];
     var turned = false;
     function setTurn(next) {
       turned = next;

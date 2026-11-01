@@ -6,13 +6,13 @@
  * rendezvous-p2p.e2e.ts — the OPTIONAL posture, proved end to end with nothing
  * mocked:
  *
- *   "A standalone Diwan can delegate peer discovery to an operator's OWN
+ *   "A standalone LocalFirst can delegate peer discovery to an operator's OWN
  *    external relay (a self-hosted `vulos-relayd` / Pier), with nothing of ours
  *    in the discovery path at all."
  *
  * ── This is not the default path ─────────────────────────────────────────────
  *
- * It used to be the ONLY path, which made Diwan's central claim conditional on
+ * It used to be the ONLY path, which made LocalFirst's central claim conditional on
  * another product being deployed. It is not any more: the binary now serves its
  * own discovery surface (backend/rendezvous), and THAT default is proved by
  * builtin-rendezvous-p2p.e2e.ts — a suite with no external dependency, which
@@ -24,16 +24,16 @@
  * It deliberately does NOT clone or build another repository to find one.
  *
  * The instances here run with `builtin_rendezvous: false`, so the premise below is
- * exactly true rather than approximately: Diwan mounts nothing for discovery.
+ * exactly true rather than approximately: LocalFirst mounts nothing for discovery.
  *
  * This suite runs the real thing: a real `vulos-relayd` binary with the
- * rendezvous role enabled, two real standalone `diwan` servers (separate ports,
+ * rendezvous role enabled, two real standalone `localfirst` servers (separate ports,
  * separate data dirs — no shared state whatsoever), two real browser contexts, and
  * a real WebRTC data channel.
  *
  * ── What "proven" means here ────────────────────────────────────────────────
  *
- * The two peers are served by two DIFFERENT Diwan servers that share no storage
+ * The two peers are served by two DIFFERENT LocalFirst servers that share no storage
  * and no document endpoint. The only things they have in common are (a) the one
  * relayd both are configured to discover through, and (b) the room key, which
  * lives in the invite link's URL fragment and is never sent to any server. So
@@ -51,7 +51,7 @@
  *
  * ── The browser calls the relayd DIRECTLY ───────────────────────────────────
  *
- * There is no Diwan server in the discovery path: the pages fetch the relay's
+ * There is no LocalFirst server in the discovery path: the pages fetch the relay's
  * own origin cross-origin, which works because relayd's rendezvous role serves
  * CORS. That is asserted below as a measured fact about the relay (not assumed),
  * including from a real browser, since only a browser enforces CORS. It also
@@ -89,11 +89,11 @@ test.beforeAll(async () => {
   // how a job ends up red for a reason unrelated to the code under test (as it
   // was while it cloned a repo that had been renamed).
   //
-  // Nothing about Diwan's DEFAULT path depends on this file: that is proved,
+  // Nothing about LocalFirst's DEFAULT path depends on this file: that is proved,
   // unskippably, by builtin-rendezvous-p2p.e2e.ts.
   test.skip(!relaydBinAvailable(),
     'no vulos-relayd binary supplied — set VULOS_RELAYD_BIN to exercise the external-relay ' +
-    'posture. Diwan\'s default (built-in) P2P path is covered by builtin-rendezvous-p2p.e2e.ts.')
+    'posture. LocalFirst\'s default (built-in) P2P path is covered by builtin-rendezvous-p2p.e2e.ts.')
   stack = await startStack({ rendezvous: 'external', offices: 2, localOnlyOffice: true })
 })
 
@@ -113,11 +113,11 @@ test('relayd rendezvous is browser-reachable cross-origin — the guarantee the 
 
   // ── The CORS contract, asserted as a REQUIREMENT ──────────────────────────
   //
-  // Diwan's browser code calls this relayd's origin directly. That only works
+  // LocalFirst's browser code calls this relayd's origin directly. That only works
   // because relayd's rendezvous role sends CORS headers, so this suite pins the
   // exact posture the transport depends on: a relayd that regressed it would
   // break every standalone deployment, and this test is what catches that here
-  // rather than in the field. (Diwan carried a same-origin proxy until relayd
+  // rather than in the field. (LocalFirst carried a same-origin proxy until relayd
   // shipped this; see docs/COLLABORATION.md §3.)
   const ice = await request.get(`${stack.relayUrl}/rendezvous/ice`, {
     headers: { Origin: stack.offices[0].url },
@@ -148,7 +148,7 @@ test('relayd rendezvous is browser-reachable cross-origin — the guarantee the 
   // ── …and the same thing from a REAL browser on a DIFFERENT origin ─────────
   //
   // Header assertions above are necessary but not sufficient: only a browser
-  // enforces CORS. This runs the actual fetches from an Diwan page, so a
+  // enforces CORS. This runs the actual fetches from an LocalFirst page, so a
   // preflight that a raw HTTP client accepts but Chromium rejects cannot pass.
   const ctx = await browser.newContext()
   const page = await ctx.newPage()
@@ -188,26 +188,26 @@ test('relayd rendezvous is browser-reachable cross-origin — the guarantee the 
   }
 })
 
-test('a standalone Diwan advertises the rendezvous and mounts no host-box peering', async ({ request }) => {
+test('a standalone LocalFirst advertises the rendezvous and mounts no host-box peering', async ({ request }) => {
   const [a] = stack.offices
 
   // The premise of the whole claim: this binary serves no /api/peering/*.
   const peering = await request.get(`${a.url}/api/peering/ice`)
-  expect(peering.status(), 'a standalone Diwan must not serve host-box peering').toBe(404)
+  expect(peering.status(), 'a standalone LocalFirst must not serve host-box peering').toBe(404)
 
   const reach = await (await request.get(`${a.url}/api/reachability`)).json() as ReachabilityResponse
   expect(reach.rendezvous_url).toBe(stack.relayUrl)
   // These instances run with `builtin_rendezvous: false`, which is what makes the
   // premise of this whole file exactly true rather than approximately: with the
-  // built-in surface off, Diwan mounts NOTHING for discovery and the browser can
+  // built-in surface off, LocalFirst mounts NOTHING for discovery and the browser can
   // only be talking to the relay.
   expect(reach.builtin_rendezvous_prefix,
     'this posture deliberately disables the built-in surface').toBe('')
   expect((await request.get(`${a.url}${BUILTIN_PREFIX}/healthz`)).status(),
-    'with builtin_rendezvous:false, Diwan must mount no discovery surface at all').toBe(404)
+    'with builtin_rendezvous:false, LocalFirst must mount no discovery surface at all').toBe(404)
 })
 
-test('THE PAYOFF — two standalone Diwan servers collaborate P2P through the relayd', async ({ browser }) => {
+test('THE PAYOFF — two standalone LocalFirst servers collaborate P2P through the relayd', async ({ browser }) => {
   const [a, b] = stack.offices
   const docA = await createDoc(a.url, 'P2P Proof A')
   const docB = await createDoc(b.url, 'P2P Proof B')
@@ -236,7 +236,7 @@ test('THE PAYOFF — two standalone Diwan servers collaborate P2P through the re
 
     // Both sides must announce themselves to the relay — directly, cross-origin
     // — before anything can connect. Note the URLs matched here are the RELAY's
-    // origin, not either Diwan's: that is the whole point.
+    // origin, not either LocalFirst's: that is the whole point.
     await expect
       .poll(() => reqA.filter((r) => r.url.startsWith(`${stack.relayUrl}/rendezvous/`)).length, {
         message: 'peer A never spoke the rendezvous protocol',
@@ -409,7 +409,7 @@ test('offline divergence — both peers edit disconnected, then converge on reco
   }
 })
 
-test('NEGATIVE — with no rendezvous configured, standalone Diwan reports local-only and never fakes a session', async ({ browser, request }) => {
+test('NEGATIVE — with no rendezvous configured, standalone LocalFirst reports local-only and never fakes a session', async ({ browser, request }) => {
   const lo = stack.localOnly
   expect(lo, 'the local-only instance must be booted for this test').toBeTruthy()
   // expect(...).toBeTruthy() above is the real runtime guarantee (it fails the

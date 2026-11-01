@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs'
+import { cp } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -12,7 +13,7 @@ import { licensesTxt } from './vite-plugin-licenses.js'
 // Go backend actually looks for it.
 const dir = import.meta.dirname
 const repoRoot = resolve(dir, '..')
-const distDir = resolve(repoRoot, process.env.DIWAN_BUILD_OFFLINE === '1' ? 'dist-offline' : 'dist')
+const distDir = resolve(repoRoot, process.env.LOCALFIRST_BUILD_OFFLINE === '1' ? 'dist-offline' : 'dist')
 
 // emptyOutDir wipes dist/ on every build, including the dist/.gitkeep
 // placeholder that lets `go build` (//go:embed all:dist) compile before any
@@ -21,6 +22,25 @@ const keepGitkeep = {
   name: 'keep-dist-gitkeep',
   closeBundle() {
     writeFileSync(resolve(distDir, '.gitkeep'), '')
+  },
+}
+
+// Excalidraw otherwise falls back to a CDN for its writing-system fonts.
+// Copy the installed package's font assets into both builds, then let the
+// offline builder precache them with the other application assets.
+const localWhiteboardFonts = {
+  name: 'localfirst-whiteboard-fonts',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!id.replaceAll('\\', '/').includes('/@excalidraw/excalidraw/') || !code.includes('ASSETS_FALLBACK_URL')) return
+    // The SDK appends its CDN even when an asset path is configured. Keep that
+    // fallback on this origin too; never weaken the offline connection policy.
+    const local = code.replace(/https:\/\/esm\.sh\/\$\{[\s\S]{0,400}?\/dist\/prod\//g, '${globalThis.location.origin}/assets/excalidraw/')
+    if (local === code) throw new Error('Whiteboard font fallback changed; review the local asset mapping before shipping.')
+    return { code: local, map: null }
+  },
+  async closeBundle() {
+    await cp(resolve(dir, 'node_modules/@excalidraw/excalidraw/dist/prod/fonts'), resolve(distDir, 'assets/excalidraw/fonts'), { recursive: true })
   },
 }
 
@@ -55,7 +75,7 @@ function manualChunks(id) {
   }
 }
 
-// Default config: monolithic diwan build (dist/).
+// Default config: monolithic localfirst build (dist/).
 // For the subdomain build use vite.config.office.js.
 // (Chat/video are third-party per the VulOS standard, not built by Office;
 // Calendar/Contacts are bring-your-own PIM via lilmail.)
@@ -87,7 +107,7 @@ export default defineConfig({
   // src/ resolve correctly with no explicit `root`. licensesTxt still needs
   // pointing at the repo root explicitly: THIRD-PARTY-NOTICES.txt and
   // THIRD-PARTY-NOTICES-GO.txt stay there (see notices npm scripts).
-  plugins: [react(), keepGitkeep, stripExternalCssImports(), licensesTxt({ root: repoRoot })],
+  plugins: [react(), keepGitkeep, localWhiteboardFonts, stripExternalCssImports(), licensesTxt({ root: repoRoot })],
   build: {
     outDir: distDir,
     emptyOutDir: true,

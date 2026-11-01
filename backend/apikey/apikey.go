@@ -29,8 +29,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	appbrand "localfirst/internal/brand"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -108,8 +108,8 @@ type Config struct {
 // FromEnv reads the introspection config from the environment.
 func FromEnv() Config {
 	return Config{
-		BaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv(EnvCPBaseURL)), "/"),
-		Token:   strings.TrimSpace(os.Getenv(EnvCPToken)),
+		BaseURL: strings.TrimRight(strings.TrimSpace(appbrand.Getenv(EnvCPBaseURL)), "/"),
+		Token:   strings.TrimSpace(appbrand.Getenv(EnvCPToken)),
 	}
 }
 

@@ -60,7 +60,7 @@ export default function ConnectionPill({ pill, peerCount = 0 }: ConnectionPillPr
   const toneClass = TONE_CLASS[pill.tone] || TONE_CLASS.muted
 
   // Screen-reader phrasing: fold peer count into the announcement when live.
-  const srText = (pill.status === 'live' && peerCount > 0)
+  const srText = pill.status === 'solo' || (pill.status === 'live' && peerCount === 0) ? 'No peer connected' : (pill.status === 'live' && peerCount > 0)
     ? `${pill.label} — ${peerCount} collaborator${peerCount === 1 ? '' : 's'} connected`
     : pill.label
 
@@ -83,7 +83,7 @@ export default function ConnectionPill({ pill, peerCount = 0 }: ConnectionPillPr
         className={meta.spin ? 'motion-safe:animate-spin' : ''}
         aria-hidden="true"
       />
-      <span>{pill.label}</span>
+      <span>{pill.status === 'solo' || (pill.status === 'live' && peerCount === 0) ? 'No peer connected' : pill.label}</span>
       {pill.status === 'live' && peerCount > 0 && (
         <span aria-hidden="true" className="opacity-70">· {peerCount}</span>
       )}

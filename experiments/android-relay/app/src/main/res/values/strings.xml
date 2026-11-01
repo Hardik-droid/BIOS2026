@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="next_relay">Outgoing device is another Diwan relay phone</string>
+    <string name="next_relay">Outgoing device is another LocalFirst relay phone</string>
     <string name="relay_consent">I allow this phone to relay between these selected devices for up to 30 minutes.</string>
     <string name="permissions_ready">Permissions are available. Refresh the paired devices.</string>
     <string name="choose_device">Choose a paired device</string>

@@ -477,7 +477,7 @@ func TestShortPairingHTTPApprovalRequiresCurrentRequestAndBridgeProtection(t *te
 		r := httptest.NewRequest("POST", "http://127.0.0.1:8765/_nearby/"+tc.path, bytes.NewReader(body))
 		r.Header.Set("Content-Type", "application/json")
 		r.Header.Set("Origin", tc.origin)
-		r.Header.Set("X-Diwan-Native-Token", tc.token)
+		r.Header.Set("X-LocalFirst-Native-Token", tc.token)
 		w := httptest.NewRecorder()
 		host.Handler().ServeHTTP(w, r)
 		if w.Code != tc.want {

@@ -1,7 +1,7 @@
-// Package docsgate holds the repo-hygiene gates for diwan's documentation:
+// Package docsgate holds the repo-hygiene gates for localfirst's documentation:
 // that every relative Markdown link resolves, and that site/docs/ stays a
 // byte-identical mirror of docs/ (plus CHANGELOG.md and ROADMAP.md). Neither
-// test exercises the diwan binary itself, so they live in their own package
+// test exercises the localfirst binary itself, so they live in their own package
 // rather than in package main.
 package docsgate
 
@@ -11,7 +11,7 @@ import (
 	"runtime"
 )
 
-// repoRoot locates the diwan module root by walking up from this source
+// repoRoot locates the localfirst module root by walking up from this source
 // file's own directory until a go.mod is found. It resolves from the module
 // root rather than a relative "../.." so these paths stay correct regardless
 // of where this package lives in the tree or what directory `go test` is

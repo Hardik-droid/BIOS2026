@@ -1,11 +1,11 @@
-# Security Testing — Diwan
+# Security Testing — LocalFirst
 
 This document describes the **pentest / adversarial test suite** for the
-`diwan` backend (Go) and the document/slide HTML render path (JSX/vitest).
+`localfirst` backend (Go) and the document/slide HTML render path (JSX/vitest).
 
-> Diwan is the documents-only product. Chat and video are third-party
+> LocalFirst is the documents-only product. Chat and video are third-party
 > (Matrix/Element; Element Call / Jitsi), not Vulos products; this document covers
-> only Diwan's own attack surface.
+> only LocalFirst's own attack surface.
 
 The suites are written attacker-first: every test **attempts a concrete attack
 and asserts it is blocked**. A green run means the corresponding defense holds.
@@ -17,7 +17,7 @@ flaky test.
 Go (backend) pentests:
 
 ```bash
-cd diwan
+cd localfirst
 
 # Run only the pentest suites (verbose):
 CGO_ENABLED=0 go test ./backend/... -run 'Pentest' -v
@@ -29,7 +29,7 @@ CGO_ENABLED=0 go build ./... && CGO_ENABLED=0 go vet ./... && CGO_ENABLED=0 go t
 Frontend (HTML render / sanitiser) pentest:
 
 ```bash
-cd diwan
+cd localfirst/web
 npx vitest run src/apps/slides/sanitize.test.js
 # or the full vitest suite:
 npm test

@@ -7,12 +7,12 @@ package handlers
 // mark-read their OWN notifications — there is no path to another account's rows.
 
 import (
+	appbrand "localfirst/internal/brand"
 	"net/http"
-	"os"
 	"sync"
 
-	"diwan/backend/models"
-	"diwan/backend/notify"
+	"localfirst/backend/models"
+	"localfirst/backend/notify"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +25,7 @@ var (
 // notifyDBPath resolves the notifications SQLite DSN from env, defaulting to a
 // durable file under the data dir.
 func notifyDBPath() string {
-	if v := os.Getenv("VULOS_NOTIFY_DB"); v != "" {
+	if v := appbrand.Getenv("VULOS_NOTIFY_DB"); v != "" {
 		return v
 	}
 	return "./data/notify.db"

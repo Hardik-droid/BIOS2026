@@ -1,4 +1,4 @@
-// Package deploymode provides a single typed DEPLOY_MODE enum for Diwan,
+// Package deploymode provides a single typed DEPLOY_MODE enum for LocalFirst,
 // per the cross-repo app-deployment contract:
 //
 //	DEPLOY_MODE = standalone|os
@@ -22,8 +22,8 @@ package deploymode
 
 import (
 	"fmt"
+	appbrand "localfirst/internal/brand"
 	"log"
-	"os"
 	"strings"
 )
 
@@ -66,7 +66,7 @@ func (m Mode) String() string { return string(m) }
 // and continue in the safe (Standalone/fully-open) default rather than fail to
 // boot over a typo.
 func FromEnv() (Mode, error) {
-	raw := strings.ToLower(strings.TrimSpace(os.Getenv(EnvVar)))
+	raw := strings.ToLower(strings.TrimSpace(appbrand.Getenv(EnvVar)))
 	if raw == "" {
 		return Standalone, nil
 	}
@@ -88,7 +88,7 @@ func Load() Mode {
 		log.Printf("[deploymode] %v", err)
 	}
 	m.checkCoherence()
-	log.Printf("[deploymode] running as %q (%s=%q)", m, EnvVar, os.Getenv(EnvVar))
+	log.Printf("[deploymode] running as %q (%s=%q)", m, EnvVar, appbrand.Getenv(EnvVar))
 	return m
 }
 
@@ -121,7 +121,7 @@ func (m Mode) RequireAuthPosture(authEnabled, hasIntrospector bool) error {
 		"collapsing every caller to a single shared identity (all users' data under one identity, "+
 		"any create/upload anonymous). Refusing to boot. Set auth.enabled=true (with %s), or set %s "+
 		"to the identity provider base URL, or use DEPLOY_MODE=standalone for single-tenant self-host",
-		m, session_EnvIdentityURL, "DIWAN_JWT_SECRET", session_EnvIdentityURL)
+		m, session_EnvIdentityURL, "LOCALFIRST_JWT_SECRET", session_EnvIdentityURL)
 }
 
 // session_EnvIdentityURL names the session-introspection provider env var in
@@ -134,8 +134,8 @@ const session_EnvIdentityURL = "IDENTITY_URL"
 // incomplete, so an operator notices a half-configured os box early rather than
 // discovering a silent fail-open/fail-closed surprise later.
 func (m Mode) checkCoherence() {
-	cp := strings.TrimSpace(os.Getenv("VULOS_CP_BASE_URL"))
-	brokerSecret := strings.TrimSpace(os.Getenv("VULOS_STORAGE_BROKER_SECRET"))
+	cp := strings.TrimSpace(appbrand.Getenv("VULOS_CP_BASE_URL"))
+	brokerSecret := strings.TrimSpace(appbrand.Getenv("VULOS_STORAGE_BROKER_SECRET"))
 
 	switch m {
 	case OS:

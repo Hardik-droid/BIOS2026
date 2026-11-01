@@ -2,10 +2,10 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
-import { DiwanMark } from './ui'
+import { LocalFirstLogo } from './ui'
 
 /*
- * LoginScreen — first contact. Warm, hand-set typography: the Diwan mark, a
+ * LoginScreen — first contact. Warm, hand-set typography: the LocalFirst mark, a
  * Fraunces serif title, and a single ember button complete the path.  Two soft
  * off-canvas washes (ember + teal) give the page a centre of gravity without
  * gradients or grids.
@@ -42,9 +42,9 @@ export default function LoginScreen() {
         <div className="bg-paper rounded-xl border border-line shadow-e3 p-8">
           <div className="flex flex-col items-start mb-7">
             <span className="inline-flex items-center gap-2.5 mb-5">
-              <DiwanMark size={30} />
+              <LocalFirstLogo size={30} />
               <span className="flex flex-col leading-none">
-                <span className="font-display text-xl font-bold text-ink leading-none tracking-display">Diwan</span>
+                <span className="font-display text-xl font-bold text-ink leading-none tracking-display">LocalFirst</span>
                 <span className="font-mono text-[8.5px] font-medium text-ink-faint tracking-eyebrow uppercase mt-1.5">
                   Office Suite
                 </span>

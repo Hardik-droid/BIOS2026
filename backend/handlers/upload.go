@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"diwan/backend/billing"
-	"diwan/backend/config"
+	"localfirst/backend/billing"
+	"localfirst/backend/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

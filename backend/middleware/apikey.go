@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"diwan/backend/apikey"
-	"diwan/backend/config"
-	"diwan/backend/session"
+	"localfirst/backend/apikey"
+	"localfirst/backend/config"
+	"localfirst/backend/session"
 
 	"github.com/gin-gonic/gin"
 )

@@ -74,8 +74,8 @@ jobs:
       - name: Verify tag matches binary version
         run: |
           VERSION="${{ steps.version.outputs.semver }}"
-          go build -ldflags "-X main.Version=${VERSION}" -o /tmp/diwan-check .
-          BIN_VER=$(/tmp/diwan-check --version)
+          go build -ldflags "-X main.Version=${VERSION}" -o /tmp/localfirst-check .
+          BIN_VER=$(/tmp/localfirst-check --version)
           if [ "${BIN_VER}" != "${VERSION}" ]; then
             echo "ERROR: binary reports version '${BIN_VER}' but tag is '${VERSION}'"
             exit 1
@@ -112,7 +112,7 @@ jobs:
           go build \
             -trimpath \
             -ldflags "-s -w -X main.Version=${{ steps.version.outputs.semver }}" \
-            -o diwan-linux-amd64 \
+            -o localfirst-linux-amd64 \
             .
 
       - name: Cross-compile linux/arm64
@@ -124,7 +124,7 @@ jobs:
           go build \
             -trimpath \
             -ldflags "-s -w -X main.Version=${{ steps.version.outputs.semver }}" \
-            -o diwan-linux-arm64 \
+            -o localfirst-linux-arm64 \
             .
 
       - name: Cross-compile darwin/amd64
@@ -136,7 +136,7 @@ jobs:
           go build \
             -trimpath \
             -ldflags "-s -w -X main.Version=${{ steps.version.outputs.semver }}" \
-            -o diwan-darwin-amd64 \
+            -o localfirst-darwin-amd64 \
             .
 
       - name: Cross-compile darwin/arm64
@@ -148,7 +148,7 @@ jobs:
           go build \
             -trimpath \
             -ldflags "-s -w -X main.Version=${{ steps.version.outputs.semver }}" \
-            -o diwan-darwin-arm64 \
+            -o localfirst-darwin-arm64 \
             .
 
       # ── Archive dist-lib so the publish + release jobs can use it ─────────────
@@ -163,10 +163,10 @@ jobs:
       - name: Generate SHA-256 checksums
         run: |
           sha256sum \
-            diwan-linux-amd64 \
-            diwan-linux-arm64 \
-            diwan-darwin-amd64 \
-            diwan-darwin-arm64 \
+            localfirst-linux-amd64 \
+            localfirst-linux-arm64 \
+            localfirst-darwin-amd64 \
+            localfirst-darwin-arm64 \
             > checksums.txt
           cat checksums.txt
 
@@ -176,10 +176,10 @@ jobs:
         with:
           name: binaries
           path: |
-            diwan-linux-amd64
-            diwan-linux-arm64
-            diwan-darwin-amd64
-            diwan-darwin-arm64
+            localfirst-linux-amd64
+            localfirst-linux-arm64
+            localfirst-darwin-amd64
+            localfirst-darwin-arm64
             checksums.txt
           retention-days: 1
 
@@ -261,10 +261,10 @@ jobs:
           name: ${{ github.ref_name }}
           generate_release_notes: true
           files: |
-            diwan-linux-amd64
-            diwan-linux-arm64
-            diwan-darwin-amd64
-            diwan-darwin-arm64
+            localfirst-linux-amd64
+            localfirst-linux-arm64
+            localfirst-darwin-amd64
+            localfirst-darwin-arm64
             checksums.txt
             office-client-${{ github.ref_name }}-dist.tar.gz
         env:

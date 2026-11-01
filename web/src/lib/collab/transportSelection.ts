@@ -5,34 +5,34 @@
 /**
  * transportSelection.js — the collaboration transport decision.
  *
- * Every FabricClient construction site in Diwan (useCollabFabric.js for
+ * Every FabricClient construction site in LocalFirst (useCollabFabric.js for
  * presence/Sheets/Slides doc-sync, useP2PCollab.js for Docs/Whiteboard invite
  * links) needs the same answer to "how do we reach a peer?", in the same
  * priority order:
  *
  *   1. HOST_PEERING  — this server itself mounts `/api/peering/*` (a Vulos OS
- *      or Pier host is in front of Diwan). Preferred when present:
- *      unchanged from Diwan's original behaviour, and it is the one transport
+ *      or Pier host is in front of LocalFirst). Preferred when present:
+ *      unchanged from LocalFirst's original behaviour, and it is the one transport
  *      that can carry an authToken tied to an account session.
  *   2. RENDEZVOUS (external) — no host-box peering, but this deployment names
  *      somebody else's rendezvous surface: config.yaml `collab.rendezvous_url` /
  *      VULOS_RENDEZVOUS_URL (see backend/config/config.go) — typically a
  *      self-hosted `vulos-relayd`'s open announce/resolve/signal/mailbox + ICE
- *      surface. The browser calls that origin DIRECTLY, cross-origin; Diwan's
+ *      surface. The browser calls that origin DIRECTLY, cross-origin; LocalFirst's
  *      server is not in the discovery path at all, so it never sees even the
  *      (already content-blind) rendezvous envelopes. This relies on the relay
  *      serving CORS. Configuring it is an EXPLICIT operator choice, which is why
  *      it outranks the built-in surface below.
- *   3. RENDEZVOUS (built-in) — this Diwan binary's OWN discovery surface,
+ *   3. RENDEZVOUS (built-in) — this LocalFirst binary's OWN discovery surface,
  *      `/api/rendezvous/*` on this very origin (backend/rendezvous), advertised
  *      by GET /api/reachability as `builtin_rendezvous_prefix`.
  *
- *      THIS IS THE DEFAULT, and it is what makes a bare `diwan` binary capable
+ *      THIS IS THE DEFAULT, and it is what makes a bare `localfirst` binary capable
  *      of real peer-to-peer collaboration on its own. WebRTC cannot introduce two
  *      browsers unaided — something has to pass the first offer/answer/ICE
- *      frames — and until this existed, Diwan could only get that from ANOTHER
+ *      frames — and until this existed, LocalFirst could only get that from ANOTHER
  *      product (a Vulos OS / Pier host, or an operator-run relayd). With
- *      neither, every session fell through to local-only. One Diwan on one VPS is
+ *      neither, every session fell through to local-only. One LocalFirst on one VPS is
  *      now sufficient.
  *
  *      It carries no document content: payloads are opaque bytes sealed under a
@@ -82,7 +82,7 @@ export type TransportChoice = {
   rendezvousBaseUrl: string
   /** path prefix under that origin ('' unless transport is 'rendezvous') */
   rendezvousPrefix: string
-  /** true when the chosen rendezvous surface is this Diwan server's own.
+  /** true when the chosen rendezvous surface is this LocalFirst server's own.
    *  Callers use it for honest UI copy ("discovery runs on this server" vs "on
    *  <relay>"); it is never a security decision. */
   builtin: boolean
@@ -133,7 +133,7 @@ export async function selectCollabTransport({
     url = '' // fail safe — an unresolvable rendezvous means local-only, not a throw
   }
   if (url) {
-    // Straight at the operator's chosen relay: no Diwan origin in the discovery
+    // Straight at the operator's chosen relay: no LocalFirst origin in the discovery
     // path.
     return {
       transport: TRANSPORT_RENDEZVOUS,

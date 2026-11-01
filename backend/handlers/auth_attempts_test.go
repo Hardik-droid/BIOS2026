@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/userauth"
+	"localfirst/backend/userauth"
 
 	"github.com/gin-gonic/gin"
 )

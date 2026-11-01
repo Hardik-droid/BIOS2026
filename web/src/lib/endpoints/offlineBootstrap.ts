@@ -1,7 +1,7 @@
 /**
- * offlineBootstrap.js — Diwan's offline-first shell bootstrap.
+ * offlineBootstrap.js — LocalFirst's offline-first shell bootstrap.
  *
- * First-party (re-homed from the vendored relay-client copy so Diwan
+ * First-party (re-homed from the vendored relay-client copy so LocalFirst
  * no longer depends on that package — see src/lib/endpoints/index.js).
  *
  * Three responsibilities, run once at app entry:

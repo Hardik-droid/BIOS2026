@@ -1,14 +1,15 @@
-// diwan-offline serves bundled application assets on loopback. It has no cloud API.
+// localfirst-offline serves bundled application assets on loopback. It has no cloud API.
 package main
 
 import (
 	"bytes"
-	"diwan/internal/nearby"
 	"embed"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
+	appbrand "localfirst/internal/brand"
+	"localfirst/internal/nearby"
 	"log"
 	"mime"
 	"net"
@@ -19,7 +20,7 @@ import (
 	"time"
 )
 
-//go:embed launch.html launch.js
+//go:embed launch.html launch.js launch.css
 var launcherFiles embed.FS
 
 func loopbackAddress(addr string) bool {
@@ -36,7 +37,7 @@ func assetHandler(assets fs.FS) http.Handler {
 		CacheVersion  string `json:"cacheVersion"`
 		NativeVersion string `json:"nativeVersion"`
 	}
-	if marker, err := fs.ReadFile(assets, ".diwan-offline.json"); err == nil {
+	if marker, err := appbrand.ReadOfflineMetadata(assets); err == nil {
 		_ = json.Unmarshal(marker, &build)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -61,16 +62,18 @@ func assetHandler(assets fs.FS) http.Handler {
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Cache-Control", "no-store")
 			if r.Method != http.MethodHead {
-				_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "server": "diwan-offline", "mode": "offline-only", "cache_version": build.CacheVersion, "native_version": build.NativeVersion, "nearby_protocol": "windows-rfcomm-v1"})
+				_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "server": "localfirst-offline", "mode": "offline-only", "cache_version": build.CacheVersion, "native_version": build.NativeVersion, "nearby_protocol": "windows-rfcomm-v1"})
 			}
 			return
 		}
 		// All released offline workers bypass /api/. Keep the launcher
 		// here so a cached shell cannot hide a newly installed application.
-		if r.URL.Path == "/api/offline-launch" || r.URL.Path == "/api/offline-launch.js" {
+		if r.URL.Path == "/api/offline-launch" || r.URL.Path == "/api/offline-launch.js" || r.URL.Path == "/api/offline-launch.css" {
 			name := "launch.html"
 			if strings.HasSuffix(r.URL.Path, ".js") {
 				name = "launch.js"
+			} else if strings.HasSuffix(r.URL.Path, ".css") {
+				name = "launch.css"
 			}
 			data, _ := launcherFiles.ReadFile(name)
 			w.Header().Set("Cache-Control", "no-store")
@@ -130,7 +133,7 @@ func main() {
 		log.Fatal("Only a loopback IP address is allowed")
 	}
 	assets := os.DirFS(*assetsPath)
-	marker, err := fs.ReadFile(assets, ".diwan-offline.json")
+	marker, err := appbrand.ReadOfflineMetadata(assets)
 	if err != nil {
 		log.Fatal("Build the offline application before starting: ", err)
 	}
@@ -149,7 +152,7 @@ func main() {
 	mux.Handle("/_nearby/", hub.Handler())
 	mux.Handle("/", assetHandler(assets))
 	server := &http.Server{Addr: *addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, WriteTimeout: 30 * time.Second}
-	fmt.Printf("Diwan offline workspace: http://%s\n", *addr)
+	fmt.Printf("LocalFirst offline workspace: http://%s\n", *addr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

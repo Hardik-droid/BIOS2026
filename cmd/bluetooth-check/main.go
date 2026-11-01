@@ -1,9 +1,9 @@
 package main
 
 import (
-	"diwan/internal/nearby"
 	"encoding/json"
 	"fmt"
+	"localfirst/internal/nearby"
 )
 
 func main() {

@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	appbrand "localfirst/internal/brand"
 	"log"
 	"net/http"
 	"os"
@@ -17,20 +18,20 @@ import (
 	"strings"
 	"time"
 
-	"diwan/backend/apikey"
-	"diwan/backend/billing"
-	"diwan/backend/config"
-	"diwan/backend/deploymode"
-	"diwan/backend/handlers"
-	"diwan/backend/integration/cloud"
-	"diwan/backend/middleware"
-	"diwan/backend/obs"
-	"diwan/backend/rendezvous"
-	"diwan/backend/seam"
-	"diwan/backend/session"
-	"diwan/backend/storage"
-	"diwan/backend/updatelog"
-	"diwan/backend/userauth"
+	"localfirst/backend/apikey"
+	"localfirst/backend/billing"
+	"localfirst/backend/config"
+	"localfirst/backend/deploymode"
+	"localfirst/backend/handlers"
+	"localfirst/backend/integration/cloud"
+	"localfirst/backend/middleware"
+	"localfirst/backend/obs"
+	"localfirst/backend/rendezvous"
+	"localfirst/backend/seam"
+	"localfirst/backend/session"
+	"localfirst/backend/storage"
+	"localfirst/backend/updatelog"
+	"localfirst/backend/userauth"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -47,7 +48,7 @@ func main() {
 	// One-shot CLI subcommand: migrate a legacy shared-password deploy to a
 	// per-user credential so an upgrade doesn't silently lock everyone out.
 	//
-	//   diwan migrate-credential -admin you@vulos.org [-password PW]
+	//   localfirst migrate-credential -admin you@vulos.org [-password PW]
 	//
 	// If -password is omitted the shared password from config.yaml (auth.password)
 	// is used. Safe to run repeatedly: it is a no-op once any user exists.
@@ -70,7 +71,7 @@ func main() {
 	configPath := flag.String("config", "config.yaml", "path to config file")
 	flag.Parse()
 
-	log.Printf("diwan %s starting", Version)
+	log.Printf("localfirst %s starting", Version)
 	obs.Init()
 
 	// Typed DEPLOY_MODE (standalone|os): read once, validate coherent config,
@@ -88,7 +89,7 @@ func main() {
 	}
 
 	// Fail closed: when auth is enabled, refuse to start unless a JWT signing
-	// secret is configured (DIWAN_JWT_SECRET, or DIWAN_DEV=1 for
+	// secret is configured (LOCALFIRST_JWT_SECRET, or LOCALFIRST_DEV=1 for
 	// local development). This prevents shipping with a predictable key.
 	if cfg.Auth.Enabled && !middleware.JWTSecretConfigured() {
 		log.Fatalf("auth is enabled but no JWT signing secret is configured: set %s "+
@@ -164,7 +165,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-	// CORS: prefer an explicit origin allowlist (DIWAN_CORS_ORIGINS, a
+	// CORS: prefer an explicit origin allowlist (LOCALFIRST_CORS_ORIGINS, a
 	// comma-separated list) so credentialed cross-origin requests are restricted
 	// to trusted front-ends. When unset we fall back to AllowAllOrigins WITHOUT
 	// credentials (the SPA is same-origin embedded, so this is safe for self-host
@@ -177,7 +178,7 @@ func main() {
 		// caller cannot read them — and a warning nobody can read is a silent loss.
 		ExposeHeaders: []string{"Content-Disposition", "X-Export-Fidelity", "X-Export-Warnings"},
 	}
-	if raw := strings.TrimSpace(os.Getenv("DIWAN_CORS_ORIGINS")); raw != "" {
+	if raw := strings.TrimSpace(appbrand.Getenv("LOCALFIRST_CORS_ORIGINS")); raw != "" {
 		var origins []string
 		for _, o := range strings.Split(raw, ",") {
 			if o = strings.TrimSpace(o); o != "" {
@@ -189,7 +190,7 @@ func main() {
 		log.Printf("[cors] explicit origin allowlist: %v (credentials allowed)", origins)
 	} else {
 		corsCfg.AllowAllOrigins = true // no credentials → safe wildcard
-		log.Printf("[cors] no DIWAN_CORS_ORIGINS set; allowing all origins WITHOUT credentials")
+		log.Printf("[cors] no LOCALFIRST_CORS_ORIGINS set; allowing all origins WITHOUT credentials")
 	}
 	r.Use(cors.New(corsCfg))
 
@@ -269,13 +270,13 @@ func main() {
 	// ── Built-in peer discovery (this binary's own signalling surface) ─────────
 	//
 	// WebRTC cannot introduce two browsers to each other unaided: something has to
-	// pass the first offer/answer/ICE frames. Diwan used to be able to get that
+	// pass the first offer/answer/ICE frames. LocalFirst used to be able to get that
 	// ONLY from another product — a Vulos OS / Pier host mounting
 	// `/api/peering/*`, or an operator-run `vulos-relayd` named in
 	// `collab.rendezvous_url` — so with neither, a standalone binary had no P2P at
 	// all and every session fell through to honestly-local-only.
 	//
-	// backend/rendezvous serves that protocol HERE, on this origin, so one Diwan
+	// backend/rendezvous serves that protocol HERE, on this origin, so one LocalFirst
 	// on one VPS is enough for two users to collaborate. It still carries no
 	// document content: every payload is opaque bytes sealed under a room key that
 	// lives in an invite link's fragment and reaches no server, and edits ride the
@@ -612,7 +613,7 @@ func main() {
 		addr = ":8080"
 	}
 
-	log.Printf("Diwan running → http://localhost%s", addr)
+	log.Printf("LocalFirst running → http://localhost%s", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatal(err)
 	}
@@ -711,7 +712,7 @@ func runMigrateCredential(args []string) {
 
 	dsn := *dbPath
 	if dsn == "" {
-		if v := os.Getenv("VULOS_USERAUTH_DB"); v != "" {
+		if v := appbrand.Getenv("VULOS_USERAUTH_DB"); v != "" {
 			dsn = v
 		} else {
 			dsn = "./data/userauth.db"

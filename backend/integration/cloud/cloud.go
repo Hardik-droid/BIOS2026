@@ -19,14 +19,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	appbrand "localfirst/internal/brand"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"diwan/backend/seam"
+	"localfirst/backend/seam"
 )
 
 // Environment contract for the optional cloud adapter.
@@ -47,7 +47,7 @@ const (
 // Enabled reports whether the cloud adapter should be used (i.e. a control-plane
 // base URL is configured). When false, callers must use the standalone seam.
 func Enabled() bool {
-	return strings.TrimSpace(os.Getenv(EnvCPBaseURL)) != ""
+	return strings.TrimSpace(appbrand.Getenv(EnvCPBaseURL)) != ""
 }
 
 // Config holds the resolved cloud adapter settings.
@@ -60,9 +60,9 @@ type Config struct {
 // FromEnv reads the cloud adapter config from the environment.
 func FromEnv() Config {
 	return Config{
-		BaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv(EnvCPBaseURL)), "/"),
-		Token:   strings.TrimSpace(os.Getenv(EnvCPToken)),
-		OrgID:   strings.TrimSpace(os.Getenv(EnvOrgID)),
+		BaseURL: strings.TrimRight(strings.TrimSpace(appbrand.Getenv(EnvCPBaseURL)), "/"),
+		Token:   strings.TrimSpace(appbrand.Getenv(EnvCPToken)),
+		OrgID:   strings.TrimSpace(appbrand.Getenv(EnvOrgID)),
 	}
 }
 

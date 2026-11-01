@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const rawBackend = process.argv[2] || process.env.DIWAN_BACKEND_URL
+const rawBackend = process.argv[2] || process.env.LOCALFIRST_BACKEND_URL
 if (!rawBackend) {
   throw new Error('Usage: node scripts/prepare-vercel.mjs https://YOUR-SERVICE.up.railway.app')
 }
@@ -18,14 +18,14 @@ if (backend.hostname === 'localhost' || backend.hostname === '127.0.0.1' || back
 const healthResponse = await fetch(new URL('/healthz', backend), { signal: AbortSignal.timeout(30000) })
 if (!healthResponse.ok) throw new Error(`Backend health check failed: ${healthResponse.status}`)
 const health = await healthResponse.json()
-if (health.status !== 'ok' || typeof health.version !== 'string') throw new Error('The backend did not return a Diwan health response.')
+if (health.status !== 'ok' || typeof health.version !== 'string') throw new Error('The backend did not return a LocalFirst health response.')
 const authResponse = await fetch(new URL('/api/auth/status', backend), { signal: AbortSignal.timeout(30000) })
 if (!authResponse.ok || (await authResponse.json()).enabled !== true) {
   throw new Error('Enable backend login before publishing the public app.')
 }
 
 await readFile(join(repo, 'dist', 'index.html'))
-const cloudBuild = JSON.parse(await readFile(join(repo, 'dist', '.diwan-cloud.json'), 'utf8'))
+const cloudBuild = JSON.parse(await readFile(join(repo, 'dist', '.localfirst-cloud.json'), 'utf8'))
 if (cloudBuild.accountId !== 'self') throw new Error('Run npm run build:cloud from web/ first.')
 // Each preparation gets its own folder so stale assets and previous project
 // links cannot leak into another deployment.

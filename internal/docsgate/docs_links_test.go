@@ -16,7 +16,7 @@ package docsgate
 // resolved as file paths.
 //
 // Moved out of package main (originally repo-root docs_links_test.go): this
-// gate checks repo-hygiene of the documentation tree, not the diwan binary.
+// gate checks repo-hygiene of the documentation tree, not the localfirst binary.
 // All paths resolve from the module root (see root.go) rather than the
 // process's working directory, so the gate runs the same regardless of where
 // `go test` is invoked from.

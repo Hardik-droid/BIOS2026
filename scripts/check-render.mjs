@@ -35,10 +35,10 @@ const SITE = resolve(REPO, 'site');
 // combinations came back green with nothing in the output looking wrong.
 // This gate binds its own ephemeral port rather than a well-known one, and
 // still refuses to trust a single measurement until the served <title> proves
-// the document is diwan's.
+// the document is localfirst's.
 const TITLE_MUST_MATCH = {
-  'index.html': /^Diwan\b/,
-  'docs.html': /^Diwan docs\b/,
+  'index.html': /^LocalFirst\b/,
+  'docs.html': /^LocalFirst docs\b/,
 };
 
 const PAGES = ['index.html', 'docs.html'];
@@ -64,7 +64,7 @@ const VIEWPORTS = [
 
 // ---------------------------------------------------------------------------
 // Playwright, from wherever it lives on this box.
-// Diwan is a Go repo with no package.json, so there is no local node_modules to
+// LocalFirst is a Go repo with no package.json, so there is no local node_modules to
 // resolve from. Bare `import 'playwright'` resolves relative to THIS file's
 // directory and would fail; walk the fleet for a checkout that has one.
 // ---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ async function inspect(page, opts = {}) {
     // 1 · horizontal overflow, measured GEOMETRICALLY.
     //
     // `documentElement.scrollWidth - clientWidth <= 1` is NOT usable here.
-    // Diwan's body carries overflow-x:clip (docs) / hidden (index), and a
+    // LocalFirst's body carries overflow-x:clip (docs) / hidden (index), and a
     // clipped container reports the CLIPPED width — so that assertion passes
     // vacuously no matter how far a child bleeds. Basin's docs page passed 41
     // widths × 2 schemes that way while body.scrollWidth was 742 against a 320
@@ -456,7 +456,7 @@ async function checkPage(browser, base, target, theme, vp) {
     // Vector art has no resolution to fall short of.
     //
     // Basin's version of this check also required the image to offer a srcset.
-    // Diwan uses no srcset anywhere — the screenshots are simply captured at 2×
+    // LocalFirst uses no srcset anywhere — the screenshots are simply captured at 2×
     // and drawn at half — so that precondition made the check apply to exactly
     // zero images while still printing as part of a green run. Dropped: the
     // site passes on merit (measured: 2880px sources drawn at ≤1438 CSS px, so
@@ -850,7 +850,7 @@ async function selftestIdentity(browser) {
     const s = createServer((_req, res) => {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       res.end('<!doctype html><title>Basin — object storage for your own hardware</title>' +
-        '<body><main><p>' + 'a decoy page that is not diwan. '.repeat(40) + '</p></main>');
+        '<body><main><p>' + 'a decoy page that is not localfirst. '.repeat(40) + '</p></main>');
     });
     s.listen(0, '127.0.0.1', () => ok(s));
   });

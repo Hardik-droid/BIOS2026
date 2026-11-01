@@ -17,7 +17,7 @@ package docsgate
 // here as a Go test using repoPath(), not as a third gate mechanism.
 //
 // Moved-out-of-package-main rationale from docs_links_test.go applies
-// equally: this checks repo-hygiene of the published site, not the diwan
+// equally: this checks repo-hygiene of the published site, not the localfirst
 // binary, and resolves all paths from the module root via repoRoot() so it
 // runs the same regardless of the working directory `go test` is invoked
 // from.

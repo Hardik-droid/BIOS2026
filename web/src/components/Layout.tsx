@@ -1,313 +1,215 @@
-/**
- * Layout — app shell.
- *
- * Composed against src/components/ui (Sidebar primitives, Topbar primitives).
- *
- * Aesthetic notes:
- *   - Sidebar uses an accent-rail to mark the active app instead of filling
- *     the row, so the rail "gets out of the way" of the work surface.
- *   - App icons keep one warm tint each (so users can find Sheets / Slides /
- *     PDF at a glance) but those tints sit at low saturation and only show
- *     on the icon itself, never on a row background.
- *   - The bottom-right "theme cycler" gives users explicit control over the
- *     warm-dark mode — calmer than slamming the inversion on every load.
- *
- * Responsive:
- *   - ≥lg: the rail is a persistent column, collapsible to an icon strip.
- *   - <lg: the rail collapses off-canvas. A slim mobile header (hamburger +
- *     brand) sits above the work surface; tapping the hamburger slides the rail
- *     in over a scrim. Selecting any destination closes the drawer.
- *
- * Routes / props: unchanged — it still wraps `children` and reads from
- * `useAuthStore` + `useFilesStore`.
- */
-
-import { useEffect, useState } from 'react'
+/** LocalFirst workspace shell. Navigation changes views; it never copies files. */
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-  Home as HomeIcon, FileText, Table2, Presentation, FileSearch, PenTool,
-  LogOut, PanelLeftOpen, Settings as SettingsIcon, Plus,
-  Menu, Bell,
-} from 'lucide-react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Bell, Check, ChevronDown, ChevronRight, ChevronsUpDown, Clock3, CloudOff, FileSearch, FileText, FolderOpen, Home, LayoutGrid, LogOut, Menu, PanelLeftClose, PanelLeftOpen, PenTool, Plus, Presentation, Search, Settings as SettingsIcon, Share2, Star, Table2, Trash2, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import { useFilesStore } from '../store/filesStore'
-import type { DiwanFile } from '../store/filesStore'
 import { useNotificationsStore } from '../store/notificationsStore'
 import { OFFLINE_ONLY } from '../lib/offline/mode'
 import OfflineWorkspaceBar from './OfflineWorkspaceBar'
 import NewFileModal from './NewFileModal'
 import NotificationsPanel from './NotificationsPanel'
-import { Sidebar, IconButton, Tooltip, ThemeSwitch, DiwanMark } from './ui'
-import type { SidebarMode } from './ui/Sidebar'
+import { Button, IconButton, Input, LocalFirstLogo, Modal, Tooltip, useDialogA11y } from './ui'
 
-interface NavApp {
-  label: string
-  icon: LucideIcon
-  route: string
-  tint: string
-  beta?: boolean
-}
-
-// Each app icon carries one low-saturation tint at rest (so users find
-// Sheets/Slides/PDF at a glance); it brightens to accent only when its app is
-// active — the cloud "restrained accent" trait. Tints live on the icon glyph
-// only (never a row bg) and match the Home page cards so rail ↔ content agree.
-// Office is documents-only: chat/video and calendar/contacts are third-party and
-// are NOT launched from here.
-const NAV_APPS: NavApp[] = [
-  { label: 'Docs',        icon: FileText,      route: '/docs',        tint: 'text-app-docs'   },
-  { label: 'Sheets',      icon: Table2,        route: '/sheets',      tint: 'text-app-sheets' },
-  { label: 'Slides',      icon: Presentation,  route: '/slides',      tint: 'text-app-slides' },
-  { label: 'Whiteboards', icon: PenTool,       route: '/whiteboards', tint: 'text-app-board'  },
-  { label: 'PDF',         icon: FileSearch,    route: '/pdf',         tint: 'text-app-pdf'    },
+type SidebarMode = 'expanded' | 'mini' | 'hidden'
+type WorkspaceView = 'home' | 'recent' | 'favorites' | 'all' | 'shared' | 'offline' | 'trash'
+const VIEW_LINKS: { view: WorkspaceView; label: string; Icon: LucideIcon }[] = [
+  { view: 'home', label: 'Home', Icon: Home },
+  { view: 'recent', label: 'Recent', Icon: Clock3 },
+  { view: 'favorites', label: 'Favorites', Icon: Star },
+  { view: 'all', label: 'My files', Icon: FolderOpen },
+  { view: 'shared', label: 'Shared files', Icon: Share2 },
+  { view: 'offline', label: 'Offline files', Icon: CloudOff },
+  { view: 'trash', label: 'Trash', Icon: Trash2 },
 ]
+const APPS: { label: string; route: string; Icon: LucideIcon; tint: string }[] = [
+  { label: 'Documents', route: '/docs', Icon: FileText, tint: 'text-app-docs' },
+  { label: 'Spreadsheets', route: '/sheets', Icon: Table2, tint: 'text-app-sheets' },
+  { label: 'Presentations', route: '/slides', Icon: Presentation, tint: 'text-app-slides' },
+  { label: 'Whiteboards', route: '/whiteboards', Icon: PenTool, tint: 'text-app-board' },
+  { label: 'PDF Studio', route: '/pdf', Icon: FileSearch, tint: 'text-app-pdf' },
+]
+const viewPath = (view: WorkspaceView) => view === 'home' ? '/' : `/?view=${view}`
+const openSearch = () => window.dispatchEvent(new CustomEvent('localfirst:open-search'))
+function stored(key: string, fallback = ''): string { try { return localStorage.getItem(key) || fallback } catch { return fallback } }
+function identityName(): string {
+  try { return (JSON.parse(localStorage.getItem('presence_identity') || '{}') as { displayName?: string }).displayName || 'Personal workspace' } catch { return 'Personal workspace' }
+}
+function initials(name: string): string { return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'LF' }
 
-// Recent-file rows mirror the app tints so a recent doc/sheet/slide/whiteboard
-// reads the same hue as its app in the rail above.
-const RECENT_ICON: Record<string, LucideIcon> = { doc: FileText, sheet: Table2, slide: Presentation, whiteboard: PenTool }
-const RECENT_TINT: Record<string, string> = { doc: 'text-app-docs', sheet: 'text-app-sheets', slide: 'text-app-slides', whiteboard: 'text-app-board' }
-
-/**
- * SidebarContent — the rail body, shared between the persistent (≥lg) column
- * and the mobile drawer. `collapsed` only applies to the desktop column;
- * `onNavigate` is fired on any destination tap so the drawer can close itself.
- */
-interface SidebarContentProps {
+interface NavigationProps {
   collapsed: boolean
-  onNavigate?: () => void
-  onNewFile: () => void
-  onSetMode?: (mode: SidebarMode) => void
+  workspaceName: string
+  onRename: () => void
+  onNew: () => void
+  onNavigate?: (() => void) | undefined
+  onCollapse?: (() => void) | undefined
 }
 
-function SidebarContent({ collapsed, onNavigate, onNewFile, onSetMode }: SidebarContentProps) {
-  const { status, logout } = useAuthStore()
-  const { files } = useFilesStore()
+function WorkspaceNavigation({ collapsed, workspaceName, onRename, onNew, onNavigate, onCollapse }: NavigationProps) {
+  const location = useLocation()
   const navigate = useNavigate()
-  const { items: notifs, fetch: fetchNotifs } = useNotificationsStore()
-  const [notifOpen, setNotifOpen] = useState(false)
+  const { status, logout } = useAuthStore()
+  const files = useFilesStore(state => state.files)
+  const { items, fetch: fetchNotifications } = useNotificationsStore()
+  const [workspaceOpen, setWorkspaceOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => stored('localfirst_notifications_enabled', 'true') !== 'false')
+  const priorNotifications = useRef<Set<string> | null>(null)
+  const view = new URLSearchParams(location.search).get('view') || 'home'
+  const unread = items.filter(item => !item.read).length
+  const nav = (destination: string) => { void navigate(destination); onNavigate?.() }
+  const row = 'flex items-center gap-3 rounded-lg px-3 min-h-9 text-[13px] font-medium transition-colors duration-fast'
+  const quiet = 'text-ink-muted hover:bg-bg-elev2 hover:text-ink'
 
-  // Poll for @-mention notifications so the badge stays fresh.
   useEffect(() => {
-    void fetchNotifs()
-    const t = setInterval(() => { void fetchNotifs() }, 60000)
-    return () => clearInterval(t)
-  }, [fetchNotifs])
-  const unread = notifs.filter((n) => !n.read).length
-  const fileTypeOf = (id: string) => files.find((f) => f.id === id)?.type
+    const sync = () => setNotificationsEnabled(stored('localfirst_notifications_enabled', 'true') !== 'false')
+    window.addEventListener('localfirst:preferences-changed', sync)
+    return () => window.removeEventListener('localfirst:preferences-changed', sync)
+  }, [])
+  useEffect(() => {
+    // The persistent navigation owns polling, including on mobile. The drawer
+    // is a second presentation and must never duplicate desktop alerts.
+    if (OFFLINE_ONLY || !notificationsEnabled || onNavigate) return
+    let live = true
+    const refresh = async () => {
+      await fetchNotifications()
+      if (!live) return
+      const current = useNotificationsStore.getState().items
+      if (priorNotifications.current && stored('localfirst_desktop_notifications') === 'true' && 'Notification' in window && Notification.permission === 'granted') {
+        for (const notification of current.filter(item => !item.read && !priorNotifications.current!.has(item.id))) {
+          try {
+            const alert = new Notification('LocalFirst', { body: `${notification.actor || 'Someone'} mentioned you${notification.file_name ? ` in ${notification.file_name}` : ''}.`, tag: notification.id, icon: '/icons/icon-192.png' })
+            alert.onclick = () => { window.focus(); alert.close(); if (notification.file_id) { const type = useFilesStore.getState().files.find(file => file.id === notification.file_id)?.type; const route: Record<string, string> = { doc: 'docs', sheet: 'sheets', slide: 'slides', whiteboard: 'whiteboards', pdf: 'pdf' }; void navigate(`/${route[type || 'doc'] || 'docs'}/${notification.file_id}`) } }
+          } catch { /* The browser may disallow desktop notifications on this platform. */ }
+        }
+      }
+      priorNotifications.current = new Set(current.map(item => item.id))
+    }
+    void refresh()
+    const timer = window.setInterval(() => void refresh(), 60000)
+    return () => { live = false; window.clearInterval(timer) }
+  }, [fetchNotifications, notificationsEnabled, onNavigate, navigate])
+  useEffect(() => {
+    if (!workspaceOpen && !notificationsOpen) return
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setWorkspaceOpen(false); setNotificationsOpen(false) } }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [workspaceOpen, notificationsOpen])
 
-  const recentFiles = files.filter(file => !file.trashed).slice(0, 5)
-  const TYPE_ROUTE: Record<string, string> = { doc: 'docs', sheet: 'sheets', slide: 'slides', whiteboard: 'whiteboards' }
-  const typeRoute = (f: DiwanFile) => `/${TYPE_ROUTE[f.type] || 'docs'}/${f.id}`
-
-  return (
-    <>
-      <Sidebar.Brand name="Diwan" onSetMode={onSetMode} />
-
-      <Sidebar.Section>
-        {/* "New" is the only emphatic button in the rail — primary accent. */}
-        <button
-          onClick={() => { onNewFile(); onNavigate?.() }}
-          title="New file"
-          className={[
-            'relative flex items-center gap-2 h-9 mt-2 rounded-lg',
-            'bg-accent text-white border border-accent shadow-e1',
-            'hover:bg-accent-hover active:translate-y-px',
-            'transition-[background,transform] duration-fast ease-out',
-            'text-[13px] font-semibold tracking-tightish',
-            collapsed ? 'justify-center px-0' : 'px-3',
-          ].join(' ')}
-        >
-          <Plus size={16} strokeWidth={2.2} className="flex-shrink-0" />
-          {!collapsed && <span>New file</span>}
-        </button>
-        <div className="mt-1.5">
-          <Sidebar.Item to="/" end icon={HomeIcon} title="Home" onClick={onNavigate}>Home</Sidebar.Item>
-        </div>
-      </Sidebar.Section>
-
-      <Sidebar.Section label="Apps">
-        {NAV_APPS.map(({ label, icon, route, beta, tint }) => (
-          <Sidebar.Item
-            key={route}
-            to={route}
-            icon={icon}
-            iconAccent={tint}
-            title={beta ? `${label} (beta)` : label}
-            onClick={onNavigate}
-          >
-            {label}
-            {beta && !collapsed && (
-              <span className="font-mono text-[8.5px] px-1 py-px rounded-sm bg-brand-purple-subtle text-brand-purple font-medium leading-none uppercase tracking-wide">
-                beta
-              </span>
-            )}
-          </Sidebar.Item>
-        ))}
-      </Sidebar.Section>
-
-      {recentFiles.length > 0 && !collapsed && (
-        <Sidebar.Section label="Recent">
-          {recentFiles.map((f) => (
-            <Sidebar.Item
-              key={f.id}
-              dense
-              icon={RECENT_ICON[f.type] || FileText}
-              iconAccent={RECENT_TINT[f.type] || 'text-ink-faint'}
-              onClick={() => { void navigate(typeRoute(f)); onNavigate?.() }}
-              title={f.name}
-            >
-              {f.name}
-            </Sidebar.Item>
-          ))}
-        </Sidebar.Section>
-      )}
-
-      <Sidebar.Footer>
-        {/* @-mention notifications — a bell with an unread badge + popover. */}
-        <div className="relative">
-          <button
-            onClick={() => setNotifOpen((v) => !v)}
-            title="Notifications"
-            className={[
-              'relative w-full flex items-center gap-2 h-8 rounded-lg text-[13px] tracking-tightish transition-colors',
-              collapsed ? 'justify-center px-0' : 'px-2.5',
-              notifOpen ? 'bg-accent-tint text-ink' : 'text-ink-muted hover:bg-bg-elev2 hover:text-ink',
-            ].join(' ')}
-          >
-            <span className="relative flex-shrink-0">
-              <Bell size={15} />
-              {unread > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[13px] h-[13px] px-0.5 rounded-full bg-accent text-white text-[8px] font-bold flex items-center justify-center leading-none">
-                  {unread > 9 ? '9+' : unread}
-                </span>
-              )}
-            </span>
-            {!collapsed && <span>Notifications</span>}
-          </button>
-          {notifOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-              <div className="absolute bottom-full left-0 mb-2 z-50">
-                <NotificationsPanel onClose={() => setNotifOpen(false)} fileTypeOf={fileTypeOf} />
-              </div>
-            </>
-          )}
-        </div>
-        <Sidebar.Item to="/settings" icon={SettingsIcon} title="Settings" onClick={onNavigate}>
-          Settings
-        </Sidebar.Item>
-        {status?.enabled && (
-          <Sidebar.Item
-            onClick={() => { void logout(); onNavigate?.() }}
-            icon={LogOut}
-            title="Sign out"
-            variant="danger"
-          >
-            Sign out
-          </Sidebar.Item>
-        )}
-      </Sidebar.Footer>
-    </>
-  )
+  return <>
+    <div className={`flex items-center h-[76px] flex-shrink-0 ${collapsed ? 'justify-center px-3' : 'px-5 gap-2.5'}`}>
+      <NavLink to="/" onClick={onNavigate} aria-label="LocalFirst home" className="flex items-center gap-2.5 min-w-0">
+        <LocalFirstLogo size={33} className="flex-shrink-0" />
+        {!collapsed && <span className="text-[21px] font-bold tracking-[-0.055em] text-ink">LocalFirst<span className="text-accent">.</span></span>}
+      </NavLink>
+      {!collapsed && onCollapse && <IconButton title="Collapse sidebar" aria-label="Collapse sidebar" size="sm" onClick={onCollapse} className="ml-auto"><PanelLeftClose size={16} /></IconButton>}
+    </div>
+    <div className={`relative flex-shrink-0 ${collapsed ? 'px-3' : 'px-4'}`}>
+      <button type="button" onClick={() => setWorkspaceOpen(value => !value)} aria-label="Choose workspace" aria-expanded={workspaceOpen} aria-haspopup="menu" title={workspaceName} className={`flex items-center w-full gap-2.5 rounded-lg border border-line bg-bg/60 py-2.5 text-left ${collapsed ? 'justify-center' : 'px-2.5'}`}>
+        <span className="flex items-center justify-center w-7 h-7 flex-shrink-0 rounded-md bg-accent-tint text-accent-press text-xs font-semibold">{initials(workspaceName)}</span>
+        {!collapsed && <><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-ink">{workspaceName}</span><span className="block text-[10px] text-ink-faint mt-0.5">{OFFLINE_ONLY ? 'On this device' : 'Personal workspace'}</span></span><ChevronsUpDown size={13} className="text-ink-faint" /></>}
+      </button>
+      {workspaceOpen && <><button className="fixed inset-0 z-30 cursor-default" tabIndex={-1} aria-label="Close workspace menu" onClick={() => setWorkspaceOpen(false)} /><div role="menu" aria-label="Workspaces" className={`absolute top-full mt-2 p-1.5 z-40 w-56 rounded-xl border border-line bg-paper shadow-e2 ${collapsed ? 'left-3' : 'left-4'}`}>
+        <button role="menuitem" onClick={() => setWorkspaceOpen(false)} className="flex items-center w-full gap-2 px-2.5 py-2 text-xs text-ink rounded-md hover:bg-bg-elev2"><LayoutGrid size={14} /><span className="truncate flex-1 text-left">{workspaceName}</span><Check size={14} className="text-accent" /></button>
+        <button role="menuitem" onClick={() => { setWorkspaceOpen(false); onRename(); onNavigate?.() }} className="flex items-center w-full gap-2 px-2.5 py-2 text-xs text-ink-muted rounded-md hover:bg-bg-elev2"><SettingsIcon size={14} />Workspace settings</button>
+      </div></>}
+    </div>
+    <div className={`pt-4 flex-shrink-0 ${collapsed ? 'px-3' : 'px-4'}`}>
+      <button onClick={() => { onNew(); onNavigate?.() }} title="New file" aria-label="New file" className={`flex items-center gap-2.5 w-full h-10 rounded-lg bg-accent text-white shadow-e1 hover:bg-accent-hover transition-colors text-xs font-semibold ${collapsed ? 'justify-center' : 'px-3'}`}><Plus size={17} />{!collapsed && <><span>New file</span><ChevronDown size={13} className="ml-auto opacity-70" /></>}</button>
+    </div>
+    <nav aria-label="Workspace" className={`flex-1 min-h-0 overflow-y-auto pt-4 pb-5 ${collapsed ? 'px-3' : 'px-4'}`}>
+      <button title="Search (Ctrl+K)" onClick={() => { openSearch(); onNavigate?.() }} className={`${row} ${quiet} w-full ${collapsed ? 'justify-center px-0' : ''}`}><Search size={17} />{!collapsed && <><span>Search</span><kbd className="ml-auto rounded border border-line px-1 py-0.5 text-[9px] font-sans text-ink-faint">Ctrl K</kbd></>}</button>
+      <div className="mt-1 space-y-0.5">
+        {VIEW_LINKS.map(({ view: key, label, Icon }) => {
+          const active = location.pathname === '/' && view === key
+          return <button key={key} title={label} aria-current={active ? 'page' : undefined} onClick={() => nav(viewPath(key))} className={`${row} w-full ${collapsed ? 'justify-center px-0' : ''} ${active ? 'bg-accent-tint text-accent-press' : quiet}`}><Icon size={17} strokeWidth={active ? 2 : 1.7} />{!collapsed && <span>{label}</span>}{!collapsed && key === 'trash' && files.some(file => file.trashed) && <span className="ml-auto text-[10px] text-ink-faint">{files.filter(file => file.trashed).length}</span>}</button>
+        })}
+      </div>
+      <div className={`border-t border-line mt-5 pt-4 ${collapsed ? '' : 'space-y-0.5'}`}>
+        {!collapsed && <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-faint px-3 mb-2">Create &amp; collaborate</p>}
+        {APPS.map(({ label, route, Icon, tint }) => <NavLink key={route} to={route} title={label} onClick={onNavigate} className={({ isActive }) => `${row} ${collapsed ? 'justify-center px-0' : ''} ${isActive ? 'bg-accent-tint text-accent-press' : quiet}`}><Icon size={17} strokeWidth={1.7} className={tint} />{!collapsed && <span>{label}</span>}</NavLink>)}
+      </div>
+    </nav>
+    <div className={`flex-shrink-0 border-t border-line py-3 ${collapsed ? 'px-3' : 'px-4'}`}>
+      <div className="relative">
+        <button title={OFFLINE_ONLY ? 'Notifications are available in hosted workspaces' : 'Notifications'} disabled={OFFLINE_ONLY || !notificationsEnabled} onClick={() => setNotificationsOpen(value => !value)} aria-expanded={notificationsOpen} className={`${row} ${quiet} w-full disabled:opacity-45 disabled:cursor-not-allowed ${collapsed ? 'justify-center px-0' : ''}`}><Bell size={17} />{!collapsed && <span>Notifications</span>}{!OFFLINE_ONLY && notificationsEnabled && unread > 0 && <span className={`${collapsed ? 'absolute top-0 right-0' : 'ml-auto'} rounded-full bg-accent text-white min-w-4 h-4 px-1 text-[9px] flex items-center justify-center`}>{unread > 9 ? '9+' : unread}</span>}</button>
+        {notificationsOpen && <><button className="fixed inset-0 z-40 cursor-default" tabIndex={-1} aria-label="Close notifications" onClick={() => setNotificationsOpen(false)} /><div className="absolute left-0 bottom-full mb-2 z-50"><NotificationsPanel onClose={() => setNotificationsOpen(false)} fileTypeOf={id => files.find(file => file.id === id)?.type} /></div></>}
+      </div>
+      <NavLink to="/settings" title="Settings" onClick={onNavigate} className={({ isActive }) => `${row} ${collapsed ? 'justify-center px-0' : ''} ${isActive ? 'bg-accent-tint text-accent-press' : quiet}`}><SettingsIcon size={17} />{!collapsed && <span>Settings</span>}</NavLink>
+      {status?.enabled && <button title="Sign out" onClick={() => { void logout(); onNavigate?.() }} className={`${row} ${quiet} w-full hover:text-danger ${collapsed ? 'justify-center px-0' : ''}`}><LogOut size={17} />{!collapsed && <span>Sign out</span>}</button>}
+      {!collapsed && <p className="px-3 pt-4 text-[10px] text-ink-faint">A little more focus. A lot more yours.</p>}
+    </div>
+  </>
 }
 
-const SIDEBAR_KEY = 'diwan.sidebar'
-const SIDEBAR_MODES: SidebarMode[] = ['expanded', 'mini', 'hidden']
-
-function Shell({ children }: { children?: ReactNode }) {
-  // Desktop rail state — persisted across sessions. 'expanded' | 'mini' | 'hidden'.
-  const [mode, setMode] = useState<SidebarMode>(() => {
-    try {
-      const m = localStorage.getItem(SIDEBAR_KEY)
-      return SIDEBAR_MODES.includes(m as SidebarMode) ? (m as SidebarMode) : 'expanded'
-    } catch { return 'expanded' }
-  })
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [showNew, setShowNew] = useState(false)
-
-  const openNew = () => setShowNew(true)
-  const closeMobile = () => setMobileOpen(false)
-  const collapsed = mode === 'mini'
-
-  const applyMode = (m: SidebarMode) => {
-    setMode(m)
-    try { localStorage.setItem(SIDEBAR_KEY, m) } catch { /* private mode */ }
-  }
-
-  // Esc closes the mobile drawer.
-  useEffect(() => {
-    if (!mobileOpen) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMobile() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [mobileOpen])
-
-  return (
-    <div className="flex h-screen overflow-hidden bg-bg text-ink">
-      {/* Persistent rail — ≥lg only. The <Sidebar> animates its own width and
-          collapses to 0 when hidden, so the work surface reflows full-width. */}
-      <div className="hidden lg:flex">
-        <Sidebar mode={mode}>
-          <SidebarContent collapsed={collapsed} onSetMode={applyMode} onNewFile={openNew} />
-          {/* Appearance control lives at the foot; the collapse control now sits
-              at the top of the rail (Sidebar.Brand). */}
-          <div className={collapsed ? 'flex flex-col items-center px-2 pb-2' : 'px-3 pb-3 pt-1'}>
-            <ThemeSwitch collapsed={collapsed} />
-          </div>
-        </Sidebar>
-      </div>
-
-      {/* When fully hidden (≥lg), a slim floating control brings the rail back. */}
-      {mode === 'hidden' && (
-        <div className="hidden lg:block absolute left-3 top-3 z-30">
-          <Tooltip label="Show sidebar" side="right">
-            <IconButton size="md" onClick={() => applyMode('expanded')} title="Show sidebar"
-              className="bg-bg-elev1 border border-line shadow-e2">
-              <PanelLeftOpen size={17} />
-            </IconButton>
-          </Tooltip>
-        </div>
-      )}
-
-      {/* Mobile drawer — <lg: off-canvas overlay with scrim (backdrop + Esc close) */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <div
-            className="absolute inset-0 bg-black/40 animate-fade-in"
-            onClick={closeMobile}
-            aria-hidden
-          />
-          <div className="absolute left-0 top-0 bottom-0 animate-drawer-in">
-            <Sidebar mode="expanded" className="h-full shadow-e3">
-              <SidebarContent collapsed={false} onNavigate={closeMobile} onNewFile={openNew} />
-              <div className="px-3 pb-3 pt-1">
-                <ThemeSwitch />
-              </div>
-            </Sidebar>
-          </div>
-        </div>
-      )}
-
-      <main className="relative flex-1 flex flex-col min-w-0 overflow-hidden bg-bg">
-        {OFFLINE_ONLY && <OfflineWorkspaceBar />}
-        {/* Mobile header — only below lg, where the rail is off-canvas */}
-        <header className="lg:hidden flex items-center gap-2.5 h-12 px-2 border-b border-line bg-bg-elev2 flex-shrink-0">
-          <IconButton size="md" onClick={() => setMobileOpen(true)} title="Open navigation">
-            <Menu size={18} />
-          </IconButton>
-          <DiwanMark size={26} />
-          <span className="font-display text-[18px] font-bold tracking-display text-ink leading-none">Diwan</span>
-        </header>
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">{children}</div>
-      </main>
-
-      {showNew && <NewFileModal onClose={() => setShowNew(false)} />}
-    </div>
-  )
+function MobileNavigation({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useDialogA11y(ref, onClose)
+  return <div ref={ref} role="dialog" aria-modal="true" aria-label="Navigation" className="fixed inset-0 z-50 lg:hidden">
+    <div className="absolute inset-0 bg-black/35 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+    <aside className="relative flex flex-col h-full w-[280px] max-w-[85vw] bg-paper shadow-e3 animate-drawer-in">
+      <IconButton title="Close navigation" aria-label="Close navigation" onClick={onClose} className="absolute right-2 top-6 z-10"><X size={16} /></IconButton>
+      {children}
+    </aside>
+  </div>
 }
 
 export default function Layout({ children }: { children?: ReactNode }) {
-  return <Shell>{children}</Shell>
+  const location = useLocation()
+  const [mode, setMode] = useState<SidebarMode>(() => { const value = stored('localfirst.sidebar', 'expanded'); return value === 'mini' || value === 'hidden' ? value : 'expanded' })
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [workspaceName, setWorkspaceName] = useState(() => stored('localfirst.workspace-name', 'My workspace'))
+  const [renaming, setRenaming] = useState(false)
+  const [workspaceDraft, setWorkspaceDraft] = useState(workspaceName)
+  const [workspaceError, setWorkspaceError] = useState('')
+  const [displayName, setDisplayName] = useState(identityName)
+  const closeMobile = useCallback(() => setMobileOpen(false), [])
+  const collapsed = mode === 'mini'
+  const currentView = new URLSearchParams(location.search).get('view') || 'home'
+  const currentApp = APPS.find(app => location.pathname.startsWith(app.route))
+  const isEditor = /^\/(docs|sheets|slides|whiteboards|pdf)\/[^/]+/.test(location.pathname)
+  const section = location.pathname === '/settings' ? 'Settings' : currentApp?.label || VIEW_LINKS.find(link => link.view === currentView)?.label || 'Home'
+  const applyMode = (value: SidebarMode) => { setMode(value); try { localStorage.setItem('localfirst.sidebar', value) } catch { /* The temporary UI preference still works. */ } }
+  const rename = () => { setWorkspaceDraft(workspaceName); setWorkspaceError(''); setRenaming(true) }
+  const saveWorkspace = () => {
+    const next = workspaceDraft.trim()
+    if (!next) { setWorkspaceError('Give your workspace a name.'); return }
+    try { localStorage.setItem('localfirst.workspace-name', next); setWorkspaceName(next); setRenaming(false); window.dispatchEvent(new CustomEvent('localfirst:workspace-changed')) } catch { setWorkspaceError('This browser could not save the workspace name. Please allow site storage and try again.') }
+  }
+  useEffect(() => { const update = () => setDisplayName(identityName()); window.addEventListener('localfirst:identity-changed', update); return () => window.removeEventListener('localfirst:identity-changed', update) }, [])
+  const navigation = (mobile = false) => <WorkspaceNavigation collapsed={mobile ? false : collapsed} workspaceName={workspaceName} onRename={rename} onNew={() => setShowNew(true)} onNavigate={mobile ? closeMobile : undefined} onCollapse={mobile ? undefined : () => applyMode(collapsed ? 'expanded' : 'mini')} />
+
+  return <div className="flex h-screen overflow-hidden bg-bg text-ink">
+    <a href="#workspace-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-paper focus:rounded-lg focus:p-3 focus:shadow-e2">Skip to content</a>
+    <aside aria-label="Workspace navigation" className={`hidden lg:flex flex-col flex-shrink-0 bg-paper border-r border-line transition-[width] duration-base ${mode === 'hidden' ? 'w-0 border-r-0 overflow-hidden' : collapsed ? 'w-[72px]' : 'w-[248px]'}`} aria-hidden={mode === 'hidden' || undefined}>
+      {navigation()}
+      {collapsed && <div className="border-t border-line px-3 py-3"><Tooltip label="Expand sidebar" side="right"><IconButton title="Expand sidebar" aria-label="Expand sidebar" onClick={() => applyMode('expanded')} className="w-full"><PanelLeftOpen size={17} /></IconButton></Tooltip></div>}
+    </aside>
+    {mobileOpen && <MobileNavigation onClose={closeMobile}>{navigation(true)}</MobileNavigation>}
+    <main className="relative min-w-0 flex flex-1 flex-col overflow-hidden">
+      <header className={`flex flex-shrink-0 items-center gap-3 h-14 px-4 sm:px-6 border-b border-line bg-paper ${isEditor ? 'lg:hidden' : ''}`}>
+        <IconButton className="lg:hidden" title="Open navigation" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu size={19} /></IconButton>
+        {mode === 'hidden' && <IconButton className="hidden lg:inline-flex" title="Show sidebar" aria-label="Show sidebar" onClick={() => applyMode('expanded')}><PanelLeftOpen size={18} /></IconButton>}
+        <LocalFirstLogo size={27} className="lg:hidden" />
+        <nav aria-label="Breadcrumb" className="hidden lg:flex items-center gap-2 text-xs min-w-0"><NavLink to="/" className="text-ink-faint hover:text-ink truncate max-w-36">{workspaceName}</NavLink><ChevronRight size={12} className="text-ink-ghost flex-shrink-0" /><span className="text-ink font-medium truncate">{section}</span></nav>
+        <span className="text-sm font-semibold lg:hidden">LocalFirst</span>
+        <div className="flex-1" />
+        <button onClick={openSearch} aria-label="Search files and commands" className="hidden sm:flex items-center gap-2 w-52 rounded-lg border border-line bg-bg/60 h-8 px-2.5 text-xs text-ink-faint hover:border-line-strong hover:text-ink-muted transition-colors"><Search size={14} /><span>Search anything...</span><kbd className="ml-auto rounded border border-line bg-paper px-1 text-[9px]">Ctrl K</kbd></button>
+        <IconButton onClick={openSearch} className="sm:hidden" title="Search files and commands" aria-label="Search files and commands"><Search size={18} /></IconButton>
+        <NavLink to="/settings" title={`Settings for ${displayName}`} aria-label="Open account settings" className="flex items-center justify-center w-8 h-8 rounded-full bg-accent-tint text-accent-press text-[10px] font-bold border border-accent-tint-2">{initials(displayName)}</NavLink>
+      </header>
+      {mode === 'hidden' && isEditor && <div className="hidden lg:block absolute top-2 left-2 z-30"><IconButton title="Show sidebar" aria-label="Show sidebar" onClick={() => applyMode('expanded')} className="border border-line bg-paper shadow-e1"><PanelLeftOpen size={17} /></IconButton></div>}
+      <div id="workspace-content" tabIndex={-1} className="flex-1 flex flex-col min-h-0 overflow-hidden">{children}</div>
+      {OFFLINE_ONLY && <OfflineWorkspaceBar />}
+    </main>
+    {showNew && <NewFileModal onClose={() => setShowNew(false)} />}
+    <Modal open={renaming} title="Workspace settings" onClose={() => setRenaming(false)}>
+      <Modal.Body><p className="text-sm text-ink-muted mb-5">Make this space feel like yours. The name is saved in this browser; your files stay in the current workspace.</p><Input label="Workspace name" value={workspaceDraft} onChange={event => setWorkspaceDraft(event.target.value)} maxLength={60} autoFocus error={workspaceError} onKeyDown={event => { if (event.key === 'Enter') saveWorkspace() }} /></Modal.Body>
+      <Modal.Footer><Button onClick={() => setRenaming(false)}>Cancel</Button><Button variant="primary" onClick={saveWorkspace}>Save workspace</Button></Modal.Footer>
+    </Modal>
+  </div>
 }

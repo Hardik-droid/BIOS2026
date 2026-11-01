@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
 )
 
 func newCollabStore(t *testing.T) *LocalStorage {

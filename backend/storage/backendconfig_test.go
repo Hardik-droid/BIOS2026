@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"diwan/backend/storage"
+	"localfirst/backend/storage"
 )
 
 // officeS3TestServer is a minimal in-memory S3-compatible server for testing.

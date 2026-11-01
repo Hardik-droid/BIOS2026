@@ -3,7 +3,7 @@
  *
  * The engine is the npm package `@vul-os/kotva-sync` (published from the
  * `kotva` repo; it was `dmtap-sync-wasm` inside `envoir` before the substrate
- * was named, which is why the artifacts are now `kotva_sync_*`). Diwan used to
+ * was named, which is why the artifacts are now `kotva_sync_*`). LocalFirst used to
  * vendor a copy under `third_party/dmtap-sync-wasm/`; it does not any more —
  * npm resolves it, and `package-lock.json` records the tarball's sha512.
  *
@@ -89,7 +89,7 @@ function isNode(): boolean {
  *   specifier, which a `new URL(…, import.meta.url)` expression cannot.
  */
 async function wasmBytes(): Promise<ArrayBuffer | Buffer> {
-  // Diwan's library build (vite.config.lib.js) also emits a CommonJS artifact,
+  // LocalFirst's library build (vite.config.lib.js) also emits a CommonJS artifact,
   // in which the bundler replaces `import.meta` with `{}` — there is no module
   // URL to resolve against and no way to invent one. Say so plainly instead of
   // failing later with a confusing `undefined` base URL: callers already fall

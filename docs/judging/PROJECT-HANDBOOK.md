@@ -1,4 +1,4 @@
-# BIOS2026 / Diwan: Complete Technical Handbook
+# BIOS2026 / LocalFirst: Complete Technical Handbook
 
 **Edition:** 1 November 2026. **Source baseline:** [`d7e9135`](https://github.com/Vasu-Gupta105/BIOS2026/commit/d7e9135c65860530032173fecfb81eff696af6c6). **Audience:** presenters, judges, maintainers and technical reviewers.
 
@@ -6,7 +6,7 @@ This handbook describes the source and available verification evidence. It separ
 
 ## 1. Project in one paragraph
 
-BIOS2026 develops a local-first document workspace on top of the open-source Diwan office suite. The current Windows package opens a browser interface from a local executable, stores documents on that device, and supports an explicitly shared Docs document over native Bluetooth. Local snapshots, recovery drafts and durable Yjs journals address different failure cases. A separate experimental Android app can forward a fixed route between selected Bluetooth neighbors while the document endpoints retain their original authenticated TLS session. Automatic mesh routing and an 800 m–1 km operating range are future goals, not completed measurements.
+BIOS2026 develops a local-first document workspace on top of the original open-source [Diwan office suite](https://github.com/vul-os/diwan). The current Windows package opens a browser interface from a local executable, stores documents on that device, and supports an explicitly shared Docs document over native Bluetooth. Local snapshots, recovery drafts and durable Yjs journals address different failure cases. A separate experimental Android app can forward a fixed route between selected Bluetooth neighbors while the document endpoints retain their original authenticated TLS session. Automatic mesh routing and an 800 m–1 km operating range are future goals, not completed measurements.
 
 The useful engineering question is: **Can people keep creating and recovering their documents when internet service disappears, then exchange edits over an explicitly authorized local transport without giving forwarding devices the document keys?**
 
@@ -259,7 +259,7 @@ For a hosting session, Go generates an ECDSA P-256 key and self-signed certifica
 DBT1- + base64url_without_padding(certificate_SHA256_pin[32] || secret[32])
 ```
 
-The resulting code has a five-character prefix and an 86-character encoded body. Its JSON file is tagged `diwan-bluetooth-invitation`, version 1. A workspace backup is a different format and must not be accepted as an invitation.
+The resulting code has a five-character prefix and an 86-character encoded body. Its JSON file is tagged `localfirst-bluetooth-invitation`, version 1. A workspace backup is a different format and must not be accepted as an invitation.
 
 The receiver creates a TLS configuration with a minimum of TLS 1.3. Ordinary public-CA verification is replaced by a `VerifyConnection` callback that requires exactly one presented certificate and constant-time equality with the pinned hash. The source sets `InsecureSkipVerify` for that custom trust model; the security property depends on the callback being present and correct. It must never be copied into code as “skip verification and accept anything.”
 
@@ -279,7 +279,7 @@ Relays can observe adjacent devices, traffic volume, timing and disconnections. 
 
 ## 13. Browser-to-native bridge and API surface
 
-The browser contacts only its own origin through `/_nearby/`. Bootstrap obtains an unpredictable local helper token. Subsequent requests include `X-Diwan-Native-Token`; fetch is same-origin, omits browser credentials, refuses redirects and avoids caches.
+The browser contacts only its own origin through `/_nearby/`. Bootstrap obtains an unpredictable local helper token. Subsequent requests include `X-LocalFirst-Native-Token`; fetch is same-origin, omits browser credentials, refuses redirects and avoids caches.
 
 | Route | Method | Purpose |
 | --- | --- | --- |
@@ -401,8 +401,8 @@ The user reported the current app working well. That is useful user feedback and
 | `web/src/lib/nearby/` | Native bridge, invitation handling, local replica journal and sync protocol |
 | `web/src/lib/crdt/` | Existing structured shared-document and other CRDT foundations |
 | `internal/nearby/` | Native radio wrappers, hub, framing, TLS and tagged relay connector |
-| `cmd/diwan-offline/` | Stable offline asset server and cache-update startup page |
-| `cmd/diwan-relay-experiment/` | Separate experimental receiver entrypoint |
+| `cmd/localfirst-offline/` | Stable offline asset server and cache-update startup page |
+| `cmd/localfirst-relay-experiment/` | Separate experimental receiver entrypoint |
 | `experiments/android-relay/` | Native Android relay project and core tests |
 | `web/e2e-offline/` | Offline, recovery, invitation and replica browser scenarios |
 | `scripts/` | Frontend/package/deployment build tooling |
@@ -420,13 +420,13 @@ npm.cmd run package:offline
 Use the configured portable Go binary or an appropriate installed Go toolchain to run native tests from the repository root:
 
 ```powershell
-go test ./internal/nearby ./cmd/diwan-offline
-go test -tags relay_experiment ./internal/nearby ./cmd/diwan-offline ./cmd/diwan-relay-experiment
+go test ./internal/nearby ./cmd/localfirst-offline
+go test -tags relay_experiment ./internal/nearby ./cmd/localfirst-offline ./cmd/localfirst-relay-experiment
 ```
 
-The Android project needs a compatible JDK, SDK and Gradle setup. There is a concrete clean-clone gap at `d7e9135`: the inherited, unanchored `diwan` ignore rule also matches the Java package directory `org/diwan`, so the local Java implementation and core tests were omitted from the push. The Gradle/manifest/resource files are present, but they are insufficient to reproduce the APK. The corrective follow-up is to anchor the intended binary exclusion as `/diwan`, explicitly version the missing Java and tests, and rerun a clean-clone build. This handbook records that gap; it does not silently change product configuration.
+The Android project needs a compatible JDK, SDK and Gradle setup. At the historical `d7e9135` commit, the inherited unanchored `diwan` ignore rule matched the Java package directory `org/diwan`, omitting local Java source and core tests from that push. Current LocalFirst binary exclusions are anchored as `/localfirst`, and the Java package name `org.diwan` is retained for compatibility. This fixes the current ignore-pattern interaction without rewriting the historical snapshot; versioning the required source and checking an Android build from a fresh clone remain separate release checks.
 
-Workspace-level Android/experimental-Windows build and verification wrappers also live outside the nested repository and are not in that push. Downloaded SDKs, caches and APK outputs are appropriately excluded. The stable Windows `npm` offline build/package scripts are tracked and can be used with their documented prerequisites. The known project repository is `W\diwan`; `git -C diwan ...` selects it from the parent workspace.
+Workspace-level Android/experimental-Windows build and verification wrappers also live outside the nested repository and are not in that push. Downloaded SDKs, caches and APK outputs are appropriately excluded. The stable Windows `npm` offline build/package scripts are tracked and can be used with their documented prerequisites. The existing checkout retains the folder path `W\diwan`; `git -C diwan ...` selects it from the parent workspace. That filesystem path is independent of the LocalFirst product brand.
 
 Current generated artifacts are kept separate from application source. Backups and historical packages were moved to sibling `W-Archives`, and exact redundant ZIPs were removed after hash comparison. This organization protects the working app; it is unrelated to the cryptographic protocol and should not be presented as a network feature.
 

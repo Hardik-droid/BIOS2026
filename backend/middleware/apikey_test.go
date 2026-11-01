@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"diwan/backend/apikey"
-	"diwan/backend/config"
+	"localfirst/backend/apikey"
+	"localfirst/backend/config"
 
 	"github.com/gin-gonic/gin"
 )

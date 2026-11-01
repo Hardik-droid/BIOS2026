@@ -1,5 +1,5 @@
 /**
- * P4 — Equations (KaTeX) in Diwan Docs.
+ * P4 — Equations (KaTeX) in LocalFirst Docs.
  *
  * Coverage:
  *   1. renderEquationHtml produces real KaTeX (MathML + spans), never throws.

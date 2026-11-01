@@ -22,7 +22,7 @@ The renderer uses the local Marked, Mermaid and Playwright/Chrome tools. It writ
 
 ## The five facts every presenter must know
 
-1. **This is an extension of Diwan.** The office engines, substantial Go/backend code and existing online collaboration infrastructure are inherited. Explain the added offline, recovery, native Bluetooth and relay work specifically.
+1. **LocalFirst extends the original Diwan office suite.** The office engines, substantial Go/backend code and existing online collaboration infrastructure are inherited. Explain the added offline, recovery, native Bluetooth and relay work specifically.
 2. **The offline Windows app is the current working foundation.** Its browser profile stores the documents. Local save success is different from inter-device synchronization, and Docs has stronger verification than the entire office feature surface.
 3. **Native nearby sharing and Android relays have distinct evidence levels.** Source implementations, memory/loopback tests, one-radio owner tests and a complete physical multi-device transfer are different claims. The available reports do not independently establish the last one.
 4. **The relay is a fixed-route prototype.** Participating, powered, consenting devices forward the endpoints' encrypted stream. Arbitrary nearby devices, automatic mesh routing and an 800 m–1 km range are not current verified capabilities.
@@ -46,7 +46,9 @@ Older repository documents sometimes describe earlier milestones or the inherite
 
 ## Publication and reproducibility gap to disclose
 
-At the documented Git commit, an existing unanchored `diwan` ignore rule also excludes the Android Java package path `org/diwan`. The local APK was built from source available in this workspace, but not all of that source is present in the pushed snapshot. Some experiment build and verification helpers also live in the parent workspace. A clean-clone Android reproduction therefore remains a concrete release task. The handbook explains the narrow corrective work; this documentation task does not silently change code, repository rules or the running app.
+At the historical `d7e9135` commit, the unanchored `diwan` ignore rule also matched the Android Java package path `org/diwan`, so the published snapshot omitted local Java source and tests. The current LocalFirst binary ignore is anchored as `/localfirst`; the Android `org.diwan` package remains a compatibility identifier. This current fix does not alter the historical commit. A clean-clone Android build and source-publication check remain separate release validation steps.
+
+Historical report and launcher basenames below retain their original `Diwan-*` spelling where those are the actual files in the parent workspace. They are evidence identifiers, not the current product brand.
 
 ## Before sharing with judges
 

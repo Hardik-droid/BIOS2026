@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"diwan/backend/billing"
-	"diwan/backend/config"
-	"diwan/backend/middleware"
-	"diwan/backend/seam"
+	"localfirst/backend/billing"
+	"localfirst/backend/config"
+	"localfirst/backend/middleware"
+	"localfirst/backend/seam"
 
 	"github.com/gin-gonic/gin"
 )

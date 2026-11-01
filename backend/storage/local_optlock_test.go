@@ -9,7 +9,7 @@ import (
 	"errors"
 	"testing"
 
-	"diwan/backend/models"
+	"localfirst/backend/models"
 )
 
 func TestLocalUpdateFileRevCAS(t *testing.T) {

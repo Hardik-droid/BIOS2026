@@ -1,23 +1,23 @@
-# Dockerfile — Diwan deploy image (Go server + embedded Vite SPA).
+# Dockerfile — LocalFirst deploy image (Go server + embedded Vite SPA).
 #
 # Produces the image the README advertises as
-#   ghcr.io/vul-os/diwan:latest
+#   localfirst:local
 # a single static Go binary that EMBEDS the built SPA (//go:embed all:dist in
 # main.go) and serves everything on :8080. Runs completely standalone — no
 # config file, no cloud, no account.
 #
 # ── BUILD CONTEXT (read before building) ──────────────────────────────────────
-# Diwan's WebRTC collaboration fabric is first-party source under
+# LocalFirst's WebRTC collaboration fabric is first-party source under
 # src/lib/collab/webrtc/ (no vendored npm package, no sibling-repo checkout of
 # any kind needed), so a plain clone-and-build works with the repo itself as
 # the build context:
 #
-#   docker build -t ghcr.io/vul-os/diwan:latest .
+#   docker build -t localfirst:local .
 #
 # Run:
-#   docker run -d --name diwan -p 8080:8080 \
-#     -v diwan-data:/srv/data -v diwan-uploads:/srv/uploads \
-#     ghcr.io/vul-os/diwan:latest
+#   docker run -d --name localfirst -p 8080:8080 \
+#     -v localfirst-data:/srv/data -v localfirst-uploads:/srv/uploads \
+#     localfirst:local
 #   # open http://localhost:8080
 
 # ── Stage 1: build the SPA ─────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ RUN go mod download
 # static binary that runs on a tiny alpine runtime.
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
     -ldflags="-s -w -X main.Version=${VERSION}" \
-    -o /out/diwan .
+    -o /out/localfirst .
 
 # ── Stage 3: minimal non-root runtime ─────────────────────────────────────────
 FROM alpine:3.20
@@ -63,7 +63,7 @@ FROM alpine:3.20
 # wget for the healthcheck.
 RUN apk add --no-cache ca-certificates wget \
  && adduser -D -u 10001 vulos
-COPY --from=build /out/diwan /usr/local/bin/diwan
+COPY --from=build /out/localfirst /usr/local/bin/localfirst
 # The server's data_dir/uploads_dir default to ./data and ./uploads relative to
 # CWD. Run from /srv and pre-create both subdirs (owned by vulos) so local
 # storage + uploads have a writable home. Declare BOTH as volumes: /srv/data
@@ -78,4 +78,4 @@ EXPOSE 8080
 # Liveness: main.go serves GET /healthz on :8080.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://127.0.0.1:8080/healthz || exit 1
-ENTRYPOINT ["/usr/local/bin/diwan"]
+ENTRYPOINT ["/usr/local/bin/localfirst"]

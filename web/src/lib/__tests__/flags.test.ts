@@ -42,7 +42,7 @@ afterEach(() => { vi.unstubAllEnvs() })
 
 describe('flag defaults', () => {
   it('runs Sheets on the SHARED substrate engine by default', () => {
-    // If this ever reads false again, Diwan's Sheets converge because a private
+    // If this ever reads false again, LocalFirst's Sheets converge because a private
     // re-implementation is self-consistent rather than because two replicas run
     // the same vector-pinned algebra. That is the whole point of adopting it.
     expect(substrateSyncEnabled()).toBe(true)

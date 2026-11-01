@@ -6,6 +6,7 @@ package config
 // explicit, opt-in operator choice, never the default.
 
 import (
+	appbrand "localfirst/internal/brand"
 	"os"
 	"strings"
 
@@ -21,21 +22,21 @@ type Config struct {
 }
 
 // CollabConfig configures peer DISCOVERY for browser-to-browser collaboration
-// (see docs/COLLABORATION.md §3). Diwan's backend still never mediates live
+// (see docs/COLLABORATION.md §3). LocalFirst's backend still never mediates live
 // document content — edits ride a direct WebRTC data channel — but it does now
 // serve the signalling that lets two browsers find each other in the first place
 // (BuiltinRendezvous), and it can be pointed at somebody else's instead
 // (RendezvousURL).
 type CollabConfig struct {
-	// BuiltinRendezvous serves Diwan's OWN signed, content-blind peer-discovery
+	// BuiltinRendezvous serves LocalFirst's OWN signed, content-blind peer-discovery
 	// surface from this binary at /api/rendezvous/* (backend/rendezvous).
 	//
 	// DEFAULT TRUE, and that default is the point. WebRTC cannot introduce two
 	// browsers without something in the middle passing the first few packets;
-	// before this existed, a standalone Diwan had nowhere to get that and fell
+	// before this existed, a standalone LocalFirst had nowhere to get that and fell
 	// through to honestly-local-only unless the operator ran a separate
 	// vulos-relayd (Pier) and set RendezvousURL. Collaboration therefore
-	// depended on a DIFFERENT product being deployed. Now one Diwan on one VPS is
+	// depended on a DIFFERENT product being deployed. Now one LocalFirst on one VPS is
 	// sufficient by itself, and Pier is a choice rather than a prerequisite.
 	//
 	// Set false to turn it off. That is a real, supported posture — a deployment
@@ -43,13 +44,13 @@ type CollabConfig struct {
 	// honestly: sessions fall back to RendezvousURL if set, else to local-only
 	// with the UI saying so. It never degrades to a broken editor.
 	//
-	// Env override: VULOS_BUILTIN_RENDEZVOUS / DIWAN_BUILTIN_RENDEZVOUS.
+	// Env override: VULOS_BUILTIN_RENDEZVOUS / LOCALFIRST_BUILTIN_RENDEZVOUS.
 	BuiltinRendezvous bool `yaml:"builtin_rendezvous"`
 
 	// RendezvousURL is the base URL of any vulos-relayd's OPEN rendezvous
 	// surface (announce/resolve/signal/mailbox + ICE), consumed DIRECTLY by the
 	// browser — no Vulos OS / host-box `/api/peering/*` required. When set, a
-	// STANDALONE Diwan (which mounts no `/api/peering/*` — see main.go) still
+	// STANDALONE LocalFirst (which mounts no `/api/peering/*` — see main.go) still
 	// gets real peer-to-peer collaboration: any self-hosted relayd is enough.
 	// When unset (default), a collab session uses the host-box `/api/peering/*`
 	// path when one is present, otherwise this binary's OWN built-in rendezvous
@@ -62,12 +63,12 @@ type CollabConfig struct {
 	// Because the browser calls this URL CROSS-ORIGIN, the relayd behind it must
 	// serve its rendezvous role with CORS (every Pier since the role
 	// shipped with CORS does; e2e-p2p/ asserts the posture against a real one).
-	// It must also be reachable from wherever users load Diwan — an https page
+	// It must also be reachable from wherever users load LocalFirst — an https page
 	// cannot call an http relay, so a public deployment needs TLS on the relay.
 	//
 	// Read-only from the browser's perspective: exposed at the unauthenticated
 	// GET /api/reachability as `rendezvous_url` so it can be picked up without a
-	// frontend rebuild. Env override: VULOS_RENDEZVOUS_URL / DIWAN_RENDEZVOUS_URL.
+	// frontend rebuild. Env override: VULOS_RENDEZVOUS_URL / LOCALFIRST_RENDEZVOUS_URL.
 	RendezvousURL string `yaml:"rendezvous_url"`
 
 	// ICE is the STUN/TURN configuration served at GET /api/rendezvous/ice.
@@ -76,7 +77,7 @@ type CollabConfig struct {
 
 // ICEConfig configures NAT traversal for direct WebRTC.
 //
-// Diwan's browser bundle can already read STUN/TURN settings from VITE_STUN_URLS
+// LocalFirst's browser bundle can already read STUN/TURN settings from VITE_STUN_URLS
 // / VITE_TURN_* — but those are BUILD-TIME variables compiled into the JS. An
 // operator running a downloaded release binary or the container image cannot set
 // them without rebuilding the frontend, which made docs/COTURN.md unusable for
@@ -95,19 +96,19 @@ type CollabConfig struct {
 // secret stays server-side and each response carries a short-lived credential.
 type ICEConfig struct {
 	// STUNURLs are `stun:` URLs (e.g. your own coturn's STUN listener).
-	// Env override: VULOS_STUN_URLS / DIWAN_STUN_URLS (comma-separated).
+	// Env override: VULOS_STUN_URLS / LOCALFIRST_STUN_URLS (comma-separated).
 	STUNURLs []string `yaml:"stun_urls"`
 
 	// TURNURLs are `turn:`/`turns:` URLs. Ignored unless a credential mode below
 	// is configured too — a credential-less TURN entry cannot authenticate.
-	// Env override: VULOS_TURN_URLS / DIWAN_TURN_URLS (comma-separated).
+	// Env override: VULOS_TURN_URLS / LOCALFIRST_TURN_URLS (comma-separated).
 	TURNURLs []string `yaml:"turn_urls"`
 
 	// TurnSecret is coturn's `static-auth-secret` (its REST API / "ephemeral
 	// credential" mode). RECOMMENDED: the secret never leaves this process, and
 	// each /ice response carries a username/credential valid only for TurnTTL,
 	// so a leaked response expires instead of being a permanent grant.
-	// Env override: VULOS_TURN_SECRET / DIWAN_TURN_SECRET.
+	// Env override: VULOS_TURN_SECRET / LOCALFIRST_TURN_SECRET.
 	TurnSecret string `yaml:"turn_secret"`
 
 	// TurnTTLSeconds is how long a minted credential lasts. Default 3600.
@@ -116,8 +117,8 @@ type ICEConfig struct {
 	// TurnUsername / TurnCredential are a LONG-LIVED pair, served verbatim to any
 	// caller. Supported for deployments that have no REST secret; prefer
 	// TurnSecret. Ignored when TurnSecret is set.
-	// Env overrides: VULOS_TURN_USERNAME / DIWAN_TURN_USERNAME,
-	// VULOS_TURN_CREDENTIAL / DIWAN_TURN_CREDENTIAL.
+	// Env overrides: VULOS_TURN_USERNAME / LOCALFIRST_TURN_USERNAME,
+	// VULOS_TURN_CREDENTIAL / LOCALFIRST_TURN_CREDENTIAL.
 	TurnUsername   string `yaml:"turn_username"`
 	TurnCredential string `yaml:"turn_credential"`
 }
@@ -131,7 +132,7 @@ type PersistenceConfig struct {
 	// only durability path — nothing about existing behaviour changes. During
 	// the transition the frontend DUAL-WRITES: it keeps autosaving the whole
 	// document AND appends CRDT frames, so enabling or disabling the flag never
-	// loses a document. Env override: VULOS_PERSISTENCE_UPDATELOG / DIWAN_UPDATE_LOG.
+	// loses a document. Env override: VULOS_PERSISTENCE_UPDATELOG / LOCALFIRST_UPDATE_LOG.
 	UpdateLog bool `yaml:"updatelog"`
 }
 
@@ -174,7 +175,7 @@ func Load(path string) (*Config, error) {
 		// No config file is a SUPPORTED deployment, not an error: a container or
 		// PaaS image is normally configured entirely from the environment. The env
 		// overrides must therefore be applied on this branch too — they used not
-		// to be, which silently ignored every VULOS_*/DIWAN_* variable in exactly
+		// to be, which silently ignored every VULOS_*/LOCALFIRST_* variable in exactly
 		// the deployment that had nothing else to configure with.
 		cfg := Default()
 		applyEnvOverrides(cfg)
@@ -192,31 +193,31 @@ func Load(path string) (*Config, error) {
 // box) without editing the checked-in config.yaml. Only additive, opt-in flags
 // are honoured here.
 func applyEnvOverrides(cfg *Config) {
-	if v, ok := boolEnv("VULOS_PERSISTENCE_UPDATELOG", "DIWAN_UPDATE_LOG"); ok {
+	if v, ok := boolEnv("VULOS_PERSISTENCE_UPDATELOG", "LOCALFIRST_UPDATE_LOG"); ok {
 		cfg.Persistence.UpdateLog = v
 	}
-	if v, ok := stringEnv("VULOS_RENDEZVOUS_URL", "DIWAN_RENDEZVOUS_URL"); ok {
+	if v, ok := stringEnv("VULOS_RENDEZVOUS_URL", "LOCALFIRST_RENDEZVOUS_URL"); ok {
 		cfg.Collab.RendezvousURL = v
 	}
-	if v, ok := boolEnv("VULOS_BUILTIN_RENDEZVOUS", "DIWAN_BUILTIN_RENDEZVOUS"); ok {
+	if v, ok := boolEnv("VULOS_BUILTIN_RENDEZVOUS", "LOCALFIRST_BUILTIN_RENDEZVOUS"); ok {
 		cfg.Collab.BuiltinRendezvous = v
 	}
 	// ICE (STUN/TURN) served at GET /api/rendezvous/ice. Env-settable so a
 	// RELEASE BINARY or container can be pointed at a coturn without rebuilding
 	// the frontend bundle — see ICEConfig.
-	if v, ok := stringEnv("VULOS_STUN_URLS", "DIWAN_STUN_URLS"); ok {
+	if v, ok := stringEnv("VULOS_STUN_URLS", "LOCALFIRST_STUN_URLS"); ok {
 		cfg.Collab.ICE.STUNURLs = csvEnv(v)
 	}
-	if v, ok := stringEnv("VULOS_TURN_URLS", "DIWAN_TURN_URLS"); ok {
+	if v, ok := stringEnv("VULOS_TURN_URLS", "LOCALFIRST_TURN_URLS"); ok {
 		cfg.Collab.ICE.TURNURLs = csvEnv(v)
 	}
-	if v, ok := stringEnv("VULOS_TURN_SECRET", "DIWAN_TURN_SECRET"); ok {
+	if v, ok := stringEnv("VULOS_TURN_SECRET", "LOCALFIRST_TURN_SECRET"); ok {
 		cfg.Collab.ICE.TurnSecret = v
 	}
-	if v, ok := stringEnv("VULOS_TURN_USERNAME", "DIWAN_TURN_USERNAME"); ok {
+	if v, ok := stringEnv("VULOS_TURN_USERNAME", "LOCALFIRST_TURN_USERNAME"); ok {
 		cfg.Collab.ICE.TurnUsername = v
 	}
-	if v, ok := stringEnv("VULOS_TURN_CREDENTIAL", "DIWAN_TURN_CREDENTIAL"); ok {
+	if v, ok := stringEnv("VULOS_TURN_CREDENTIAL", "LOCALFIRST_TURN_CREDENTIAL"); ok {
 		cfg.Collab.ICE.TurnCredential = v
 	}
 }
@@ -238,7 +239,7 @@ func csvEnv(raw string) []string {
 // whether any was set. Accepts 1/true/on/yes (case-insensitive) as true.
 func boolEnv(names ...string) (bool, bool) {
 	for _, n := range names {
-		raw, present := os.LookupEnv(n)
+		raw, present := appbrand.LookupEnv(n)
 		if !present {
 			continue
 		}
@@ -256,7 +257,7 @@ func boolEnv(names ...string) (bool, bool) {
 // value may be blank) env var among names, and whether any was found present.
 func stringEnv(names ...string) (string, bool) {
 	for _, n := range names {
-		if raw, present := os.LookupEnv(n); present {
+		if raw, present := appbrand.LookupEnv(n); present {
 			return strings.TrimSpace(raw), true
 		}
 	}
@@ -286,7 +287,7 @@ func Default() *Config {
 			},
 		},
 		Collab: CollabConfig{
-			// ON by default: a bare `diwan` binary must be able to introduce two
+			// ON by default: a bare `localfirst` binary must be able to introduce two
 			// browsers to each other without any other product being deployed.
 			// See CollabConfig.BuiltinRendezvous.
 			BuiltinRendezvous: true,

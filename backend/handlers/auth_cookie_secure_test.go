@@ -14,8 +14,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"diwan/backend/middleware"
-	"diwan/backend/userauth"
+	"localfirst/backend/middleware"
+	"localfirst/backend/userauth"
 
 	"github.com/gin-gonic/gin"
 )

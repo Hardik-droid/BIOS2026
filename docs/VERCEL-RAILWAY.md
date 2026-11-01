@@ -9,9 +9,9 @@ Deploy the repository with `railway.json`. It selects `Dockerfile.railway` and c
 Before starting the service:
 
 1. Use a Free or Trial workspace. Do not upgrade to a paid plan.
-2. Attach one volume at `/var/lib/diwan`. The entrypoint requires the volume; data and uploads both live under it.
-3. Set `DIWAN_JWT_SECRET` to a random value of at least 32 characters.
-4. Set `DIWAN_ADMIN_PASSWORD` to a random value of at least 20 characters using letters, digits, underscores, periods, or hyphens. A generated hexadecimal password works.
+2. Attach one volume at `/var/lib/localfirst`. The entrypoint requires the volume; data and uploads both live under it.
+3. Set `LOCALFIRST_JWT_SECRET` to a random value of at least 32 characters.
+4. Set `LOCALFIRST_ADMIN_PASSWORD` to a random value of at least 20 characters using letters, digits, underscores, periods, or hyphens. A generated hexadecimal password works.
 5. Generate a public Railway domain targeting the service's `PORT` (8080 by default).
 6. Enable Railway Serverless in service settings so the service can sleep when idle. Keep one replica and check the workspace's usage allowance.
 

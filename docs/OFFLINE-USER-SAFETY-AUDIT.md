@@ -32,7 +32,7 @@ Current nearby status: the Windows-only preview now implements OS-authenticated/
 | Editor throws and leaves a blank screen | Recovery boundary with reload/file-list actions, without resetting file state; intentional render-failure test |
 | Slower device loads every office engine at startup | Load editors/settings when opened, precache chunks for offline use; measured main JS entry ~2.4 MB → 240 KB; offline restart regression passes |
 | Offline controls imply unsupported services work | Cloud sharing/comments/suggestions and remote-image controls remain unavailable; Windows Bluetooth has a separate explicit sharing flow and actual local-save/peer-acknowledgement states. A connected link alone is not a synchronization success. |
-| Old background server keeps serving an old package | Version-aware launcher replaces only a verified Diwan asset server at the same origin; Go health/version check and launcher verification |
+| Old background server keeps serving an old package | Version-aware launcher replaces only a verified LocalFirst asset server at the same origin; Go health/version check and launcher verification |
 | Cached update arrives during editing | Pending-update message and save/close/reopen instructions; no forced activation during editing |
 | Workspace backup mistaken for a Bluetooth invitation | Specific file-type error and instructions to create/find the invitation in Downloads; reproduced original generic error and verified exact export/import between browser profiles |
 | Invalid file leaves a previously loaded invitation active | Clear the old code before reading a new file; rejected input keeps Connect disabled; browser regression test |
@@ -61,7 +61,7 @@ The phone viewport and CPU slowdown are emulation on this laptop, not proof of A
 3. **Backup scale:** restore accepts up to 32 MiB, 1,000 files, 1,000 folders, bounded nesting and the supported schema. Documents have a 16 MiB limit and retain 50 versions. Large-workspace splitting/streaming and schema migration are pending; check backup size before relying on large-workspace restoration.
 4. **Privacy/storage:** deleting browser data or losing the device can remove local work. Application data and JSON backups are not encrypted at rest by this application. A shared unlocked profile exposes its files. Help explains profile ownership and separate backups.
 5. **Device/accessibility matrix:** physical low-memory Windows/Android devices, NVDA/TalkBack, magnification, switch input, Android IME, eviction, sleep/wake and battery behavior need testing.
-6. **Install/updates:** disconnected clean-machine installs, signing, multiple profiles, conflicting ports and multi-version upgrades remain release gates. After updating, save and close every Diwan tab/window, then reopen the launcher. Do not clear browser data to update.
+6. **Install/updates:** disconnected clean-machine installs, signing, multiple profiles, conflicting ports and multi-version upgrades remain release gates. After updating, save and close every LocalFirst tab/window, then reopen the launcher. Do not clear browser data to update.
 7. **Other office/cloud features:** this does not certify every Sheets, Slides, Whiteboard, PDF, attachment or import/export feature. Vercel remains the earlier online deployment.
 8. **Security/performance:** hostile-peer review, dependency review, large-document stress tests, p95 latency and a supported hardware matrix remain outstanding.
 

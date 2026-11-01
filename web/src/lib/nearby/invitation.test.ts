@@ -3,7 +3,7 @@ import { createBluetoothInvitationFile, MAX_INVITATION_FILE_BYTES, normalizeBlue
 
 // Fixed protocol fixture, not a live session secret.
 const code = 'DBT1-' + 'A'.repeat(86)
-const exported = JSON.stringify({ format: 'diwan-bluetooth-invitation', version: 1, invitation: code })
+const exported = JSON.stringify({ format: 'localfirst-bluetooth-invitation', version: 1, invitation: code })
 
 describe('Bluetooth invitation interoperability and rejection', () => {
   it.each(['0000', '0123', '9999'])('accepts a four-digit direct pairing code without losing leading zeros: %s', value => {
@@ -19,7 +19,7 @@ describe('Bluetooth invitation interoperability and rejection', () => {
   it('keeps short codes out of full-invitation files and pinned identities', () => {
     expect(() => normalizeBluetoothInvitation('0123')).toThrow()
     expect(() => createBluetoothInvitationFile('0123')).toThrow()
-    expect(() => parseBluetoothInvitation(JSON.stringify({ format: 'diwan-bluetooth-invitation', version: 1, invitation: '0123' }))).toThrow()
+    expect(() => parseBluetoothInvitation(JSON.stringify({ format: 'localfirst-bluetooth-invitation', version: 1, invitation: '0123' }))).toThrow()
   })
 
   it('loads both the original v1 export and the exact new export without changing identity bytes', () => {
@@ -42,7 +42,7 @@ describe('Bluetooth invitation interoperability and rejection', () => {
 
   it.each([
     ['workspace backup', { format: 'diwan-local-workspace', version: 1, files: [] }],
-    ['connection report', { format: 'diwan-bluetooth-connection-report', state: 'idle' }],
+    ['connection report', { format: 'localfirst-bluetooth-connection-report', state: 'idle' }],
   ])('identifies a %s and explains where to create the correct file', (description, entry) => {
     try { parseBluetoothInvitation(JSON.stringify(entry)); throw new Error('unexpected acceptance') }
     catch (error) {
@@ -52,12 +52,12 @@ describe('Bluetooth invitation interoperability and rejection', () => {
     }
   })
 
-  it.each([null, [], 42, {}, { invitation: code }, { format: 'diwan-bluetooth-invitation', version: 1, invitation: 42 }])('rejects invalid JSON structure %j', entry => {
+  it.each([null, [], 42, {}, { invitation: code }, { format: 'localfirst-bluetooth-invitation', version: 1, invitation: 42 }])('rejects invalid JSON structure %j', entry => {
     expect(() => parseBluetoothInvitation(JSON.stringify(entry))).toThrow()
   })
 
   it.each([0, 2, '1', null])('rejects unsupported file version %j with an update instruction', version => {
-    expect(() => parseBluetoothInvitation(JSON.stringify({ format: 'diwan-bluetooth-invitation', version, invitation: code }))).toThrow('same updated offline package')
+    expect(() => parseBluetoothInvitation(JSON.stringify({ format: 'localfirst-bluetooth-invitation', version, invitation: code }))).toThrow('same updated offline package')
   })
 
   it('identifies a different wire version without accepting it', () => {

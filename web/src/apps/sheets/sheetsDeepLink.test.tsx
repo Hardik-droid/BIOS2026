@@ -91,3 +91,39 @@ describe('Sheets deep link (open by URL / refresh)', () => {
     expect(loaded).toBe(true)
   })
 })
+
+describe('Fortune matrix persistence boundary', () => {
+  it('round-trips dense edited cells without dropping formulas, formats, zero or false', async () => {
+    const { normalizeSheets } = await import('./SheetsEditor.jsx')
+    const formula = { v: 0, m: '0', f: '=1-1', ct: { fa: '0.00', t: 'n' } }
+    const normalized = normalizeSheets([{
+      name: 'Saved workbook',
+      data: [[null, formula, false], [0, { v: 'January', m: 'January' }, null]],
+      celldata: [{ r: 0, c: 0, v: { v: 'stale sparse value' } }],
+    }])
+    expect(normalized[0]?.data).toBeUndefined()
+    expect(normalized[0]?.celldata).toEqual([
+      { r: 0, c: 1, v: formula },
+      { r: 0, c: 2, v: false },
+      { r: 1, c: 0, v: 0 },
+      { r: 1, c: 1, v: { v: 'January', m: 'January' } },
+    ])
+    expect(normalizeSheets(JSON.parse(JSON.stringify(normalized)))).toEqual(normalized)
+  })
+
+  it('keeps explicit matrix deletions authoritative over older sparse values', async () => {
+    const { normalizeSheets } = await import('./SheetsEditor.jsx')
+    for (const data of [[], [[null, null], [null, null]]]) {
+      const normalized = normalizeSheets([{ celldata: [{ r: 0, c: 0, v: { v: 'deleted' } }], data }])
+      expect(normalized[0]?.celldata).toEqual([])
+      expect(normalized[0]?.data).toBeUndefined()
+      expect(normalizeSheets(JSON.parse(JSON.stringify(normalized)))[0]?.celldata).toEqual([])
+    }
+  })
+
+  it('keeps sparse-only imports authoritative when no matrix was saved', async () => {
+    const { normalizeSheets } = await import('./SheetsEditor.jsx')
+    const imported = [{ r: 2, c: 3, v: { v: 42, m: '42' } }]
+    expect(normalizeSheets([{ celldata: imported }])[0]?.celldata).toEqual(imported)
+  })
+})

@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
-	"diwan/backend/signing"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
+	"localfirst/backend/signing"
 )
 
 // realisticToken is shaped exactly like signing.GenerateShareLinkToken output

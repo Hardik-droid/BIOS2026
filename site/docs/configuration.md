@@ -1,19 +1,19 @@
-# Diwan — Configuration Reference
+# LocalFirst — Configuration Reference
 
-All runtime configuration for Diwan is driven by `config.yaml` and environment variables. Environment variables take precedence over the config file.
+All runtime configuration for LocalFirst is driven by `config.yaml` and environment variables. Environment variables take precedence over the config file.
 
 By default the server looks for `config.yaml` in the process's current working directory. Override the path with `-config` (also accepted as `--config`; Go's flag parser treats both the same), e.g.:
 
 ```sh
-diwan -config /etc/diwan/config.yaml
+localfirst -config /etc/localfirst/config.yaml
 ```
 
-Diwan never refuses to start over a config problem — this is deliberate for a zero-config first run, but means a typo'd `-config` path fails silently:
+LocalFirst never refuses to start over a config problem — this is deliberate for a zero-config first run, but means a typo'd `-config` path fails silently:
 
 - **Missing file** (wrong path, typo): silently falls back to built-in defaults — no error, no log line. If a setting doesn't seem to be taking effect, double-check the path first (e.g. `ls -la <path>`).
 - **File present but invalid YAML**: falls back to defaults AND logs `Config error: … — using defaults` on boot.
 
-The `migrate` subcommand (`diwan migrate up|status`) takes its own `-config` flag, defaulting the same way; it is a separate flag set from the server command, so pass it after `migrate`: `diwan migrate -config /etc/diwan/config.yaml up`.
+The `migrate` subcommand (`localfirst migrate up|status`) takes its own `-config` flag, defaulting the same way; it is a separate flag set from the server command, so pass it after `migrate`: `localfirst migrate -config /etc/localfirst/config.yaml up`.
 
 ---
 
@@ -39,7 +39,7 @@ storage:
     port: 5432
     user: "postgres"
     password: ""
-    database: "diwan"
+    database: "localfirst"
     sslmode: "disable"
 
 persistence:
@@ -51,7 +51,7 @@ collab:
 
 ### `persistence.updatelog` — the CRDT update log
 
-Off by default. When `true`, Diwan exposes the per-file **append-only CRDT
+Off by default. When `true`, LocalFirst exposes the per-file **append-only CRDT
 update log** (`POST`/`GET /api/files/:id/updates`) — the durability
 model that supersedes "single blob + 409 compare-and-swap". Every CRDT frame is
 kept (opaque, encrypted-or-plain Yjs / sheet / slide updates), so two clients
@@ -95,11 +95,11 @@ is absent). Enable both together.
 
 **On by default.** Frontend build flag only; there is no server setting.
 
-Diwan's Sheets grid ships two interchangeable CRDT implementations:
+LocalFirst's Sheets grid ships two interchangeable CRDT implementations:
 
 * **on (default)** — `src/lib/crdt/substrateGrid.js`, an LWW
   register per `substrate/SYNC.md` §4.4 (the spec lives in the `kotva` repo; it
-  is not linked relatively, because building Diwan must never require a sibling
+  is not linked relatively, because building LocalFirst must never require a sibling
   checkout) computed by the **shared** KOTVA Sync engine — the published npm
   package [`@vul-os/kotva-sync`](https://www.npmjs.com/package/@vul-os/kotva-sync),
   the same compiled core a Rust server runs, rather than a second implementation
@@ -112,7 +112,7 @@ Diwan's Sheets grid ships two interchangeable CRDT implementations:
   instantiates the WebAssembly directly; it re-uses the published wrappers and
   `.wasm` byte-for-byte and re-implements no algebra.
 * **`VITE_SUBSTRATE_SYNC=off`** — `src/lib/crdt/grid.js`, the hand-rolled LWW
-  map Diwan shipped before the substrate existed. Still supported as a
+  map LocalFirst shipped before the substrate existed. Still supported as a
   deployment-wide choice; it is a second implementation of the same idea, so two
   replicas on it converge because that one implementation is self-consistent
   rather than because they run the shared, vector-pinned algebra.
@@ -177,15 +177,15 @@ substrate's movable tree reproduces it and what remains.
 
 ### `collab.builtin_rendezvous` — peer discovery served by this binary (default: **on**)
 
-Diwan's backend never mediates live document content — the Docs/Whiteboard
+LocalFirst's backend never mediates live document content — the Docs/Whiteboard
 invite-link path and the Sheets/Slides presence layer talk peer-to-peer over
-Diwan's own first-party `FabricClient` (`src/lib/collab/webrtc/fabric.js`; see
+LocalFirst's own first-party `FabricClient` (`src/lib/collab/webrtc/fabric.js`; see
 [COLLABORATION.md](COLLABORATION.md) §3). But WebRTC cannot introduce two
 browsers **unaided**: something has to carry the first offer/answer/ICE frames.
 
 `collab.builtin_rendezvous` makes this binary that something. On by default, it
 serves the signed, content-blind announce/resolve/signal/mailbox protocol at
-`/api/rendezvous/*` on its own origin (`backend/rendezvous`), so **one `diwan` on
+`/api/rendezvous/*` on its own origin (`backend/rendezvous`), so **one `localfirst` on
 one box is all two people need** — no Vulos OS, no Pier, no relay, no account.
 
 Before it existed, discovery had to come from another product, and a standalone
@@ -198,7 +198,7 @@ collab:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VULOS_BUILTIN_RENDEZVOUS` / `DIWAN_BUILTIN_RENDEZVOUS` | Overrides `collab.builtin_rendezvous`. `1/true/on/yes` or `0/false/off/no`. | `true` |
+| `VULOS_BUILTIN_RENDEZVOUS` / `LOCALFIRST_BUILTIN_RENDEZVOUS` | Overrides `collab.builtin_rendezvous`. `1/true/on/yes` or `0/false/off/no`. | `true` |
 
 **What your box can see, stated plainly.** Discovery metadata: which Ed25519 keys
 are present, which key sent bytes to which, sizes, timing. Not content — every
@@ -242,15 +242,15 @@ precedence over the built-in one above — configuring it is an explicit choice,
 it wins. Reasons to: one shared relay across several deployments, or its
 TURN/NAT-traversal help.
 
-Diwan picks one of four discovery paths, in order:
+LocalFirst picks one of four discovery paths, in order:
 
 1. **This server's own peering fabric** (`/api/peering/*`) — present only when
-   a Vulos OS / Pier deployment fronts Diwan. Unchanged default.
+   a Vulos OS / Pier deployment fronts LocalFirst. Unchanged default.
 2. **A configured rendezvous URL** — the base URL of any **self-hosted
    `vulos-relayd`**'s OPEN rendezvous surface (announce/resolve/signal/mailbox
    + ICE). No Vulos OS and no account are required.
 
-   The browser calls that relayd's origin **directly**, cross-origin. Diwan
+   The browser calls that relayd's origin **directly**, cross-origin. LocalFirst
    mounts nothing for discovery and is not in that path at all, so it never
    sees even the (content-blind) rendezvous envelopes — see
    [COLLABORATION.md](COLLABORATION.md) §3 for exactly what the relay does and
@@ -259,8 +259,8 @@ Diwan picks one of four discovery paths, in order:
    - The relayd must serve **CORS** on its rendezvous role. Every Pier
      deployment with the role does; `npm run test:e2e:p2p` asserts the posture
      against a real one, from a real browser.
-   - It must be reachable from wherever users load Diwan, over a scheme the
-     page can call: an **https** Diwan cannot call an **http** relay, so a
+   - It must be reachable from wherever users load LocalFirst, over a scheme the
+     page can call: an **https** LocalFirst cannot call an **http** relay, so a
      public deployment needs TLS on the relay.
 3. **This binary's own built-in surface** — `collab.builtin_rendezvous` above.
    **This is what an unconfigured deployment uses.**
@@ -274,7 +274,7 @@ collab:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VULOS_RENDEZVOUS_URL` / `DIWAN_RENDEZVOUS_URL` | Overrides `collab.rendezvous_url`. Any URL a `vulos-relayd` serves its rendezvous surface on. | — (unset) |
+| `VULOS_RENDEZVOUS_URL` / `LOCALFIRST_RENDEZVOUS_URL` | Overrides `collab.rendezvous_url`. Any URL a `vulos-relayd` serves its rendezvous surface on. | — (unset) |
 
 Exposed **read-only** to the browser at the unauthenticated `GET /api/reachability`
 (as `rendezvous_url`), so setting the env var takes effect without a frontend
@@ -283,7 +283,7 @@ externally-reachable origin:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DIWAN_PUBLIC_URL` | This Diwan instance's externally-reachable origin (a public domain, or a Pier tunnel URL when behind NAT/CGNAT). Used to build P2P invite links / signaling targets an external peer can actually reach, instead of blindly trusting `window.location.origin` (which may be a LAN-only address). | — (falls back to the visitor's own origin) |
+| `LOCALFIRST_PUBLIC_URL` | This LocalFirst instance's externally-reachable origin (a public domain, or a Pier tunnel URL when behind NAT/CGNAT). Used to build P2P invite links / signaling targets an external peer can actually reach, instead of blindly trusting `window.location.origin` (which may be a LAN-only address). | — (falls back to the visitor's own origin) |
 
 `rendezvous_url` is `""` when nothing is configured, and
 `builtin_rendezvous_prefix` is `""` when the built-in surface is off. Clients
@@ -292,7 +292,7 @@ prefix that is not an absolute same-origin path — that is what keeps a
 deliberately-local-only deployment local-only instead of minting invite links that
 could never connect anyone, or sending discovery somewhere unintended.
 
-**No default endpoint anywhere.** Every URL Diwan uses for discovery comes from
+**No default endpoint anywhere.** Every URL LocalFirst uses for discovery comes from
 this deployment: your own config, or the page's own origin. Nothing points at a
 Vulos-run service.
 
@@ -329,17 +329,17 @@ collab:
     turn_secret: "…"
     turn_ttl_seconds: 3600
     # Or a long-lived pair, served verbatim to any caller. Ignored if turn_secret is set.
-    # turn_username: "diwan"
+    # turn_username: "localfirst"
     # turn_credential: "…"
 ```
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VULOS_STUN_URLS` / `DIWAN_STUN_URLS` | Comma-separated `stun:` URLs. | — |
-| `VULOS_TURN_URLS` / `DIWAN_TURN_URLS` | Comma-separated `turn:`/`turns:` URLs. Ignored unless a credential mode below is set — a credential-less TURN entry cannot authenticate. | — |
-| `VULOS_TURN_SECRET` / `DIWAN_TURN_SECRET` | coturn `static-auth-secret`. Credentials are minted per request and expire. | — |
-| `VULOS_TURN_USERNAME` / `DIWAN_TURN_USERNAME` | Long-lived TURN username. Ignored when a secret is set. | — |
-| `VULOS_TURN_CREDENTIAL` / `DIWAN_TURN_CREDENTIAL` | Long-lived TURN credential. Ignored when a secret is set. | — |
+| `VULOS_STUN_URLS` / `LOCALFIRST_STUN_URLS` | Comma-separated `stun:` URLs. | — |
+| `VULOS_TURN_URLS` / `LOCALFIRST_TURN_URLS` | Comma-separated `turn:`/`turns:` URLs. Ignored unless a credential mode below is set — a credential-less TURN entry cannot authenticate. | — |
+| `VULOS_TURN_SECRET` / `LOCALFIRST_TURN_SECRET` | coturn `static-auth-secret`. Credentials are minted per request and expire. | — |
+| `VULOS_TURN_USERNAME` / `LOCALFIRST_TURN_USERNAME` | Long-lived TURN username. Ignored when a secret is set. | — |
+| `VULOS_TURN_CREDENTIAL` / `LOCALFIRST_TURN_CREDENTIAL` | Long-lived TURN credential. Ignored when a secret is set. | — |
 
 **Why a runtime setting exists at all.** The `VITE_*` variables below are baked
 into the JS bundle at build time, so an operator who **downloaded a release binary
@@ -387,7 +387,7 @@ A host page may also inject these at runtime instead of build time, via
 ```js
 window.__VULOS_ENDPOINTS__ = {
   stunUrls: ['stun:stun.example.org:3478'],
-  turn: { urls: ['turn:turn.example.org:3478'], username: 'diwan', credential: '…' },
+  turn: { urls: ['turn:turn.example.org:3478'], username: 'localfirst', credential: '…' },
 }
 ```
 
@@ -405,16 +405,16 @@ build-time `VITE_*` ones if you build the frontend yourself.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DIWAN_JWT_SECRET` | HS256 signing secret — **required** when `auth.enabled: true` | — |
-| `DIWAN_REGISTRATION_TOKEN` | Static fallback registration token (prefer invite tokens) | — |
+| `LOCALFIRST_JWT_SECRET` | HS256 signing secret — **required** when `auth.enabled: true` | — |
+| `LOCALFIRST_REGISTRATION_TOKEN` | Static fallback registration token (prefer invite tokens) | — |
 
 ### SSO session introspection (multi-user)
 
-Diwan holds **no session-signing power**. When an identity provider is configured it validates the browser's `vc_session` cookie by introspection instead of verifying a signature Diwan minted.
+LocalFirst holds **no session-signing power**. When an identity provider is configured it validates the browser's `vc_session` cookie by introspection instead of verifying a signature LocalFirst minted.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `IDENTITY_URL` | Identity-provider base URL (sovereign box in self-host, CP in cloud). **SET** → Diwan introspects `vc_session` at `POST {IDENTITY_URL}/api/session/introspect` and fails **closed** (401) on invalid/expired/unreachable. **UNSET** → SSO disabled; existing local single-identity behavior unchanged. | — (unset) |
+| `IDENTITY_URL` | Identity-provider base URL (sovereign box in self-host, CP in cloud). **SET** → LocalFirst introspects `vc_session` at `POST {IDENTITY_URL}/api/session/introspect` and fails **closed** (401) on invalid/expired/unreachable. **UNSET** → SSO disabled; existing local single-identity behavior unchanged. | — (unset) |
 | `VULOS_CP_TOKEN` | Shared service-auth secret presented as `X-Relay-Auth` on the introspection call (== the provider's `CP_SHARED_SECRET`). Reused from the existing API-key / entitlements path — **not a signing key**. | — |
 
 Precedence (first match wins): `vk_` API key → per-product session JWT → SSO `vc_session` introspection → 401. On a valid session the request is scoped to the resolved **user + tenant** (`tenantId` = account id); results are cached in-process for ~45s (bounded by the session's `expiresAt`) so it is not a round-trip per request.
@@ -422,13 +422,13 @@ Precedence (first match wins): `vk_` API key → per-product session JWT → SSO
 **Operator quick-reference**
 
 - Self-host single-user box: leave `IDENTITY_URL` unset. Nothing else to do.
-- Multi-user with an external identity/control plane: point `IDENTITY_URL` at your own control-plane host (there is no default host — leave it unset and the box stays self-contained) and set `VULOS_CP_TOKEN=<CP shared secret>` (plus `auth.enabled: true` / `DIWAN_JWT_SECRET` if you also keep native JWT logins).
+- Multi-user with an external identity/control plane: point `IDENTITY_URL` at your own control-plane host (there is no default host — leave it unset and the box stays self-contained) and set `VULOS_CP_TOKEN=<CP shared secret>` (plus `auth.enabled: true` / `LOCALFIRST_JWT_SECRET` if you also keep native JWT logins).
 
 ### Persistence
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VULOS_PERSISTENCE_UPDATELOG` / `DIWAN_UPDATE_LOG` | Enable the CRDT update log (overrides `persistence.updatelog`). Accepts `1/true/on/yes`. | `false` |
+| `VULOS_PERSISTENCE_UPDATELOG` / `LOCALFIRST_UPDATE_LOG` | Enable the CRDT update log (overrides `persistence.updatelog`). Accepts `1/true/on/yes`. | `false` |
 
 ### Database paths (SQLite)
 
@@ -466,7 +466,7 @@ Written by the OS storage-mode selector; consumed by all three bundle services:
 
 ### SMTP (optional)
 
-Diwan itself does not send mail. If you want outbound notifications, point Diwan at an external SMTP relay:
+LocalFirst itself does not send mail. If you want outbound notifications, point LocalFirst at an external SMTP relay:
 
 | Variable | Description |
 |----------|-------------|
@@ -481,7 +481,7 @@ Diwan itself does not send mail. If you want outbound notifications, point Diwan
 | Variable | Description |
 |----------|-------------|
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP endpoint for traces (optional) |
-| `OTEL_SERVICE_NAME` | Service name tag (default `diwan`) |
+| `OTEL_SERVICE_NAME` | Service name tag (default `localfirst`) |
 
 Prometheus metrics are always available at `GET /metrics` (no env var needed).
 

@@ -18,8 +18,8 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	appbrand "localfirst/internal/brand"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 )
@@ -72,7 +72,7 @@ func (c SeamStorageConfig) Trusted() bool {
 	if !c.Present() {
 		return false
 	}
-	secret := strings.TrimSpace(os.Getenv(SeamBrokerSecretEnv))
+	secret := strings.TrimSpace(appbrand.Getenv(SeamBrokerSecretEnv))
 	if secret == "" {
 		return false // gate disabled — never trust injected headers
 	}

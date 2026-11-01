@@ -12,4 +12,4 @@ const build = spawnSync(process.execPath, [process.env.npm_execpath, 'run', 'bui
 })
 if (build.error) throw build.error
 if (build.status !== 0) process.exit(build.status || 1)
-writeFileSync(resolve(repo, 'dist', '.diwan-cloud.json'), JSON.stringify({ accountId: 'self' }))
+writeFileSync(resolve(repo, 'dist', '.localfirst-cloud.json'), JSON.stringify({ accountId: 'self' }))

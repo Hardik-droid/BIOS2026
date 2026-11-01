@@ -14,10 +14,10 @@ import (
 	"net/http"
 	"time"
 
-	"diwan/backend/billing"
-	"diwan/backend/models"
-	"diwan/backend/notify"
-	"diwan/backend/storage"
+	"localfirst/backend/billing"
+	"localfirst/backend/models"
+	"localfirst/backend/notify"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

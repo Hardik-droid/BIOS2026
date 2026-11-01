@@ -14,9 +14,9 @@ import (
 	"os"
 	"testing"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
-	"diwan/backend/signing"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
+	"localfirst/backend/signing"
 )
 
 // testStorageContract is a backend-agnostic verification of the core Storage

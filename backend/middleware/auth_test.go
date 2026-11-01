@@ -3,10 +3,11 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
-	"diwan/backend/config"
+	"localfirst/backend/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -55,6 +56,29 @@ func TestJWTSecretFromEnv(t *testing.T) {
 	}
 	if string(got) != "super-secret-value" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestExistingSigningSecretSurvivesRebrandAndCurrentSettingWins(t *testing.T) {
+	t.Setenv(EnvJWTSecret, "temporary-test-value")
+	if err := os.Unsetenv(EnvJWTSecret); err != nil {
+		t.Fatal(err)
+	}
+	withEnv(t, map[string]string{"DIWAN_JWT_SECRET": "installed-signing-secret", EnvDevMode: ""})
+	got, err := JWTSecret()
+	if err != nil || string(got) != "installed-signing-secret" {
+		t.Fatal("existing deployment signing key changed")
+	}
+	t.Setenv(EnvJWTSecret, "current-signing-secret")
+	resetSecretCacheForTest()
+	got, err = JWTSecret()
+	if err != nil || string(got) != "current-signing-secret" {
+		t.Fatal("current signing key did not take precedence")
+	}
+	t.Setenv(EnvJWTSecret, "")
+	resetSecretCacheForTest()
+	if _, err = JWTSecret(); err == nil {
+		t.Fatal("an explicitly empty current key silently fell back")
 	}
 }
 

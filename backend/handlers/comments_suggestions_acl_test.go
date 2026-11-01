@@ -12,9 +12,9 @@ import (
 	"net/http"
 	"testing"
 
-	"diwan/backend/fileacl"
-	"diwan/backend/middleware"
-	"diwan/backend/models"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/middleware"
+	"localfirst/backend/models"
 
 	"github.com/gin-gonic/gin"
 )

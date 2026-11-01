@@ -14,7 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	appbrand "localfirst/internal/brand"
 	"sync"
 	"time"
 )
@@ -41,7 +41,7 @@ func LoadOrGenerateKey() error {
 		return nil
 	}
 
-	raw := os.Getenv("SIGNING_PRIVATE_KEY")
+	raw := appbrand.Getenv("SIGNING_PRIVATE_KEY")
 	if raw != "" {
 		decoded, err := base64.StdEncoding.DecodeString(raw)
 		if err != nil {

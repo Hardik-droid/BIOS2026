@@ -55,8 +55,8 @@ test('the host can find a document from Home and generate its invitation (native
   const downloading = page.waitForEvent('download')
   await panel.getByRole('button', { name: 'Save invitation file', exact: true }).click()
   const download = await downloading
-  expect(download.suggestedFilename()).toBe('diwan-bluetooth-invitation.json')
-  expect(JSON.parse(await readFile((await download.path())!, 'utf8'))).toEqual({ format: 'diwan-bluetooth-invitation', version: 1, invitation })
+  expect(download.suggestedFilename()).toBe('localfirst-bluetooth-invitation.json')
+  expect(JSON.parse(await readFile((await download.path())!, 'utf8'))).toEqual({ format: 'localfirst-bluetooth-invitation', version: 1, invitation })
   await panel.getByRole('button', { name: 'Disconnect', exact: true }).click()
   await expect(panel.getByRole('button', { name: 'Save invitation file', exact: true })).toBeDisabled()
   await panel.getByRole('button', { name: 'Close', exact: true }).last().click()
@@ -100,7 +100,7 @@ test('a workspace backup is identified before connecting, and the exact saved in
     const receiver = pages[1].getByRole('dialog', { name: 'Connect two Windows laptops' })
     await receiver.getByLabel('Paired laptop', { exact: true }).selectOption('001122334455')
     const input = receiver.getByLabel('Choose Bluetooth invitation file', { exact: true })
-    await input.setInputFiles({ name: 'diwan-workspace.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'diwan-local-workspace', version: 1, files: [] })) })
+    await input.setInputFiles({ name: 'localfirst-workspace.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'diwan-local-workspace', version: 1, files: [] })) })
     await expect(receiver.getByRole('alert')).toContainText('workspace backup')
     await expect(receiver.getByRole('alert')).toContainText('Save invitation file')
     await expect(receiver.getByRole('button', { name: 'Connect over Bluetooth', exact: true })).toBeDisabled()
@@ -110,7 +110,7 @@ test('a workspace backup is identified before connecting, and the exact saved in
     const downloaded = pages[0].waitForEvent('download')
     await pages[0].getByRole('button', { name: 'Save invitation file', exact: true }).click()
     const file = await downloaded
-    expect(file.suggestedFilename()).toBe('diwan-bluetooth-invitation.json')
+    expect(file.suggestedFilename()).toBe('localfirst-bluetooth-invitation.json')
     await input.setInputFiles((await file.path())!)
     await expect(receiver.getByLabel('Host invitation', { exact: true })).toHaveValue(invitation)
     await expect(receiver.getByRole('alert')).toHaveCount(0)

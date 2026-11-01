@@ -1,5 +1,6 @@
 const status = document.getElementById('status')
 const retry = document.getElementById('retry')
+const progress = document.getElementById('progress')
 
 function workerVersion(worker) {
   return new Promise(resolve => {
@@ -19,11 +20,13 @@ function workerVersion(worker) {
 
 async function openCurrentApp() {
   retry.hidden = true
+  progress.hidden = false
+  document.querySelector('main').setAttribute('aria-busy', 'true')
   status.textContent = 'Updating the app on this device…'
   try {
     const response = await fetch('/api/offline-launch-health', { cache: 'no-store' })
     const health = await response.json()
-    if (!response.ok || health.server !== 'diwan-offline' || !health.cache_version) throw new Error('Run the updated Windows offline launcher, then try again.')
+    if (!response.ok || health.server !== 'localfirst-offline' || !health.cache_version) throw new Error('Run the updated Windows offline launcher, then try again.')
     if (!('serviceWorker' in navigator)) { location.replace('/'); return }
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
     await registration.update()
@@ -40,7 +43,9 @@ async function openCurrentApp() {
     }
     throw new Error('The update did not finish. Keep the Windows launcher running and try again. Your saved files have not been removed.')
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : 'Diwan could not open. Try again.'
+    status.textContent = error instanceof Error ? error.message : 'LocalFirst could not open. Try again.'
+    progress.hidden = true
+    document.querySelector('main').setAttribute('aria-busy', 'false')
     retry.hidden = false
   }
 }

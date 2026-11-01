@@ -119,8 +119,8 @@ export default function NearbyBluetooth({ prepare, sync }: { prepare?: () => Pro
           <textarea id="bluetooth-invitation" className="w-full p-2 rounded border border-line bg-paper font-mono text-xs" rows={3} value={status.role === 'host' ? status.invitation || '' : ''} placeholder="Choose Share this document to generate an invitation." readOnly />
           <Button disabled={busy || !hostInvitationActive} onClick={() => void action(async () => { await navigator.clipboard.writeText(status.invitation!); setCopied(true) })}>{copied ? 'Copied invitation' : 'Copy invitation'}</Button>
           <Button className="ml-2" disabled={busy || !hostInvitationActive} onClick={() => void action(() => {
-            downloadJson(createBluetoothInvitationFile(status.invitation!), 'diwan-bluetooth-invitation.json')
-            setInvitationNotice('Invitation download started. Find diwan-bluetooth-invitation.json in Downloads, or press Ctrl+J in your browser. Transfer this file to the other laptop.')
+            downloadJson(createBluetoothInvitationFile(status.invitation!), 'localfirst-bluetooth-invitation.json')
+            setInvitationNotice('Invitation download started. Find localfirst-bluetooth-invitation.json in Downloads, or press Ctrl+J in your browser. Transfer this file to the other laptop.')
           })}>Save invitation file</Button>
           <p>The invitation file is downloaded to this laptop’s Downloads folder. The browser may ask where to save it.</p>
           <p>Paste this code, or transfer its invitation file using Windows Bluetooth file sharing or USB. Anyone with this invitation and paired Bluetooth access can join. It expires after 30 minutes; delete the invitation file when finished.</p>
@@ -147,7 +147,7 @@ export default function NearbyBluetooth({ prepare, sync }: { prepare?: () => Pro
           }} />
           <Button disabled={busy} onClick={() => invitationFile.current?.click()}>Load invitation file</Button>
           <Button disabled={busy || !radio?.available || !address || !validatedInvitation} onClick={() => void action(() => bluetoothCommand('connect', { address, invitation: validatedInvitation }))}>Connect over Bluetooth</Button>
-          <p>You can also paste the full DBT1 code or load <strong>diwan-bluetooth-invitation.json</strong> from the host’s Invitation file and full code section. A workspace backup cannot connect the laptops.</p>
+          <p>You can also paste the full DBT1 code or load <strong>localfirst-bluetooth-invitation.json</strong> from the host’s Invitation file and full code section. A workspace backup cannot connect the laptops.</p>
         </section>}
         {invitationNotice && <p role="status">{invitationNotice}</p>}
         {status.state === 'connected' && status.document && <section className="space-y-2">
@@ -158,9 +158,10 @@ export default function NearbyBluetooth({ prepare, sync }: { prepare?: () => Pro
         {reachable && <details className="space-y-2">
           <summary className="cursor-pointer font-semibold">Connection details</summary>
           <p>Transport between laptops: Windows Bluetooth RFCOMM.</p>
+          {status.peerAddress && <p>Connected peer: {devices.find(device => device.address.toUpperCase() === status.peerAddress!.toUpperCase())?.name || 'Paired device'} · <span className="font-mono">{status.peerAddress}</span></p>}
           <p>Document payload: {status.sentBytes || 0} bytes sent, {status.receivedBytes || 0} bytes received.</p>
           {sync && <p>{sync.phase === 'acknowledged' ? 'The other laptop acknowledged the current saved replica.' : 'The current replica has not yet been acknowledged by the other laptop.'}</p>}
-          <Button onClick={() => downloadJson(JSON.stringify({ format: 'diwan-bluetooth-connection-report', checkedAt: new Date().toISOString(), transport: 'windows-bluetooth-rfcomm', radioAvailable: radio?.available ?? null, state: status.state, role: status.role || '', fileId: status.document?.id || '', sentBytes: status.sentBytes || 0, receivedBytes: status.receivedBytes || 0, peerAcknowledgement: sync ? sync.phase : 'Open the shared document to inspect its acknowledgement', error: sync?.error || status.error || '' }, null, 2), 'diwan-bluetooth-connection-report.json')}>Save connection report</Button>
+          <Button onClick={() => downloadJson(JSON.stringify({ format: 'localfirst-bluetooth-connection-report', checkedAt: new Date().toISOString(), transport: 'windows-bluetooth-rfcomm', radioAvailable: radio?.available ?? null, state: status.state, role: status.role || '', fileId: status.document?.id || '', sentBytes: status.sentBytes || 0, receivedBytes: status.receivedBytes || 0, peerAcknowledgement: sync ? sync.phase : 'Open the shared document to inspect its acknowledgement', error: sync?.error || status.error || '' }, null, 2), 'localfirst-bluetooth-connection-report.json')}>Save connection report</Button>
           <p>The report excludes the invitation and local bridge token.</p>
         </details>}
       </Modal.Body>

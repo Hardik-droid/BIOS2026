@@ -1,5 +1,5 @@
 // no-broker-dep:allow-file: names Pier once, describing unchanged default behaviour when a
-// Vulos OS/Pier host is in front of Diwan — an optional case in the priority chain
+// Vulos OS/Pier host is in front of LocalFirst — an optional case in the priority chain
 // transportSelection.js implements, not a default or an import.
 /**
  * src/lib/collab/useCollabFabric.js — shared FabricClient lifecycle hook
@@ -33,12 +33,12 @@
  * HONESTY GUARD — three-way reality (see docs/COLLABORATION.md §3):
  *
  *   1. HOST-BOX PEERING — this server mounts `/api/peering/*` (Vulos OS /
- *      Pier in front of Diwan). Unchanged default behaviour.
+ *      Pier in front of LocalFirst). Unchanged default behaviour.
  *   2. ANY RELAYD RENDEZVOUS — no host-box peering, but this deployment has a
  *      configured rendezvous URL (config.yaml `collab.rendezvous_url` /
  *      VULOS_RENDEZVOUS_URL). The browser talks DIRECTLY to that relayd's
  *      open rendezvous surface — no Vulos OS, no host box required at all.
- *      This is what makes a STANDALONE Diwan capable of real P2P collab.
+ *      This is what makes a STANDALONE LocalFirst capable of real P2P collab.
  *   3. LOCAL-ONLY — neither is available.
  *
  * A standalone Office binary never mounts `/api/peering/*` (see main.go), but

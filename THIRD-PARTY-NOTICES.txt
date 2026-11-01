@@ -1,5 +1,5 @@
 ==============================================================================
-THIRD-PARTY NOTICES -- Diwan (browser bundle)
+THIRD-PARTY NOTICES -- LocalFirst (browser bundle)
 ==============================================================================
 
 This software's production dependency graph contains the third-party

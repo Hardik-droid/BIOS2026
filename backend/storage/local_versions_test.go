@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/models"
+	"localfirst/backend/models"
 )
 
 // TestVersionSnapshotAndLabel proves a labelled snapshot round-trips and that

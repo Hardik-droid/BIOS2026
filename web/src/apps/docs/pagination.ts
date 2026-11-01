@@ -44,13 +44,15 @@ export interface PageBreaksResult {
   contentHeight: number
 }
 
-export function measurePageBreaks(contentEl: HTMLElement | null | undefined, pageContentHeightPx: number): PageBreaksResult {
+export function measurePageBreaks(contentEl: HTMLElement | null | undefined, pageContentHeightPx: number, renderScale = 1): PageBreaksResult {
   if (!contentEl || !(pageContentHeightPx > 0)) {
     return { breaks: [], pageCount: 1, contentHeight: 0 }
   }
   const containerTop = contentEl.getBoundingClientRect().top
   const blocks = Array.from(contentEl.children)
-  const totalHeight = contentEl.getBoundingClientRect().height
+  // Zoom changes screen rectangles, never the document's page geometry.
+  const scale = Number.isFinite(renderScale) && renderScale > 0 ? renderScale : 1
+  const totalHeight = contentEl.getBoundingClientRect().height / scale
 
   if (blocks.length === 0) {
     return { breaks: [], pageCount: 1, contentHeight: totalHeight }
@@ -64,8 +66,8 @@ export function measurePageBreaks(contentEl: HTMLElement | null | undefined, pag
   for (let i = 0; i < blocks.length; i++) {
     const el = blocks[i]
     const rect = el.getBoundingClientRect()
-    const top = rect.top - containerTop
-    const bottom = rect.bottom - containerTop
+    const top = (rect.top - containerTop) / scale
+    const bottom = (rect.bottom - containerTop) / scale
     const pageBottom = pageTop + pageContentHeightPx
 
     // A block taller than a whole page can't fit anywhere; let it overflow the

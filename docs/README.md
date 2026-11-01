@@ -1,4 +1,4 @@
-# Diwan — Documentation Index
+# LocalFirst — Documentation Index
 
 | Document | Description |
 |----------|-------------|

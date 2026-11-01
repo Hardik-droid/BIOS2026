@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"diwan/backend/storage"
+	"localfirst/backend/storage"
 )
 
 // OrgScopedKey is the authoritative object-store key builder every handler that

@@ -1,5 +1,5 @@
 /* ===========================================================================
- *  Diwan — global stylesheet
+ *  LocalFirst — global stylesheet
  *  ----------------------------------------------------------------------------
  *  Order matters:
  *    1. tokens.css           — CSS variables (light + dark)
@@ -14,6 +14,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* LocalFirst workspace foundations: small, quiet controls and resilient layout. */
+html { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+/* Dark accent surfaces are lighter; their foreground must follow the token. */
+[data-theme="dark"] .bg-accent.text-white,
+[data-theme="dark"] .bg-accent .text-white,
+[data-theme="dark"] .bg-danger.text-white { color: var(--ink-on-accent); }
+body, #root { height: 100dvh; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: not-allowed; }
+input, textarea, select { accent-color: var(--accent); }
+::selection { background: var(--selection-bg); color: var(--selection-fg); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 767px) {
+  .toolbar-btn, .ui-iconbtn { min-width: 36px; min-height: 36px; }
+}
 
 @layer base {
   * { box-sizing: border-box; }

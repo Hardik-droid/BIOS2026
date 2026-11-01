@@ -1,9 +1,10 @@
+import LocalFirstLogo from './LocalFirstLogo'
 /**
- * Sidebar primitives — Diwan's warm vertical app rail (sand chrome on ivory).
+ * Sidebar primitives — LocalFirst's warm vertical app rail (sand chrome on ivory).
  *
  * Pieces:
  *   - <Sidebar>             root container; manages width (collapsed/expanded)
- *   - <Sidebar.Brand>       Diwan mark + serif wordmark (fades collapsed)
+ *   - <Sidebar.Brand>       LocalFirst mark + serif wordmark (fades collapsed)
  *   - <Sidebar.Section>     labelled group; mono uppercase label, hides collapsed
  *   - <Sidebar.Item>        nav row; ember left-rail + calm tint when active,
  *                           optional per-app icon tint at rest
@@ -27,42 +28,6 @@ import type { LucideIcon } from 'lucide-react'
 export type SidebarMode = 'expanded' | 'mini' | 'hidden'
 
 const SidebarCtx = createContext<{ collapsed: boolean }>({ collapsed: false })
-
-/**
- * DiwanMark — the brand glyph: an **iwan**, the vaulted portal at the heart of
- * Persian and Ottoman architecture — the opening onto the room where the
- * registers were kept.  Turned a quarter turn clockwise the arch's two legs
- * become the bars of a D and the teal threshold becomes its stem.
- *
- * A flat two-colour glyph on transparency (ember arch, teal threshold) — it
- * carries no tile of its own, so callers must NOT give it a rounded background
- * or a drop shadow.
- * Self-contained inline SVG (no asset request), so it's crisp at any size.
- * Reused by the rail brand + the mobile header + the login screen.
- */
-interface DiwanMarkProps {
-  size?: number
-  className?: string
-}
-
-export function DiwanMark({ size = 32, className = '' }: DiwanMarkProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M12 55 L12 31 A22.1 22.1 0 0 1 32 9 A22.1 22.1 0 0 1 52 31 L52 55 L44 55 L44 31 A14.17 14.17 0 0 0 32 17 A14.17 14.17 0 0 0 20 31 L20 55 Z"
-        fill="#D0471F"
-      />
-      <rect x="20" y="47" width="24" height="8" fill="#0E8B86" />
-    </svg>
-  )
-}
 
 /**
  * <Sidebar mode> — three desktop states:
@@ -113,7 +78,7 @@ interface SidebarBrandProps {
   onSetMode?: ((mode: SidebarMode) => void) | undefined
 }
 
-function SidebarBrand({ name = 'Diwan', onSetMode }: SidebarBrandProps) {
+function SidebarBrand({ name = 'LocalFirst', onSetMode }: SidebarBrandProps) {
   const { collapsed } = useContext(SidebarCtx)
 
   const ctrlBtn =
@@ -125,7 +90,7 @@ function SidebarBrand({ name = 'Diwan', onSetMode }: SidebarBrandProps) {
     // Mini rail: mark on top, then two stacked controls (expand / hide).
     return (
       <div className="flex flex-col items-center gap-1.5 pt-2.5 pb-2 border-b border-line flex-shrink-0">
-        <DiwanMark size={28} className="flex-shrink-0" />
+        <LocalFirstLogo size={28} className="flex-shrink-0" />
         {onSetMode && (
           <div className="flex flex-col items-center gap-0.5">
             <button type="button" title="Expand sidebar" aria-label="Expand sidebar"
@@ -144,7 +109,7 @@ function SidebarBrand({ name = 'Diwan', onSetMode }: SidebarBrandProps) {
 
   return (
     <div className="flex items-center gap-2.5 h-14 px-4 border-b border-line flex-shrink-0">
-      <DiwanMark size={30} className="flex-shrink-0" />
+      <LocalFirstLogo size={30} className="flex-shrink-0" />
       <div className="flex flex-col min-w-0">
         <span className="font-display text-[20px] font-bold tracking-display text-ink truncate leading-none">
           {name}

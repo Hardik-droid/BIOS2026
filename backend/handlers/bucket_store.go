@@ -24,7 +24,7 @@ import (
 	"io"
 	"log"
 
-	"diwan/backend/storage"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 )

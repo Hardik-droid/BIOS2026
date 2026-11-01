@@ -1,5 +1,5 @@
 /**
- * MSW request handlers — an in-memory mock of the Diwan `/api` doc
+ * MSW request handlers — an in-memory mock of the LocalFirst `/api` doc
  * backend, used by the RTL + MSW integration layer (WAVE-28).
  *
  * These model the real endpoints exercised by HistoryPanel / CommentsPanel /

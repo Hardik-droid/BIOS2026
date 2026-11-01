@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export interface NearbyDocument { id: string; name: string }
-export interface NearbyStatus { state: 'idle' | 'listening' | 'connecting' | 'connected' | 'error'; role?: 'host' | 'join'; document?: NearbyDocument; session?: string; invitation?: string; pairingCode?: string; pairingExpiresAt?: string; pairingRequest?: { id: string; address: string }; pairingError?: string; error?: string; sentBytes?: number; receivedBytes?: number; needsResync?: boolean }
+export interface NearbyStatus { state: 'idle' | 'listening' | 'connecting' | 'connected' | 'error'; role?: 'host' | 'join'; document?: NearbyDocument; peerAddress?: string; session?: string; invitation?: string; pairingCode?: string; pairingExpiresAt?: string; pairingRequest?: { id: string; address: string }; pairingError?: string; error?: string; sentBytes?: number; receivedBytes?: number; needsResync?: boolean }
 export interface NearbyMessage { fileId: string; kind: 'vector' | 'update' | 'ack'; data: string; id?: string }
 export interface NearbyWire {
   status: () => NearbyStatus
@@ -17,7 +17,7 @@ let refreshing: Promise<void> | null = null
 let polling: AbortController | null = null
 
 async function request<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`/_nearby/${path}`, { method: body === undefined ? 'GET' : 'POST', headers: { 'X-Diwan-Native-Token': token, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), ...(signal ? { signal } : {}), credentials: 'omit', mode: 'same-origin', redirect: 'error', cache: 'no-store' })
+  const response = await fetch(`/_nearby/${path}`, { method: body === undefined ? 'GET' : 'POST', headers: { 'X-LocalFirst-Native-Token': token, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), ...(signal ? { signal } : {}), credentials: 'omit', mode: 'same-origin', redirect: 'error', cache: 'no-store' })
   const result: unknown = await response.json()
   if (!response.ok) throw new Error((result as { error?: string })?.error || 'The local Bluetooth bridge could not complete this action.')
   return result as T

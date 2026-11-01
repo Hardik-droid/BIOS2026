@@ -12,8 +12,8 @@ import (
 	"sync"
 	"testing"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
 )
 
 func newPostgresStoreForOptLock(t *testing.T) (Storage, func(id string)) {

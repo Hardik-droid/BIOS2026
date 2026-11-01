@@ -26,9 +26,9 @@ import (
 	"sort"
 	"strings"
 
-	"diwan/backend/docindex"
-	"diwan/backend/middleware"
-	"diwan/backend/storage"
+	"localfirst/backend/docindex"
+	"localfirst/backend/middleware"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 )

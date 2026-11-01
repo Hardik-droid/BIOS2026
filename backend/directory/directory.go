@@ -25,9 +25,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	appbrand "localfirst/internal/brand"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 )
@@ -101,11 +101,11 @@ const headerRelayAuth = "X-Relay-Auth"
 // control plane is configured (standalone / self-host) — in which case email
 // resolution is unavailable and callers fall back to a raw account id.
 func FromEnv() *CPResolver {
-	base := strings.TrimRight(strings.TrimSpace(os.Getenv(envCPBaseURL)), "/")
+	base := strings.TrimRight(strings.TrimSpace(appbrand.Getenv(envCPBaseURL)), "/")
 	if base == "" {
 		return nil
 	}
-	local := strings.TrimSpace(os.Getenv(envCellServer))
+	local := strings.TrimSpace(appbrand.Getenv(envCellServer))
 	if local == "" {
 		// Default: same host as the control plane (consolidated cell topology).
 		if u, err := url.Parse(base); err == nil {
@@ -114,7 +114,7 @@ func FromEnv() *CPResolver {
 	}
 	return &CPResolver{
 		BaseURL:     base,
-		Token:       strings.TrimSpace(os.Getenv(envCPToken)),
+		Token:       strings.TrimSpace(appbrand.Getenv(envCPToken)),
 		LocalServer: local,
 		http:        &http.Client{Timeout: 5 * time.Second},
 	}

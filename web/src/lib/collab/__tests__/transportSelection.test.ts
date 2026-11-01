@@ -10,7 +10,7 @@
  * What it pins:
  *   • the priority order — host-box peering, then an EXPLICITLY configured
  *     external relay, then this server's OWN built-in surface, then local-only;
- *   • that the built-in surface is the DEFAULT (the reason a bare `diwan` binary
+ *   • that the built-in surface is the DEFAULT (the reason a bare `localfirst` binary
  *     can do P2P at all, with no Pier and no other product deployed);
  *   • that "not available" is always honoured as local-only and NEVER turned into
  *     a guessed endpoint — the honesty contract the whole feature rests on;
@@ -19,7 +19,7 @@
  *
  * The external-relay case pins the DIRECT shape: the browser is pointed at the
  * operator-configured relay's own origin and its own `/rendezvous` prefix, with
- * no Diwan origin in the discovery path. Diwan used to route that through a
+ * no LocalFirst origin in the discovery path. LocalFirst used to route that through a
  * same-origin proxy because relayd served no CORS; it does now, and e2e-p2p/
  * asserts the whole thing against real servers and a real browser.
  */
@@ -105,7 +105,7 @@ describe('selectCollabTransport', () => {
   })
 
   it('uses this server’s OWN built-in surface when no host box and no relay are configured', async () => {
-    // THE DEFAULT PATH, and the point of the whole feature: a bare `diwan`
+    // THE DEFAULT PATH, and the point of the whole feature: a bare `localfirst`
     // binary with nothing else deployed still gets real peer-to-peer
     // collaboration, because it serves the signalling itself.
     const choice = await selectCollabTransport(seams({

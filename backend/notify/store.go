@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"diwan/backend/models"
+	"localfirst/backend/models"
 
 	"github.com/google/uuid"
 

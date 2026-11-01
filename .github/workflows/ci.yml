@@ -3,7 +3,7 @@
 # and no account") and a historical note about a since-removed sibling-repo clone step — no
 # workflow step here fetches, builds against, or depends on anything named pier.
 #
-# .github/workflows/ci.yml — build, test, and vet diwan (Go + frontend)
+# .github/workflows/ci.yml — build, test, and vet localfirst (Go + frontend)
 #
 # Triggers on:
 #   - push to any branch
@@ -182,7 +182,7 @@ jobs:
           retention-days: 7
 
   # ── Real P2P integration E2E (one bare binary, two browsers) ────────────────
-  # The opposite of the job above: nothing is mocked. It builds the real `diwan`
+  # The opposite of the job above: nothing is mocked. It builds the real `localfirst`
   # binary, runs it with its OWN built-in peer-discovery surface
   # (backend/rendezvous — the default), and proves that two real browsers
   # collaborate peer-to-peer through it over a real WebRTC data channel, with no
@@ -322,7 +322,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      # diwan is a Go repo with no root package.json, so playwright comes from
+      # localfirst is a Go repo with no root package.json, so playwright comes from
       # web/, which already depends on it for the E2E suites. The gate resolves
       # it through PLAYWRIGHT_NODE_MODULES rather than a bare import, since a
       # bare specifier would resolve from scripts/ and find nothing.

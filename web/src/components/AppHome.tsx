@@ -6,11 +6,11 @@ import {
   Trash2, Pencil, ArrowUpRight, FileText, Table2, Presentation, PenTool,
   HardDrive, Loader2, RefreshCw, FileSearch, Upload,
   Star, Folder, FolderPlus, RotateCcw, ChevronRight, Home, FolderInput,
-  Share2, Users,
+  Share2, Users, ArrowDownUp,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useFilesStore } from '../store/filesStore'
-import type { DiwanFile, DiwanFolder } from '../store/filesStore'
+import type { LocalFirstFile, LocalFirstFolder } from '../store/filesStore'
 import { useLocalFilesStore } from '../store/localFilesStore'
 import type { LocalFileEntry } from '../store/localFilesStore'
 import { useAuthStore } from '../store/authStore'
@@ -20,7 +20,7 @@ import { importFromUrl, importFile, detectType } from '../lib/importFile'
 import { api } from '../lib/api'
 import { OFFLINE_ONLY } from '../lib/offline/mode'
 import { timeAgo, formatBytes } from '../lib/format'
-import { Button, IconButton, Input, Card, Tooltip, useToast, DocThumb, Skeleton, Avatar, hueFor, ThemeSwitch, Modal } from './ui'
+import { Button, IconButton, Input, Card, Tooltip, useToast, DocThumb, Skeleton, Avatar, hueFor, Modal } from './ui'
 
 // ─── Local shapes — `api.searchDocs` returns `unknown` by design; this
 // documents just what this panel reads (see lib/api.ts searchDocs comment). ──
@@ -94,7 +94,7 @@ const CONFIG: Record<'doc' | 'sheet' | 'slide' | 'whiteboard' | 'pdf', AppConfig
     canCreate: true,
   },
   pdf: {
-    label: 'PDFs', singularLabel: 'PDF',
+    label: 'PDF Studio', singularLabel: 'PDF',
     icon: FileSearch,
     iconCn: 'text-danger',       bgCn: 'bg-danger-bg',
     route: 'pdf', emptyMsg: 'No PDFs yet',
@@ -106,6 +106,14 @@ const CONFIG: Record<'doc' | 'sheet' | 'slide' | 'whiteboard' | 'pdf', AppConfig
 }
 
 type AppType = keyof typeof CONFIG
+
+const APP_DESCRIPTION: Record<AppType, string> = {
+  doc: 'A place for clear thinking, first drafts, and finished stories.',
+  sheet: 'Bring a little clarity to the numbers that matter.',
+  slide: 'Shape your story. Give every idea its moment.',
+  whiteboard: 'Connect the dots in a space made for free thinking.',
+  pdf: 'Read, annotate, and put the finishing touches on your PDFs.',
+}
 
 interface AppHomeProps {
   type: AppType
@@ -125,7 +133,7 @@ export default function AppHome({ type }: AppHomeProps) {
   const myAccountId = useAuthStore((s) => s.accountId)
   const [showNew, setShowNew] = useState(false)
   // The file currently open in the account-share dialog (or null).
-  const [sharing, setSharing] = useState<DiwanFile | null>(null)
+  const [sharing, setSharing] = useState<LocalFirstFile | null>(null)
   const [deleting, setDeleting] = useState<{ id: string; name: string; folder: boolean } | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState('')
@@ -149,7 +157,11 @@ export default function AppHome({ type }: AppHomeProps) {
   // Results carry per-file snippets; ACL is enforced server-side at query time.
   const [contentResults, setContentResults] = useState<SearchResult[] | null>(null) // null = idle, [] = no matches
   const [contentSearching, setContentSearching] = useState(false)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    try { return (localStorage.getItem('localfirst_default_view') || localStorage.getItem('vulos_default_view')) === 'grid' ? 'grid' : 'list' }
+    catch { return 'list' }
+  })
+  const [sort, setSort] = useState<'modified' | 'name'>('modified')
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -163,7 +175,11 @@ export default function AppHome({ type }: AppHomeProps) {
   //   moving  — the file being placed via the "Move to…" picker (or null)
   const [view, setView] = useState<'browse' | 'starred' | 'trash'>('browse')
   const [folderId, setFolderId] = useState('')
-  const [moving, setMoving] = useState<DiwanFile | null>(null)
+  const [moving, setMoving] = useState<LocalFirstFile | null>(null)
+  const [newFolderOpen, setNewFolderOpen] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [newFolderBusy, setNewFolderBusy] = useState(false)
+  const [newFolderError, setNewFolderError] = useState('')
 
   const openImportedFile = async (file: File | null | undefined) => {
     if (!file) return
@@ -202,6 +218,14 @@ export default function AppHome({ type }: AppHomeProps) {
   // rejects — a failure clears `loading` and/or leaves its section empty.
   useEffect(() => { void fetchFiles(); void fetchFolders(); void fetchSharedWithMe() }, [])
   useEffect(() => { if (!OFFLINE_ONLY && !scanned) void scan() }, [scanned])
+  useEffect(() => {
+    const applyPreferences = (event: Event) => {
+      const preferred = (event as CustomEvent<{ defaultView?: string }>).detail?.defaultView
+      if (preferred === 'grid' || preferred === 'list') setViewMode(preferred)
+    }
+    window.addEventListener('localfirst:preferences-changed', applyPreferences)
+    return () => window.removeEventListener('localfirst:preferences-changed', applyPreferences)
+  }, [])
 
   // Debounced backend full-text search (content, not just names). Scoped to this
   // app's type so a Docs search doesn't surface Sheets. The server enforces ACL
@@ -228,6 +252,13 @@ export default function AppHome({ type }: AppHomeProps) {
     return () => { live = false; clearTimeout(t) }
   }, [search, type])
 
+  useEffect(() => {
+    if (!menuOpen) return
+    const dismissMenu = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(null) }
+    window.addEventListener('keydown', dismissMenu)
+    return () => window.removeEventListener('keydown', dismissMenu)
+  }, [menuOpen])
+
   const searchLc = search.toLowerCase()
 
   // Folders scoped to the current view. Trash view lists trashed folders at any
@@ -245,10 +276,11 @@ export default function AppHome({ type }: AppHomeProps) {
     const list = files
       .filter(f => f.type === type)
       .filter(f => f.name.toLowerCase().includes(searchLc))
-    if (view === 'trash') return list.filter(f => f.trashed)
-    if (view === 'starred') return list.filter(f => f.starred && !f.trashed)
-    return list.filter(f => !f.trashed && (f.parent_id || '') === folderId)
-  }, [files, type, view, folderId, searchLc])
+    const scoped = view === 'trash' ? list.filter(f => f.trashed)
+      : view === 'starred' ? list.filter(f => f.starred && !f.trashed)
+      : list.filter(f => !f.trashed && (f.parent_id || '') === folderId)
+    return scoped.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : (Date.parse(b.updated_at || '') || 0) - (Date.parse(a.updated_at || '') || 0))
+  }, [files, type, view, folderId, searchLc, sort])
 
   const myLocalFiles = localFiles
     .filter(f => f.ext && cfg.localExts.includes(f.ext))
@@ -265,7 +297,7 @@ export default function AppHome({ type }: AppHomeProps) {
   const crumbs = useMemo(() => {
     if (view !== 'browse' || !folderId) return []
     const byId = new Map((folders || []).map(f => [f.id, f]))
-    const out: DiwanFolder[] = []
+    const out: LocalFirstFolder[] = []
     let cur = byId.get(folderId)
     let guard = 0
     while (cur && guard++ < 64) {
@@ -280,7 +312,7 @@ export default function AppHome({ type }: AppHomeProps) {
   // makes openFile's own return type void instead of inheriting
   // NavigateFunction's wider (data-router) `void | Promise<void>`.
   const openFile = (f: { id: string }) => { void navigate(`/${cfg.route}/${f.id}`) }
-  const startRename = (f: DiwanFile) => { setRenaming(f.id); setRenameValue(f.name); setMenuOpen(null) }
+  const startRename = (f: LocalFirstFile) => { setRenaming(f.id); setRenameValue(f.name); setMenuOpen(null) }
   // BUG FIX: renameFile/renameFolder (filesStore.ts) do not catch their own
   // errors — a network failure or unresolved save-conflict throws through
   // here. That used to skip `setRenaming(null)`, leaving the rename input
@@ -296,7 +328,7 @@ export default function AppHome({ type }: AppHomeProps) {
       setRenaming(null)
     }
   }
-  const startRenameFolder = (f: DiwanFolder) => { setRenaming('folder:' + f.id); setRenameValue(f.name); setMenuOpen(null) }
+  const startRenameFolder = (f: LocalFirstFolder) => { setRenaming('folder:' + f.id); setRenameValue(f.name); setMenuOpen(null) }
   const commitRenameFolder = async (id: string) => {
     try {
       if (renameValue.trim()) await renameFolder(id, renameValue.trim())
@@ -308,11 +340,14 @@ export default function AppHome({ type }: AppHomeProps) {
   }
 
   const handleNewFolder = async () => {
-    const name = window.prompt('New folder name')
-    if (name && name.trim()) {
-      try { await createFolder(name.trim(), view === 'browse' ? folderId : '') }
-      catch (e) { showToast(`Could not create folder: ${e instanceof Error ? e.message : String(e)}`, 'error') }
-    }
+    setNewFolderName(''); setNewFolderError(''); setNewFolderOpen(true)
+  }
+  const submitNewFolder = async () => {
+    if (!newFolderName.trim() || newFolderBusy) return
+    setNewFolderBusy(true); setNewFolderError('')
+    try { await createFolder(newFolderName.trim(), view === 'browse' ? folderId : ''); setNewFolderOpen(false) }
+    catch (reason) { setNewFolderError(reason instanceof Error ? reason.message : 'The folder could not be created.') }
+    finally { setNewFolderBusy(false) }
   }
 
   // Returns a plain void-returning handler (not an async function) so it can
@@ -361,64 +396,30 @@ export default function AppHome({ type }: AppHomeProps) {
         </div>
       )}
       {/* ── Topbar ── */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-5 h-11 bg-paper border-b border-line">
-        <div className={`w-7 h-7 rounded-md ${cfg.bgCn} flex items-center justify-center flex-shrink-0`}>
-          <Icon size={15} className={cfg.iconCn} />
-        </div>
-        <h1 className="font-display text-lg font-semibold text-ink tracking-tight leading-none">{cfg.label}</h1>
-
-        <div className="flex-1 max-w-xs mx-2">
-          <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search…"
-            size="sm"
-            leading={<Search size={13} />}
-          />
-        </div>
-
-        <div className="ml-auto flex items-center gap-1.5">
-          <ThemeSwitch collapsed />
-          <div className="flex items-center gap-0.5 p-0.5 bg-bg-elev2 border border-line rounded-md mr-1">
-            <Tooltip label="Grid view" side="bottom">
-              <IconButton size="sm" active={viewMode === 'grid'} onClick={() => setViewMode('grid')}>
-                <LayoutGrid size={13} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip label="List view" side="bottom">
-              <IconButton size="sm" active={viewMode === 'list'} onClick={() => setViewMode('list')}>
-                <List size={13} />
-              </IconButton>
-            </Tooltip>
+      <div className="max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-10 pt-7 sm:pt-9">
+        <header className="flex items-start sm:items-center justify-between gap-4 mb-7">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className={`hidden sm:flex w-12 h-12 rounded-xl ${cfg.bgCn} items-center justify-center shrink-0`}><Icon size={24} strokeWidth={1.65} className={cfg.iconCn} /></div>
+            <div className="min-w-0"><h1 className="font-display text-[27px] sm:text-[32px] font-semibold text-ink tracking-[-0.04em] leading-tight">{cfg.label}</h1><p className="text-xs text-ink-muted leading-relaxed mt-1.5 max-w-md">{APP_DESCRIPTION[type]}</p></div>
           </div>
-
-          <input ref={fileInputRef} type="file" accept={cfg.importExts} className="hidden" onChange={(e) => void handleImportFile(e)} />
-          <Button
-            variant="secondary" size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing === '__file__'}
-          >
-            {importing === '__file__' ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-            Open file
-          </Button>
-          {cfg.canCreate && (
-            <>
-              <Tooltip label="New folder" side="bottom">
-                <IconButton size="sm" onClick={() => void handleNewFolder()} aria-label="New folder">
-                  <FolderPlus size={14} />
-                </IconButton>
-              </Tooltip>
-              <Button variant="primary" size="sm" onClick={() => setShowNew(true)}>
-                <Plus size={13} /> New {cfg.singularLabel}
-              </Button>
-            </>
-          )}
+          <div className="flex items-center gap-2 shrink-0 pt-0.5">
+            <input ref={fileInputRef} type="file" accept={cfg.importExts} className="sr-only" tabIndex={-1} aria-label={`Import ${cfg.label.toLowerCase()}`} onChange={(e) => void handleImportFile(e)} />
+            <Button variant="secondary" className={cfg.canCreate ? 'hidden sm:inline-flex' : ''} onClick={() => fileInputRef.current?.click()} disabled={importing === '__file__'}>{importing === '__file__' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}Open file</Button>
+            {cfg.canCreate && <Button variant="primary" aria-label={`New ${cfg.singularLabel}`} onClick={() => setShowNew(true)}><Plus size={15} /><span className="hidden sm:inline">New {cfg.singularLabel}</span><span className="sm:hidden">New</span></Button>}
+          </div>
+        </header>
+        <div className="flex items-center flex-wrap gap-2.5">
+          <Input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={event => { if (event.key === 'Escape') setSearch('') }} aria-label={`Search ${cfg.label.toLowerCase()}`} placeholder={`Search ${cfg.label.toLowerCase()}…`} size="md" leading={<Search size={14} />} className="flex-1 min-w-[180px] sm:max-w-[360px]" />
+          <div className="inline-flex items-center gap-1.5 h-10 px-2.5 border border-line rounded-lg bg-paper text-ink-muted"><ArrowDownUp size={13} className="text-ink-faint" /><select aria-label="Sort files" value={sort} onChange={event => setSort(event.target.value as 'modified' | 'name')} className="bg-transparent text-[11px] border-none outline-none min-w-0"><option value="modified">Last modified</option><option value="name">Name A–Z</option></select></div>
+          {cfg.canCreate && <Tooltip label="New folder" side="bottom"><IconButton size="md" onClick={() => void handleNewFolder()} aria-label="New folder" className="border border-line bg-paper"><FolderPlus size={16} /></IconButton></Tooltip>}
+          <div className="flex items-center gap-0.5 p-0.5 bg-paper border border-line rounded-lg ml-auto" role="group" aria-label="File view"><Tooltip label="List view" side="bottom"><IconButton size="md" aria-label="List view" aria-pressed={viewMode === 'list'} active={viewMode === 'list'} onClick={() => setViewMode('list')}><List size={15} /></IconButton></Tooltip><Tooltip label="Grid view" side="bottom"><IconButton size="md" aria-label="Grid view" aria-pressed={viewMode === 'grid'} active={viewMode === 'grid'} onClick={() => setViewMode('grid')}><LayoutGrid size={14} /></IconButton></Tooltip></div>
+          {cfg.canCreate && <button className="sm:hidden flex items-center gap-1.5 text-[11px] text-ink-muted border border-line bg-paper rounded-lg h-10 px-3" disabled={!!importing} onClick={() => fileInputRef.current?.click()}><Upload size={13} />Open file</button>}
         </div>
       </div>
 
       {/* ── View tabs (All / Starred / Trash) + breadcrumb ── */}
-      <div className="max-w-6xl mx-auto px-6 pt-4 flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-1 p-0.5 bg-bg-elev2 border border-line rounded-md">
+      <div className="max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-10 pt-5 flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1 p-1 bg-paper border border-line rounded-lg">
           <ViewTab active={view === 'browse'} onClick={() => { setView('browse'); setFolderId('') }}>
             <Home size={12} /> All
           </ViewTab>
@@ -447,7 +448,7 @@ export default function AppHome({ type }: AppHomeProps) {
         )}
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-6 space-y-8">
+      <div className="max-w-[1280px] mx-auto px-5 sm:px-8 lg:px-10 py-5 space-y-8">
         {/* ── Full-text content matches (backend search) ── */}
         {search.trim().length >= 2 && (
           <ContentSearchResults
@@ -460,7 +461,7 @@ export default function AppHome({ type }: AppHomeProps) {
 
         <section>
           {loading && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="status" aria-label={`Loading ${cfg.label.toLowerCase()}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4" role="status" aria-label={`Loading ${cfg.label.toLowerCase()}`}>
               {Array.from({ length: 8 }, (_, i) => (
                 <div key={i} className="rounded-lg border border-line overflow-hidden bg-paper">
                   <Skeleton className="h-28" rounded="rounded-none" />
@@ -482,7 +483,7 @@ export default function AppHome({ type }: AppHomeProps) {
               <div className={`w-16 h-16 ${cfg.bgCn} rounded-xl flex items-center justify-center mb-4`}>
                 <Icon size={28} className={`${cfg.iconCn} opacity-40`} />
               </div>
-              <p className="font-serif text-lg text-ink mb-1">
+              <p className="font-display text-lg font-semibold tracking-tight text-ink mb-1">
                 {search ? 'No results' : view === 'trash' ? 'Trash is empty' : view === 'starred' ? 'No starred items' : cfg.emptyMsg}
               </p>
               <p className="text-sm text-ink-muted mb-6">
@@ -510,7 +511,7 @@ export default function AppHome({ type }: AppHomeProps) {
           {!loading && visibleFolders.length > 0 && (
             <div className="mb-6">
               <p className="text-2xs font-semibold text-ink-faint tracking-eyebrow uppercase mb-3">Folders</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {visibleFolders.map(folder => (
                   <FolderCard
                     key={folder.id}
@@ -540,7 +541,7 @@ export default function AppHome({ type }: AppHomeProps) {
                 <p className="text-2xs font-semibold text-ink-faint tracking-eyebrow uppercase mb-3">Files</p>
               )}
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                   {myFiles.map(file => (
                     <FileCard
                       key={file.id}
@@ -719,6 +720,10 @@ export default function AppHome({ type }: AppHomeProps) {
           onClose={() => { setSharing(null); void fetchSharedWithMe() }}
         />
       )}
+      <Modal open={newFolderOpen} title="Create a folder" onClose={() => { if (!newFolderBusy) setNewFolderOpen(false) }}>
+        <Modal.Body><form id="create-workspace-folder" onSubmit={event => { event.preventDefault(); void submitNewFolder() }}><Input autoFocus label="Folder name" placeholder="A home for a new project" value={newFolderName} onChange={event => setNewFolderName(event.target.value)} maxLength={512} required />{newFolderError && <p role="alert" className="text-xs text-danger mt-3">{newFolderError}</p>}</form></Modal.Body>
+        <Modal.Footer><Button disabled={newFolderBusy} onClick={() => setNewFolderOpen(false)}>Cancel</Button><Button variant="primary" type="submit" form="create-workspace-folder" disabled={newFolderBusy || !newFolderName.trim()}>{newFolderBusy ? 'Creating…' : 'Create folder'}</Button></Modal.Footer>
+      </Modal>
       <Modal open={!!deleting} title="Delete permanently?" onClose={() => { if (!deleteBusy) setDeleting(null) }}>
         <Modal.Body className="text-sm space-y-3">
           <p className="break-words">{deleting?.name}</p>
@@ -741,9 +746,9 @@ function ViewTab({ active, onClick, children }: { active: boolean; onClick: () =
     <button
       onClick={onClick}
       className={[
-        'flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-2xs font-semibold tracking-tightish transition-colors',
+        'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium tracking-tightish transition-colors',
         'focus:outline-none focus-visible:shadow-focus',
-        active ? 'bg-paper text-ink shadow-e1' : 'text-ink-faint hover:text-ink-muted',
+        active ? 'bg-accent-tint text-accent' : 'text-ink-faint hover:text-ink-muted',
       ].join(' ')}
     >
       {children}
@@ -824,7 +829,7 @@ export function SnippetText({ snippet }: { snippet?: string | undefined }) {
 
 // ─── FolderCard ───────────────────────────────────────────────────────────────
 interface FolderCardProps {
-  folder: DiwanFolder
+  folder: LocalFirstFolder
   view: 'browse' | 'starred' | 'trash'
   renaming: string | null
   renameValue: string
@@ -916,7 +921,7 @@ function MenuItem({ danger, onClick, children }: { danger?: boolean; onClick: ()
 
 // ─── FileCard ─────────────────────────────────────────────────────────────────
 interface FileCardProps {
-  file: DiwanFile
+  file: LocalFirstFile
   Icon: LucideIcon
   type: AppType
   view: 'browse' | 'starred' | 'trash'
@@ -946,12 +951,12 @@ function FileCard({
   return (
     <div className={`group bg-paper rounded-lg border border-line hover:border-line-strong hover:shadow-e2 hover:-translate-y-0.5 transition-[transform,box-shadow,border-color] duration-base ease-out cursor-pointer ${menuOpen === file.id ? 'relative z-20 overflow-visible' : 'overflow-hidden'}`}>
       <div
-        className="h-28 relative border-b border-line cursor-pointer rounded-t-lg focus-visible:outline-none focus-visible:shadow-focus focus-visible:z-10"
+        className="h-36 relative border-b border-line cursor-pointer rounded-t-lg focus-visible:outline-none focus-visible:shadow-focus focus-visible:z-10"
         onClick={inTrash ? undefined : onOpen}
         role="button"
         tabIndex={inTrash ? -1 : 0}
         aria-label={`Open ${file.name}`}
-        onKeyDown={(e) => { if (!inTrash && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onOpen() } }}
+        onKeyDown={(e) => { if (e.target === e.currentTarget && !inTrash && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onOpen() } }}
       >
         <DocThumb type={type} className="h-full" />
         {/* Star badge (top-left) — always visible when starred, hover otherwise. */}
@@ -962,7 +967,7 @@ function FileCard({
               file.starred
                 ? 'opacity-100 text-warning'
                 : 'opacity-0 group-hover:opacity-100 text-ink-faint hover:text-warning',
-              'bg-bg-elevated/80 backdrop-blur-sm border border-line',
+              'bg-paper border border-line',
             ].join(' ')}
             onClick={(e) => { e.stopPropagation(); onStar() }}
             aria-label={file.starred ? 'Unstar' : 'Star'}
@@ -972,7 +977,7 @@ function FileCard({
           </button>
         )}
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 translate-y-0.5 group-hover:translate-y-0 transition-[opacity,transform] duration-fast">
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-bg-elevated/80 backdrop-blur-sm border border-line">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-paper border border-line">
             <ArrowUpRight size={13} className="text-ink-muted" />
           </span>
         </div>
@@ -1032,7 +1037,7 @@ function FileCard({
 
 // ─── FileListTable ────────────────────────────────────────────────────────────
 interface FileListTableProps {
-  files: DiwanFile[]
+  files: LocalFirstFile[]
   cfg: AppConfig
   Icon: LucideIcon
   view: 'browse' | 'starred' | 'trash'
@@ -1042,12 +1047,12 @@ interface FileListTableProps {
   setRenameValue: (v: string) => void
   menuOpen: string | null
   setMenuOpen: (v: string | null) => void
-  onOpen: (file: DiwanFile) => void
-  onRename: (file: DiwanFile) => void
+  onOpen: (file: LocalFirstFile) => void
+  onRename: (file: LocalFirstFile) => void
   onRenameCommit: (id: string) => void
   onStar: (id: string) => void
-  onMove: (file: DiwanFile) => void
-  onShare: (file: DiwanFile) => void
+  onMove: (file: LocalFirstFile) => void
+  onShare: (file: LocalFirstFile) => void
   onTrash: (id: string) => void
   onRestore: (id: string) => void
   onDelete: (id: string) => void
@@ -1093,10 +1098,10 @@ function FileListTable({
                       onClick={e => e.stopPropagation()}
                     />
                   ) : (
-                    <span className="font-medium text-ink tracking-tightish flex items-center gap-1.5">
+                    <button type="button" disabled={inTrash} onClick={event => { event.stopPropagation(); onOpen(file) }} aria-label={`Open ${file.name}`} className="font-medium text-ink tracking-tightish flex items-center gap-1.5 text-left disabled:cursor-default">
                       {file.name}
                       {file.starred && !inTrash && <Star size={11} className="text-warning" fill="currentColor" />}
-                    </span>
+                    </button>
                   )}
                 </div>
               </td>
@@ -1105,7 +1110,7 @@ function FileListTable({
                 <div className="relative">
                   <button
                     onClick={() => setMenuOpen(menuOpen === file.id ? null : file.id)}
-                    className="p-1 rounded-sm hover:bg-accent-tint text-ink-faint opacity-0 group-hover:opacity-100 transition-[opacity,background] duration-fast"
+                    className="p-1 rounded-sm hover:bg-accent-tint text-ink-faint opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,background] duration-fast"
                     aria-label="File actions"
                   >
                     <MoreVertical size={14} />
@@ -1142,15 +1147,15 @@ function FileListTable({
 
 // ─── MoveToFolderModal ────────────────────────────────────────────────────────
 interface MoveToFolderModalProps {
-  file: DiwanFile
-  folders: DiwanFolder[]
+  file: LocalFirstFile
+  folders: LocalFirstFolder[]
   onClose: () => void
   onMove: (targetId: string) => void
 }
 
 function MoveToFolderModal({ file, folders, onClose, onMove }: MoveToFolderModalProps) {
   const byParent = useMemo(() => {
-    const m = new Map<string, DiwanFolder[]>()
+    const m = new Map<string, LocalFirstFolder[]>()
     for (const f of folders) {
       const p = f.parent_id || ''
       if (!m.has(p)) m.set(p, [])

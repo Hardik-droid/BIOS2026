@@ -5,7 +5,7 @@ import { OFFLINE_ONLY } from '../lib/offline/mode'
 
 /** A file record as returned by the /files API. Fields beyond the ones this
  *  store itself reads are passed through untouched (index signature). */
-export interface DiwanFile {
+export interface LocalFirstFile {
   id: string
   name: string
   type: string
@@ -22,7 +22,7 @@ export interface DiwanFile {
   [key: string]: unknown
 }
 
-export interface DiwanFolder {
+export interface LocalFirstFolder {
   id: string
   name: string
   parent_id?: string
@@ -34,38 +34,38 @@ export interface DiwanFolder {
  *  body fields (e.g. `.current`, the server's newer file on a 409 conflict). */
 interface ApiError extends Error {
   status?: number
-  current?: DiwanFile
+  current?: LocalFirstFile
 }
 
 interface UpdateFileOpts {
   replica?: boolean
   rev?: number | undefined
-  onConflict?: ((current: DiwanFile | undefined, content: unknown) => boolean | Promise<boolean> | void | Promise<void>) | undefined
+  onConflict?: ((current: LocalFirstFile | undefined, content: unknown) => boolean | Promise<boolean> | void | Promise<void>) | undefined
   _retried?: boolean
 }
 
 interface FilesState {
-  files: DiwanFile[]
-  folders: DiwanFolder[]
+  files: LocalFirstFile[]
+  folders: LocalFirstFolder[]
   loading: boolean
   loadError: string | null
-  sharedWithMe: DiwanFile[]
+  sharedWithMe: LocalFirstFile[]
   fetchFiles: () => Promise<void>
   fetchSharedWithMe: () => Promise<void>
   fetchFolders: () => Promise<void>
-  createFolder: (name: string, parentId?: string) => Promise<DiwanFolder>
-  renameFolder: (id: string, name: string) => Promise<DiwanFolder>
-  trashFolder: (id: string, trashed: boolean) => Promise<DiwanFolder>
+  createFolder: (name: string, parentId?: string) => Promise<LocalFirstFolder>
+  renameFolder: (id: string, name: string) => Promise<LocalFirstFolder>
+  trashFolder: (id: string, trashed: boolean) => Promise<LocalFirstFolder>
   deleteFolder: (id: string) => Promise<void>
-  moveFile: (id: string, opts?: { parentId?: string; starred?: boolean; trashed?: boolean }) => Promise<DiwanFile>
-  toggleStar: (id: string) => Promise<DiwanFile>
-  trashFile: (id: string) => Promise<DiwanFile>
-  restoreFile: (id: string) => Promise<DiwanFile>
-  createFile: (name: string, type: string, opts?: { content?: unknown; parentId?: string }) => Promise<DiwanFile>
-  updateFile: (id: string, name: string, content: unknown, opts?: UpdateFileOpts) => Promise<DiwanFile>
+  moveFile: (id: string, opts?: { parentId?: string; starred?: boolean; trashed?: boolean }) => Promise<LocalFirstFile>
+  toggleStar: (id: string) => Promise<LocalFirstFile>
+  trashFile: (id: string) => Promise<LocalFirstFile>
+  restoreFile: (id: string) => Promise<LocalFirstFile>
+  createFile: (name: string, type: string, opts?: { content?: unknown; parentId?: string }) => Promise<LocalFirstFile>
+  updateFile: (id: string, name: string, content: unknown, opts?: UpdateFileOpts) => Promise<LocalFirstFile>
   deleteFile: (id: string) => Promise<void>
   renameFile: (id: string, name: string) => Promise<void>
-  saveFileWithDraft: (id: string, name: string, content: unknown, opts?: { replica?: boolean }) => Promise<DiwanFile>
+  saveFileWithDraft: (id: string, name: string, content: unknown, opts?: { replica?: boolean }) => Promise<LocalFirstFile>
   markDirty: (id: string) => void
 }
 
@@ -132,7 +132,7 @@ export const useFilesStore = create<FilesState>((set, get) => ({
       // Coerce to an array: `files` feeds .filter/.map/.slice across AppHome and
       // the app-shell rail, so a malformed/non-array response must never poison
       // it (that would crash the whole shell, not just this list).
-      set({ files: Array.isArray(files) ? (files as DiwanFile[]) : [], loading: false })
+      set({ files: Array.isArray(files) ? (files as LocalFirstFile[]) : [], loading: false })
     } catch (reason) {
       set({ loading: false, loadError: reason instanceof Error ? reason.message : 'Your files could not be opened. Try again.' })
     }
@@ -142,7 +142,7 @@ export const useFilesStore = create<FilesState>((set, get) => ({
   // just leaves the section empty (it is additive UX).
   fetchSharedWithMe: async () => {
     try {
-      const res = await api.listSharedWithMe() as { files?: DiwanFile[] } | undefined
+      const res = await api.listSharedWithMe() as { files?: LocalFirstFile[] } | undefined
       set({ sharedWithMe: Array.isArray(res?.files) ? res.files : [] })
     } catch {
       set({ sharedWithMe: [] })
@@ -153,26 +153,26 @@ export const useFilesStore = create<FilesState>((set, get) => ({
   fetchFolders: async () => {
     try {
       const folders = await api.listFolders()
-      set({ folders: Array.isArray(folders) ? (folders as DiwanFolder[]) : [] })
+      set({ folders: Array.isArray(folders) ? (folders as LocalFirstFolder[]) : [] })
     } catch {
       /* folders are optional UX; a failure just hides the tree */
     }
   },
 
   createFolder: async (name, parentId = '') => {
-    const folder = await api.createFolder(name, parentId) as DiwanFolder
+    const folder = await api.createFolder(name, parentId) as LocalFirstFolder
     set({ folders: [...get().folders, folder] })
     return folder
   },
 
   renameFolder: async (id, name) => {
-    const folder = await api.updateFolder(id, { name }) as DiwanFolder
+    const folder = await api.updateFolder(id, { name }) as LocalFirstFolder
     set({ folders: get().folders.map((f) => (f.id === id ? folder : f)) })
     return folder
   },
 
   trashFolder: async (id, trashed) => {
-    const folder = await api.trashFolder(id, trashed) as DiwanFolder
+    const folder = await api.trashFolder(id, trashed) as LocalFirstFolder
     set({ folders: get().folders.map((f) => (f.id === id ? folder : f)) })
     return folder
   },
@@ -186,7 +186,7 @@ export const useFilesStore = create<FilesState>((set, get) => ({
 
   // Move / star / trash a file. Applies the returned canonical file to state.
   moveFile: async (id, opts) => {
-    const file = await api.moveFile(id, opts) as DiwanFile
+    const file = await api.moveFile(id, opts) as LocalFirstFile
     set({ files: get().files.map((f) => (f.id === id ? file : f)) })
     return file
   },
@@ -204,12 +204,12 @@ export const useFilesStore = create<FilesState>((set, get) => ({
   // places the new file in a folder (validated + ACL-checked server-side).
   createFile: async (name, type, { content, parentId } = {}) => {
     const seed = content !== undefined ? content : defaultContent(type)
-    const file = await api.createFile(name, type, seed) as DiwanFile
+    const file = await api.createFile(name, type, seed) as LocalFirstFile
     let placed = file
     // If a folder was requested, move the freshly-created file into it. The
     // server enforces that the caller owns both the file and the target folder.
     if (parentId) {
-      try { placed = await api.moveFile(file.id, { parentId }) as DiwanFile } catch { /* keep at root on failure */ }
+      try { placed = await api.moveFile(file.id, { parentId }) as LocalFirstFile } catch { /* keep at root on failure */ }
     }
     set({ files: [placed, ...get().files] })
     return placed
@@ -237,7 +237,7 @@ export const useFilesStore = create<FilesState>((set, get) => ({
     const known = get().files.find((f) => f.id === id)
     const rev = opts.rev ?? known?.rev ?? 0
     try {
-      const file = await (opts.replica ? api.updateFile(id, name, content, rev, true) : api.updateFile(id, name, content, rev)) as DiwanFile
+      const file = await (opts.replica ? api.updateFile(id, name, content, rev, true) : api.updateFile(id, name, content, rev)) as LocalFirstFile
       set({ files: get().files.map((f) => (f.id === id ? file : f)) })
       return file
     } catch (err) {

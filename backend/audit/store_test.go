@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"diwan/backend/audit"
+	"localfirst/backend/audit"
 )
 
 func runContract(t *testing.T, s audit.Store) {

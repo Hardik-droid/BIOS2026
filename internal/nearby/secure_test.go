@@ -135,7 +135,7 @@ func TestHTTPBridgeRejectsCrossOriginAndMissingToken(t *testing.T) {
 		r := httptest.NewRequest("GET", "http://"+tc.host+"/_nearby/"+tc.path, nil)
 		r.Host = tc.host
 		r.Header.Set("Origin", tc.origin)
-		r.Header.Set("X-Diwan-Native-Token", tc.token)
+		r.Header.Set("X-LocalFirst-Native-Token", tc.token)
 		w := httptest.NewRecorder()
 		hub.Handler().ServeHTTP(w, r)
 		if w.Code != tc.want {

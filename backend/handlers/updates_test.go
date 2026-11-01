@@ -8,11 +8,11 @@ import (
 	"sync"
 	"testing"
 
-	"diwan/backend/billing"
-	"diwan/backend/fileacl"
-	"diwan/backend/middleware"
-	"diwan/backend/seam"
-	"diwan/backend/updatelog"
+	"localfirst/backend/billing"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/middleware"
+	"localfirst/backend/seam"
+	"localfirst/backend/updatelog"
 
 	"github.com/gin-gonic/gin"
 )

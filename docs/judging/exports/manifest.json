@@ -1,0 +1,33 @@
+{
+  "sourceCommit": "d7e9135",
+  "userDate": "2026-11-01",
+  "words": 29942,
+  "questions": 200,
+  "diagrams": 3,
+  "pdfPages": 71,
+  "pdfQuestionsVerified": 200,
+  "blankPages": [],
+  "pdfOutlinePresent": true,
+  "pdfBytes": 1231792,
+  "pdfSha256": "ac16f920d0118afbfff27b9e33decb233ebbee41eb00f340e887b922750bfd91",
+  "markdown": [
+    {
+      "file": "PROJECT-HANDBOOK.md",
+      "sha256": "9a752a044ca1889db27d1c01b416a3c8aa5de3e0ea5b071e9a836368ebc8ae1a"
+    },
+    {
+      "file": "USP-AND-COMPETITIVE-LANDSCAPE.md",
+      "sha256": "1fb71958da36cc1c650d864894e9686308c2880473b80f54e403a49c54c00991"
+    },
+    {
+      "file": "DEMO-AND-DEFENCE.md",
+      "sha256": "848c0dc30ad76b053bf9de8c53cd786d49a169d9e20b2ee69c3ddbda462382d0"
+    },
+    {
+      "file": "JUDGES-QUESTIONS-AND-ANSWERS.md",
+      "sha256": "138d7287ead49d690966adcd783d1c274521ba14a79eff27e6916521a8502b13"
+    }
+  ],
+  "externalRenderRequests": [],
+  "browserErrors": []
+}

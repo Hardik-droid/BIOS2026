@@ -10,14 +10,14 @@ package handlers
 // cannot see actually exists.
 
 import (
+	appbrand "localfirst/internal/brand"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 
-	"diwan/backend/fileacl"
-	"diwan/backend/middleware"
-	"diwan/backend/storage"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/middleware"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,7 +46,7 @@ type FileAuthz struct {
 // fileACLDBPath resolves the ACL SQLite DSN from env, defaulting to a durable
 // file under the data dir.
 func fileACLDBPath() string {
-	if v := os.Getenv("VULOS_FILEACL_DB"); v != "" {
+	if v := appbrand.Getenv("VULOS_FILEACL_DB"); v != "" {
 		return v
 	}
 	return "./data/fileacl.db"

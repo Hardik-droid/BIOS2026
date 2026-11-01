@@ -250,7 +250,7 @@ export default function Verify() {
             Public verification
           </p>
           <h1 className="font-serif text-3xl text-ink leading-tight">
-            Verify an Diwan-signed document
+            Verify an LocalFirst-signed document
           </h1>
           <p className="text-sm text-ink-muted leading-snug max-w-md mx-auto">
             Drop a sealed PDF to check its cryptographic integrity and audit chain.
@@ -461,7 +461,7 @@ export default function Verify() {
 
         {/* Quiet provenance footer */}
         <p className="text-2xs text-ink-faint text-center tracking-eyebrow uppercase pt-2">
-          Powered by Diwan
+          Powered by LocalFirst
         </p>
       </div>
     </div>

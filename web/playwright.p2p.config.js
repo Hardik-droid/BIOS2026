@@ -3,7 +3,7 @@
  *
  * Deliberately separate from playwright.config.js. That suite is hermetic and
  * fast: a `vite preview` build with every /api call mocked in-browser. This one
- * is the opposite — it builds and runs the real `diwan` binary and negotiates
+ * is the opposite — it builds and runs the real `localfirst` binary and negotiates
  * real WebRTC between two browser contexts. It is slower and needs a Go
  * toolchain, so it must never be able to destabilise the fast suite. Run it with
  * `npm run test:e2e:p2p`.

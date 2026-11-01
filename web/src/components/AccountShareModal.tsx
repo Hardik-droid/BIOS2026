@@ -72,7 +72,7 @@ const EXPIRY_OPTIONS = [
 ]
 
 // Build the absolute anonymous view URL for a link token. Prefers Office's
-// externally-reachable base (DIWAN_PUBLIC_URL via /api/reachability) so a
+// externally-reachable base (LOCALFIRST_PUBLIC_URL via /api/reachability) so a
 // link handed to an external viewer targets a reachable URL even when the box is
 // behind NAT and the owner loaded Office over a LAN address; falls back to the
 // current origin (standalone/cloud where the origin is already public).

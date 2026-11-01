@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"diwan/backend/models"
-	"diwan/backend/signing"
+	"localfirst/backend/models"
+	"localfirst/backend/signing"
 )
 
 // Share links are persisted as sharelinks/<sha256(token)>.json — keyed by the

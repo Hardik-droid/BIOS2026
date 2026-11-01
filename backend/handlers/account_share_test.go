@@ -20,10 +20,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"diwan/backend/audit"
-	"diwan/backend/fileacl"
-	"diwan/backend/middleware"
-	"diwan/backend/models"
+	"localfirst/backend/audit"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/middleware"
+	"localfirst/backend/models"
 
 	"github.com/gin-gonic/gin"
 )

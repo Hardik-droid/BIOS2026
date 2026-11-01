@@ -6,7 +6,7 @@ The [user safety audit](OFFLINE-USER-SAFETY-AUDIT.md) records the expanded recov
 
 ## Available now
 
-The Windows development package contains a standalone executable and bundled application assets. Extract the same full ZIP on both laptops and double-click `Start-Diwan-Offline.cmd`. It serves bundled files on `http://127.0.0.1:8765`, with no cloud backend, account login, Node.js or Go runtime required. The loopback server and `/_nearby/` bridge are local to each laptop. Keep the `web` directory and launcher files beside the executable. After updating, save and close all Diwan tabs/windows, then reopen the launcher; keep the same browser/profile/port and do not clear browser data.
+The Windows development package contains a standalone executable and bundled application assets. Extract the same full ZIP on both laptops and double-click `Start-LocalFirst-Offline.cmd`. It serves bundled files on `http://127.0.0.1:8765`, with no cloud backend, account login, Node.js or Go runtime required. The loopback server and `/_nearby/` bridge are local to each laptop. Keep the `web` directory and launcher files beside the executable. After updating, save and close all LocalFirst tabs/windows, then reopen the launcher; keep the same browser/profile/port and do not clear browser data.
 
 Documents use the browser profile's IndexedDB. They are not saved into the ZIP or alongside the executable. Keep the same browser profile and origin. Export the workspace before clearing browser storage. The persistent-storage button reports the browser's actual decision; it cannot guarantee protection from user deletion or disk failure.
 
@@ -40,7 +40,7 @@ Current results for the Windows Bluetooth preview are below. Native protocol/aut
 | Actual packaged executable | Passed | Correct frontend/native versions; starts without Node/Go on PATH; real owner Bluetooth sharing starts/stops on this radio; editor content survives migration and offline reload; zero cloud/document API requests, external requests or page errors |
 | Root Windows launcher | Passed on this laptop | Starts hidden local server and opens the browser |
 
-Reproduce from `diwan/web` in PowerShell using `npm.cmd`:
+Reproduce from `localfirst/web` in PowerShell using `npm.cmd`:
 
 ```powershell
 npm.cmd run typecheck
@@ -50,7 +50,7 @@ npm.cmd run test:e2e:offline
 npm.cmd run package:offline
 ```
 
-Run `go test ./cmd/diwan-offline` from `diwan` with Go on PATH. This workspace also has the portable toolchain at `../.tools/go/bin/go.exe`. Run `node ./Verify-Offline-Package.mjs` from the workspace parent to check the packaged executable on an isolated test port. That script closes its own test server; the user launcher uses port 8765.
+Run `go test ./cmd/localfirst-offline` from `localfirst` with Go on PATH. This workspace also has the portable toolchain at `../.tools/go/bin/go.exe`. Run `node ./Verify-Offline-Package.mjs` from the workspace parent to check the packaged executable on an isolated test port. That script closes its own test server; the user launcher uses port 8765.
 
 Machine-readable evidence: `web/test-results/offline-report.json` and the workspace parent's `Diwan-offline-package-verification.json`. Screenshot: `Diwan-offline-foundation.png` in the workspace parent.
 

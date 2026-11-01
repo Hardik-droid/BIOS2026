@@ -1,3 +1,4 @@
+import { LEGACY } from '../../lib/brandCompatibility'
 import { useEffect, useState, useCallback, useRef, useMemo, type MouseEvent as ReactMouseEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEditor, EditorContent, Extension, Mark, type Editor } from '@tiptap/react'
@@ -50,11 +51,11 @@ const TableHeader = TableHeaderBase.extend({
     return ['th', { ...HTMLAttributes, scope: typeof scope === 'string' && scope ? scope : 'col' }, 0]
   },
 })
-import { ArrowLeft, Save, Loader2, AlertCircle, History, Users, MessageSquare, Activity, GitBranch, Search, ListTree, Share2, Eye } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, AlertCircle, History, Users, MessageSquare, Activity, GitBranch, Search, ListTree, Share2, Eye, Star, Maximize2, Minimize2, FileText } from 'lucide-react'
 import FindReplace from './components/FindReplace'
 import WordCountModal from './components/WordCountModal'
 import DocumentOutline from './components/DocumentOutline'
-import { useFilesStore, getSaveState, onSaveStateChange, type DiwanFile, type SaveState } from '../../store/filesStore'
+import { useFilesStore, getSaveState, onSaveStateChange, type LocalFirstFile, type SaveState } from '../../store/filesStore'
 import { api } from '../../lib/api'
 import { OFFLINE_ONLY } from '../../lib/offline/mode'
 import { sanitizeDocHtml } from '../../lib/sanitize'
@@ -89,6 +90,7 @@ import { DocsCursorLayer } from '../../components/RemoteCursors.jsx'
 import PresenceBar from '../../components/PresenceBar.jsx'
 import { Button, IconButton, Tooltip, Topbar, LoadingState, SaveStatus, AvatarStack, useToast } from '../../components/ui'
 import { Skeleton } from '../../components/ui/LoadingState'
+import { EditorIdentity, EditorTitle, EditorStatusBar, EditorZoom } from '../../components/editor/EditorChrome'
 import { getCommentStore, type Comment, type CommentAnchor } from '../../lib/crdt/comments'
 import {
   createCommentDecorationsExtension,
@@ -340,7 +342,7 @@ export default function DocsEditor() {
   // labelled unavailable. Read once per mount — it is a build-time constant.
   const cloudCollabEnabled = useMemo(() => docsCollabEnabled(), [])
   const { files, saveFileWithDraft, markDirty } = useFilesStore()
-  const [file, setFile] = useState<DiwanFile | undefined>(files.find((f) => f.id === id))
+  const [file, setFile] = useState<LocalFirstFile | undefined>(files.find((f) => f.id === id))
   const collabEnabled = cloudCollabEnabled || (OFFLINE_ONLY && file?.nearby_enabled === true)
   const replicaRef = useRef<LocalReplica | null>(null)
   const replicaMetaRef = useRef<() => void>(() => {})
@@ -378,6 +380,10 @@ export default function DocsEditor() {
   const activateCommentRef = useRef<((commentId: string) => void) | null>(null)
   const [showActivity, setShowActivity] = useState(false)
   const [showOutline, setShowOutline] = useState(false)
+  const [zoom, setZoom] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768 ? 50 : 100)
+  const zoomRef = useRef(1)
+  zoomRef.current = zoom / 100
+  const [focusMode, setFocusMode] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)  // canvas scroll container, for outline tracking
   // Find/Replace
   const [findMode, setFindMode] = useState<'find' | 'replace' | null>(null)
@@ -397,8 +403,32 @@ export default function DocsEditor() {
   const [equationEditor, setEquationEditor] = useState<{ latex: string; display: boolean; editing: boolean } | null>(null)
   // P5: native spellcheck toggle (browser dictionary). Persisted per-browser.
   const [spellcheck, setSpellcheck] = useState(() => {
-    try { return localStorage.getItem('docs_spellcheck') !== 'off' } catch { return true }
+    try {
+      const preference = localStorage.getItem('localfirst_spellcheck') ?? localStorage.getItem('vulos_spellcheck')
+      return preference === null ? localStorage.getItem('docs_spellcheck') !== 'off' : preference !== 'false'
+    } catch { return true }
   })
+  const autosaveDelayRef = useRef(AUTOSAVE_DELAY_MS)
+  useEffect(() => {
+    const updateDelay = (value: unknown) => {
+      const delay = Number(value)
+      autosaveDelayRef.current = Number.isFinite(delay) && delay >= 1000 && delay <= 30000 ? delay : AUTOSAVE_DELAY_MS
+    }
+    try { updateDelay(localStorage.getItem('localfirst_autosave_delay') ?? localStorage.getItem('vulos_autosave_delay') ?? AUTOSAVE_DELAY_MS) } catch { /* browser storage is optional */ }
+    const applyPreferences = (event: Event) => {
+      const detail = (event as CustomEvent<{ autosaveDelay?: unknown; spellcheck?: unknown }>).detail
+      if (detail?.autosaveDelay !== undefined) updateDelay(detail.autosaveDelay)
+      if (typeof detail?.spellcheck === 'boolean') setSpellcheck(detail.spellcheck)
+    }
+    window.addEventListener('localfirst:preferences-changed', applyPreferences)
+    return () => window.removeEventListener('localfirst:preferences-changed', applyPreferences)
+  }, [])
+  useEffect(() => {
+    if (!focusMode) return
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setFocusMode(false) }
+    window.addEventListener('keydown', escape)
+    return () => window.removeEventListener('keydown', escape)
+  }, [focusMode])
   // OFFICE-27: suggestion / track-changes mode
   const [suggestionMode, setSuggestionMode] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -516,7 +546,7 @@ export default function DocsEditor() {
     let cancelled = false
     let replica: LocalReplica | null = null
     let sync: NearbyDocumentSync | null = null
-    const metadata = yctx.ydoc.getMap('diwan-meta')
+    const metadata = yctx.ydoc.getMap(LEGACY.documentMetadata)
     const metaChanged = () => { if (!cancelled) { replicaMetaRef.current(); markDirty(id) } }
     setHydrated(false); setReplicaError('')
     void LocalReplica.open(yctx as Parameters<typeof LocalReplica.open>[0], id, file.nearby_initial ? null : seedJSON, file.name,
@@ -741,7 +771,7 @@ export default function DocsEditor() {
       clearTimeout(retryTimer.current)
       setRetryCount(0)
       // doSave catches its own errors (see its try/catch) and never rejects.
-      saveTimer.current = setTimeout(() => { void doSave() }, OFFLINE_ONLY ? 250 : AUTOSAVE_DELAY_MS)
+      saveTimer.current = setTimeout(() => { void doSave() }, OFFLINE_ONLY ? 250 : autosaveDelayRef.current)
 
       // NOTE: there is no broadcast here any more. The document IS the Y.Doc —
       // y-prosemirror writes every local transaction into it, and the sessions
@@ -782,7 +812,7 @@ export default function DocsEditor() {
     if (!cached && id) {
       api.getFile(id).then((f) => {
         if (cancelled) return
-        const loaded = f as DiwanFile
+        const loaded = f as LocalFirstFile
         useFilesStore.setState(state => ({ files: [...state.files.filter(item => item.id !== loaded.id), loaded] }))
         setFile(loaded)
         setTitle(loaded.name)
@@ -849,6 +879,7 @@ export default function DocsEditor() {
     try {
       editor.view.dom.setAttribute('spellcheck', spellcheck ? 'true' : 'false')
       localStorage.setItem('docs_spellcheck', spellcheck ? 'on' : 'off')
+      localStorage.setItem('localfirst_spellcheck', String(spellcheck))
     } catch { /* non-fatal */ }
   }, [editor, spellcheck])
 
@@ -1216,7 +1247,7 @@ export default function DocsEditor() {
       const contentEl = scrollRef.current?.querySelector<HTMLElement>('.tiptap .ProseMirror')
         || scrollRef.current?.querySelector<HTMLElement>('.ProseMirror')
       if (!contentEl) return
-      const { breaks, pageCount: pc } = measurePageBreaks(contentEl, contentHeightPxRef.current)
+      const { breaks, pageCount: pc } = measurePageBreaks(contentEl, contentHeightPxRef.current, zoomRef.current)
       setPageBreaks(breaks)
       setPageCount(pc)
     }
@@ -1239,10 +1270,10 @@ export default function DocsEditor() {
     const contentEl = scrollRef.current?.querySelector<HTMLElement>('.tiptap .ProseMirror')
       || scrollRef.current?.querySelector<HTMLElement>('.ProseMirror')
     if (!contentEl) return
-    const { breaks, pageCount: pc } = measurePageBreaks(contentEl, contentHeightPx)
+    const { breaks, pageCount: pc } = measurePageBreaks(contentEl, contentHeightPx, zoom / 100)
     setPageBreaks(breaks)
     setPageCount(pc)
-  }, [contentHeightPx])
+  }, [contentHeightPx, zoom, focusMode])
 
   // Keep page-setup / header-footer in refs so doSave (a stable callback) always
   // serialises the latest metadata without being re-created on every change.
@@ -1252,7 +1283,7 @@ export default function DocsEditor() {
   headerFooterRef.current = headerFooter
   replicaMetaRef.current = () => {
     if (!ydoc) return
-    const meta = ydoc.getMap('diwan-meta')
+    const meta = ydoc.getMap(LEGACY.documentMetadata)
     const sharedTitle = meta.get('title')
     if (typeof sharedTitle === 'string' && sharedTitle.trim() && sharedTitle.length <= 512) { titleRef.current = sharedTitle; setTitle(sharedTitle) }
     const setup = meta.get('pageSetup')
@@ -1338,7 +1369,7 @@ export default function DocsEditor() {
     try {
     editor.commands.setContent(resolveContent(version.content), false)
     const content = version.content as Record<string, unknown>
-    const meta = replica.context.ydoc.getMap('diwan-meta')
+    const meta = replica.context.ydoc.getMap(LEGACY.documentMetadata)
     replica.context.ydoc.transact(() => {
       meta.set('title', version.name)
       meta.set('pageSetup', normalizePageSetup(content.pageSetup))
@@ -1409,7 +1440,7 @@ export default function DocsEditor() {
     const now = new Date().toISOString()
     const content = file?.nearby_enabled && !replicaRef.current && !hydrated ? file.content : { ...editor.getJSON(), pageSetup: pageSetupRef.current, headerFooter: headerFooterRef.current }
     const recovery = { id, name: titleRef.current.trim() || 'Recovered document', type: 'doc', content, rev: 1, owner: 'self', parent_id: '', starred: false, trashed: false, created_at: now, updated_at: now }
-    downloadJson(JSON.stringify({ format: 'diwan-local-workspace', version: 1, exported_at: now, files: [recovery], folders: [], versions: [] }), `diwan-recovery-${now.slice(0, 10)}.json`)
+    downloadJson(JSON.stringify({ format: 'localfirst-local-workspace', version: 1, exported_at: now, files: [recovery], folders: [], versions: [] }), `localfirst-recovery-${now.slice(0, 10)}.json`)
   }
 
   const handleSave = () => {
@@ -1422,7 +1453,7 @@ export default function DocsEditor() {
   // ── P3: page setup ────────────────────────────────────────────────────────
   const applyPageSetup = useCallback((next: PageSetup) => {
     setPageSetup(normalizePageSetup(next))
-    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap('diwan-meta').set('pageSetup', normalizePageSetup(next))
+    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap(LEGACY.documentMetadata).set('pageSetup', normalizePageSetup(next))
     markDirty(id || '')
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => { void doSave() }, 800)
@@ -1431,7 +1462,7 @@ export default function DocsEditor() {
   // ── P2: headers & footers ─────────────────────────────────────────────────
   const applyHeaderFooter = useCallback((next: HeaderFooterConfig) => {
     setHeaderFooter(normalizeHeaderFooter(next))
-    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap('diwan-meta').set('headerFooter', normalizeHeaderFooter(next))
+    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap(LEGACY.documentMetadata).set('headerFooter', normalizeHeaderFooter(next))
     markDirty(id || '')
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => { void doSave() }, 800)
@@ -1476,7 +1507,7 @@ export default function DocsEditor() {
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
-    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap('diwan-meta').set('title', newTitle)
+    if (OFFLINE_ONLY && replicaRef.current) replicaRef.current.context.ydoc.getMap(LEGACY.documentMetadata).set('title', newTitle)
     markDirty(id || '')
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => { void doSave() }, 1500)
@@ -1546,7 +1577,7 @@ export default function DocsEditor() {
   const pendingSuggestions = suggestions.filter((s) => s.state === 'pending').length
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-bg">
+    <div className={`lf-editor lf-editor-docs flex-1 flex flex-col overflow-hidden bg-bg${focusMode ? ' is-focused' : ''}`}>
       {/* Draft-restore banner — only banner we keep, because it requires action.
           Withheld until the collaborative document is hydrated: restoring writes
           a whole document through the editor, and doing that BEFORE the seed /
@@ -1580,29 +1611,29 @@ export default function DocsEditor() {
 
       {/* Top bar — composed from the design system */}
       <Topbar
+        className="lf-editor-topbar"
         leading={
-          <Tooltip label="Back to Docs">
+          <><Tooltip label="Back to Docs">
             <IconButton size="sm" onClick={() => void navigate('/docs')}>
               <ArrowLeft size={15} />
             </IconButton>
-          </Tooltip>
+          </Tooltip><EditorIdentity kind="doc" /></>
         }
         title={
-          <input
+          <><EditorTitle
+            kind="doc"
             value={title}
-            aria-label="Document title"
+            label="Document title"
             maxLength={512}
             readOnly={!documentReady || p2p.readOnly}
-            onChange={(e) => handleTitleChange(e.target.value)}
+            onChange={handleTitleChange}
             placeholder="Untitled document"
-            className={[
-              'flex-1 min-w-0 text-sm font-semibold tracking-tightish',
-              'bg-transparent border border-transparent rounded-sm px-2 py-1',
-              'text-ink placeholder:text-ink-faint',
-              'hover:border-line focus:border-line-strong focus:bg-paper',
-              'transition-[border-color,background] duration-fast ease-out outline-none',
-            ].join(' ')}
           />
+          {!p2p.readOnly && <Tooltip label={(files.find(entry => entry.id === id)?.starred ?? file?.starred) ? 'Remove from favorites' : 'Add to favorites'}>
+            <IconButton size="sm" aria-label="Favorite document" aria-pressed={!!(files.find(entry => entry.id === id)?.starred ?? file?.starred)} disabled={!documentReady || saveStatus.status === 'dirty' || saveStatus.status === 'saving'} onClick={() => {
+              if (id) void useFilesStore.getState().toggleStar(id).catch(() => showToast('Could not update this favorite. Please try again.', 'error'))
+            }}><Star size={15} fill={(files.find(entry => entry.id === id)?.starred ?? file?.starred) ? 'currentColor' : 'none'} /></IconButton>
+          </Tooltip>}</>
         }
         meta={
           <>
@@ -1680,6 +1711,11 @@ export default function DocsEditor() {
         }
         actions={
           <>
+            <Tooltip label={focusMode ? 'Exit focus mode (Esc)' : 'Focus writing'}>
+              <IconButton size="sm" active={focusMode} aria-label={focusMode ? 'Exit focus mode' : 'Focus writing'} aria-pressed={focusMode} onClick={() => setFocusMode(value => !value)}>
+                {focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </IconButton>
+            </Tooltip>
             <Tooltip label="Document outline">
               <IconButton size="sm" active={showOutline} onClick={() => setShowOutline((v) => !v)}>
                 <ListTree size={14} />
@@ -1800,7 +1836,7 @@ export default function DocsEditor() {
             - subtle 1-px line on the page edge, no heavy shadow
             - .paper-grain adds a near-imperceptible letterpress tooth
         */}
-        <div ref={scrollRef} className="doc-desk flex-1 overflow-auto px-6 py-10 relative">
+        <div ref={scrollRef} className="doc-desk lf-editor-desk flex-1 overflow-auto relative">
           {/* Find/Replace floating bar */}
           {findMode && (
             <FindReplace
@@ -1821,7 +1857,10 @@ export default function DocsEditor() {
           <article
             className="doc-pages paper-grain mx-auto bg-paper border border-line rounded-lg shadow-e2 relative"
             style={{
-              maxWidth: `${geo.pageWidthPx}px`,
+              width: `${geo.pageWidthPx}px`,
+              maxWidth: 'none',
+              ['--editor-zoom' as string]: zoom / 100,
+              ['--editor-page-height' as string]: `${geo.pageHeightPx}px`,
               paddingLeft: `min(${geo.marginLeftPx}px, var(--doc-screen-gutter, ${geo.marginLeftPx}px))`,
               paddingRight: `min(${geo.marginRightPx}px, var(--doc-screen-gutter, ${geo.marginRightPx}px))`,
               paddingTop: `${geo.marginTopPx}px`,
@@ -1874,8 +1913,8 @@ export default function DocsEditor() {
             onClose={() => setShowHistory(false)}
             onRestore={(updated) => {
               const u = updated as { content?: unknown; name?: string } | null | undefined
-              if (updated && typeof (updated as DiwanFile).rev === 'number') {
-                const restored = updated as DiwanFile
+              if (updated && typeof (updated as LocalFirstFile).rev === 'number') {
+                const restored = updated as LocalFirstFile
                 setFile(restored)
                 useFilesStore.setState(state => ({ files: state.files.map(item => item.id === restored.id ? restored : item) }))
               }
@@ -1938,7 +1977,12 @@ export default function DocsEditor() {
         )}
       </div>
 
-      <footer className="status-bar justify-end">
+      <EditorStatusBar leading={<>
+        <span className={`lf-status-dot${saveStatus.status === 'saved' || saveStatus.status === 'idle' ? '' : ' lf-status-pending'}`} aria-hidden="true" />
+        <span className="lf-status-storage-label">{OFFLINE_ONLY ? 'Local workspace' : 'Workspace document'}</span>
+        {OFFLINE_ONLY && file?.nearby_enabled && <span title={visibleNearbySync.error}>{visibleNearbySync.phase === 'acknowledged' ? 'Peer acknowledged' : visibleNearbySync.phase === 'syncing' ? 'Peer sync in progress' : visibleNearbySync.phase === 'error' ? 'Peer sync needs attention' : 'Peer offline'}</span>}
+        <button type="button" title="Change page size and margins" onClick={() => setShowPageSetup(true)}><FileText size={12} />{pageSetup.size.toUpperCase()} · {pageSetup.orientation}</button>
+      </>}>
         {p2p.readOnly && (
           <span className="status-item text-ink-faint mr-auto">
             <Eye size={11} aria-hidden /> View only
@@ -1956,7 +2000,8 @@ export default function DocsEditor() {
           <span className="opacity-40">·</span>
           <span>{charCount} characters</span>
         </button>
-      </footer>
+        <EditorZoom value={zoom} onChange={setZoom} />
+      </EditorStatusBar>
 
       {/* Word count detail modal */}
       {showWordCount && (

@@ -9,16 +9,16 @@ package handlers
 // invite minting and audit reads off the surface of ordinary users.
 
 import (
+	appbrand "localfirst/internal/brand"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
-	"diwan/backend/audit"
-	"diwan/backend/billing"
-	"diwan/backend/invites"
-	"diwan/backend/middleware"
-	"diwan/backend/userauth"
+	"localfirst/backend/audit"
+	"localfirst/backend/billing"
+	"localfirst/backend/invites"
+	"localfirst/backend/middleware"
+	"localfirst/backend/userauth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,14 +26,14 @@ import (
 // ---- shared process-wide stores ---------------------------------------------
 
 func inviteDBPath() string {
-	if v := os.Getenv("VULOS_INVITES_DB"); v != "" {
+	if v := appbrand.Getenv("VULOS_INVITES_DB"); v != "" {
 		return v
 	}
 	return "./data/invites.db"
 }
 
 func auditDBPath() string {
-	if v := os.Getenv("VULOS_AUDIT_DB"); v != "" {
+	if v := appbrand.Getenv("VULOS_AUDIT_DB"); v != "" {
 		return v
 	}
 	return "./data/audit.db"
@@ -49,7 +49,7 @@ var (
 )
 
 func credsDBPath() string {
-	if v := os.Getenv("VULOS_USERAUTH_DB"); v != "" {
+	if v := appbrand.Getenv("VULOS_USERAUTH_DB"); v != "" {
 		return v
 	}
 	return "./data/userauth.db"

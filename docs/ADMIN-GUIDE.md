@@ -1,6 +1,6 @@
-# Diwan — Admin Guide
+# LocalFirst — Admin Guide
 
-This chapter is for the person who runs Diwan: deploying it (bare binary, Docker, Fly.io, or as part of a Vulos OS bundle), configuring it (`config.yaml` + environment variables), understanding where documents actually live on disk, enabling multi-user auth, integrating with the Vulos OS, and backing it all up. Diwan is a **single Go binary with the entire web app embedded** — the default deployment is one process, one port (`:8080`), one data directory, no external dependencies. Every endpoint and variable named here exists in the code of this repository.
+This chapter is for the person who runs LocalFirst: deploying it (bare binary, Docker, Fly.io, or as part of a Vulos OS bundle), configuring it (`config.yaml` + environment variables), understanding where documents actually live on disk, enabling multi-user auth, integrating with the Vulos OS, and backing it all up. LocalFirst is a **single Go binary with the entire web app embedded** — the default deployment is one process, one port (`:8080`), one data directory, no external dependencies. Every endpoint and variable named here exists in the code of this repository.
 
 ---
 
@@ -9,9 +9,9 @@ This chapter is for the person who runs Diwan: deploying it (bare binary, Docker
 ### 1.1 Single binary (simplest)
 
 ```bash
-npm install
-npm run build          # builds the frontend into dist/ and compiles the Go binary
-./diwan
+npm --prefix web ci
+npm --prefix web run build          # builds the frontend into dist/ and compiles the Go binary
+./localfirst
 # → http://localhost:8080
 ```
 
@@ -20,12 +20,12 @@ Data lands in `./data` and `./uploads` relative to the working directory. With z
 Useful invocations:
 
 ```bash
-./diwan --version            # print build version
-./diwan version              # same
-./diwan --no-rate-limit-writes   # disable write/collab token-bucket (trusted/internal only)
-./diwan migrate up           # apply storage schema migrations (idempotent)
-./diwan migrate status       # show which application tables exist
-./diwan migrate-credential -admin you@example.org [-password PW]
+./localfirst --version            # print build version
+./localfirst version              # same
+./localfirst --no-rate-limit-writes   # disable write/collab token-bucket (trusted/internal only)
+./localfirst migrate up           # apply storage schema migrations (idempotent)
+./localfirst migrate status       # show which application tables exist
+./localfirst migrate-credential -admin you@example.org [-password PW]
                                     # one-shot: convert a legacy shared-password deploy
                                     # to a per-user credential (no-op once any user exists)
 ```
@@ -33,40 +33,41 @@ Useful invocations:
 ### 1.2 Docker
 
 ```bash
+# Run from this repository root.
+docker build -t localfirst:local .
 docker run -d \
-  --name diwan \
+  --name localfirst \
   -p 8080:8080 \
   -v office-data:/srv/data \
-  ghcr.io/vul-os/diwan:latest
+  -v office-uploads:/srv/uploads \
+  localfirst:local
 ```
 
 Image facts (from the `Dockerfile`):
 
-- Runs as non-root user `vulos` (uid 10001), `WORKDIR /srv`, so data is at **`/srv/data`** and uploads at **`/srv/uploads`**. Mount a volume at `/srv/data` (and at `/srv/uploads` if you want uploaded images to survive redeploys — the stock image only declares the data volume).
+- Runs as non-root user `vulos` (uid 10001), `WORKDIR /srv`, so data is at **`/srv/data`** and uploads at **`/srv/uploads`**. Mount a volume at `/srv/data` (and at `/srv/uploads` if you want uploaded images to survive redeploys — the Dockerfile declares both volumes).
 - `EXPOSE 8080`; built-in `HEALTHCHECK` polls `GET /healthz`.
 - The binary is static (CGO off; Postgres via pure-Go pgx) on Alpine.
 
 **Building the image yourself**: the WebRTC collaboration fabric is first-party source under `src/lib/collab/webrtc/` (no separate package, no sibling-repo checkout needed), so a plain build from the repo root always works:
 
 ```bash
-docker build -t ghcr.io/vul-os/diwan:latest .
+docker build -t localfirst:local .
 ```
 
 ### 1.3 Fly.io
 
-`fly.toml` is checked in. Because Fly's build context is the config file's directory, build and push the image out-of-band, then deploy by image reference:
+`fly.toml` builds this repository using its `Dockerfile` ([Fly build configuration](https://fly.io/docs/reference/configuration/#the-build-section)). Set an available app name and region in the config, and create the `office_data` volume in that region before deployment. Run from the repository root:
 
 ```bash
-docker build -t ghcr.io/vul-os/diwan:latest .
-docker push ghcr.io/vul-os/diwan:latest
-fly deploy -c fly.toml --image ghcr.io/vul-os/diwan:latest
+fly deploy -c fly.toml
 ```
 
 The config mounts a volume `office_data` at `/srv/data`, checks `/healthz`, forces HTTPS, and documents setting `DATABASE_URL` / `IDENTITY_URL` / `VULOS_CP_TOKEN` as Fly secrets.
 
 ### 1.4 Vulos OS bundle
 
-For a full sovereign box (OS + Mail + Diwan sharing one identity and storage fabric), use the bundle installer described in [INSTALL.md](INSTALL.md) / [GETTING-STARTED.md](GETTING-STARTED.md). The bundle also provides the `/api/peering/*` fabric endpoints, which light up low-latency P2P collaboration and cross-app presence and are the one discovery path that can bind an authenticated account session to a peer identity. A standalone Diwan binary does not serve those — it serves its own equivalent discovery surface at `/api/rendezvous/*` instead (on by default), so peer-to-peer collaboration works either way (see [COLLABORATION.md](COLLABORATION.md) §3).
+For a full sovereign box (OS + Mail + LocalFirst sharing one identity and storage fabric), use the bundle installer described in [INSTALL.md](INSTALL.md) / [GETTING-STARTED.md](GETTING-STARTED.md). The bundle also provides the `/api/peering/*` fabric endpoints, which light up low-latency P2P collaboration and cross-app presence and are the one discovery path that can bind an authenticated account session to a peer identity. A standalone LocalFirst binary does not serve those — it serves its own equivalent discovery surface at `/api/rendezvous/*` instead (on by default), so peer-to-peer collaboration works either way (see [COLLABORATION.md](COLLABORATION.md) §3).
 
 ---
 
@@ -94,7 +95,7 @@ storage:
     port: 5432
     user: "postgres"
     password: ""
-    database: "diwan"
+    database: "localfirst"
     sslmode: "disable"
 ```
 
@@ -106,10 +107,10 @@ Core:
 |----------|---------|
 | `DATABASE_URL` | Full `postgres://…` URL. When set, selects Postgres storage (schema `office`) and overrides `storage.type`. |
 | `VULOS_DATABASE_URL` | Alias, checked if `DATABASE_URL` unset. |
-| `DIWAN_JWT_SECRET` | HS256 secret for session JWTs. **Required when `auth.enabled: true`** — the server refuses to start without it (fatal at boot). |
-| `DIWAN_DEV` | `1` = clearly-labelled insecure dev secret. Never in production. |
-| `DIWAN_CORS_ORIGINS` | Comma-separated allowed origins (credentials allowed). Unset ⇒ all origins allowed *without* credentials — the startup log states which mode you're in. |
-| `DIWAN_REGISTRATION_TOKEN` | Static fallback registration token (prefer minted invites). |
+| `LOCALFIRST_JWT_SECRET` | HS256 secret for session JWTs. **Required when `auth.enabled: true`** — the server refuses to start without it (fatal at boot). |
+| `LOCALFIRST_DEV` | `1` = clearly-labelled insecure dev secret. Never in production. |
+| `LOCALFIRST_CORS_ORIGINS` | Comma-separated allowed origins (credentials allowed). Unset ⇒ all origins allowed *without* credentials — the startup log states which mode you're in. |
+| `LOCALFIRST_REGISTRATION_TOKEN` | Static fallback registration token (prefer minted invites). |
 
 SQLite store paths (defaults under `data_dir`):
 
@@ -124,18 +125,18 @@ SSO / cloud seams (all optional; unset = fully standalone):
 
 | Variable | Purpose |
 |----------|---------|
-| `IDENTITY_URL` | Identity provider base URL. When set, Diwan validates the browser's `vc_session` cookie via `POST {IDENTITY_URL}/api/session/introspect`, **fail-closed** (401 on invalid/unreachable). Unset ⇒ SSO path disabled. |
+| `IDENTITY_URL` | Identity provider base URL. When set, LocalFirst validates the browser's `vc_session` cookie via `POST {IDENTITY_URL}/api/session/introspect`, **fail-closed** (401 on invalid/unreachable). Unset ⇒ SSO path disabled. |
 | `VULOS_CP_BASE_URL` | External control-plane URL (Vulos operates none — this points at your own, if you run one). Enables the entitlements/usage adapter and the `vk_` API-key introspection path for `/v1`. Unset ⇒ none of that code runs. |
 | `VULOS_CP_TOKEN` | Service token presented as `X-Relay-Auth` to the CP / identity provider. Not a signing key. |
 | `VULOS_ORG_ID` | Tenant/org scoping used by the cloud adapter and storage. |
 
 Object storage / bundle (optional): `TIGRIS_ENDPOINT`, `TIGRIS_REGION`, `TIGRIS_ACCESS_KEY_ID`, `TIGRIS_SECRET_ACCESS_KEY`, and the bundle-shared `VULOS_STORAGE_MODE`, `VULOS_MINIO_ENDPOINT`, `VULOS_MINIO_REGION`, `VULOS_MINIO_BUCKET`, `VULOS_MINIO_CREDS_REF` — see [CONFIGURATION.md](CONFIGURATION.md) for that matrix.
 
-Observability: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME` (default `diwan`).
+Observability: `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME` (default `localfirst`).
 
 SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`) — only relevant for outbound notification mail in standalone setups.
 
-Auth precedence per request: `vk_` API key → Diwan session JWT → SSO `vc_session` introspection → 401. Introspection results are cached in-process ~45 s.
+Auth precedence per request: `vk_` API key → LocalFirst session JWT → SSO `vc_session` introspection → 401. Introspection results are cached in-process ~45 s.
 
 ---
 
@@ -160,7 +161,7 @@ Every id used to build a path is validated against a strict pattern (letters/dig
 
 ### 3.2 Postgres (multi-user / cloud)
 
-Set `DATABASE_URL` (or `storage.type: postgres`). Diwan uses the dedicated schema **`office`** inside the database, so it co-exists with other Vulos products in one shared Postgres/Neon project. Tables are created automatically on first boot; `./diwan migrate up` applies the same migrations explicitly (idempotent — run it before a rolling restart after upgrades), and `migrate status` lists present tables. File ACLs move into Postgres too (`backend/storage/fileacl_postgres.go`).
+Set `DATABASE_URL` (or `storage.type: postgres`). LocalFirst uses the dedicated schema **`office`** inside the database, so it co-exists with other Vulos products in one shared Postgres/Neon project. Tables are created automatically on first boot; `./localfirst migrate up` applies the same migrations explicitly (idempotent — run it before a rolling restart after upgrades), and `migrate status` lists present tables. File ACLs move into Postgres too (`backend/storage/fileacl_postgres.go`).
 
 ### 3.3 Object storage (optional)
 
@@ -171,8 +172,8 @@ Set `DATABASE_URL` (or `storage.type: postgres`). Diwan uses the dedicated schem
 ## 4. Enabling multi-user auth
 
 1. Set `auth.enabled: true` in `config.yaml`.
-2. `export DIWAN_JWT_SECRET="$(openssl rand -hex 32)"` — boot fails loudly without it.
-3. Start the server, then bootstrap the first user via `POST /api/auth/register` (with `DIWAN_REGISTRATION_TOKEN` or an invite), or convert an old shared-password install with `./diwan migrate-credential -admin <account>`.
+2. `export LOCALFIRST_JWT_SECRET="$(openssl rand -hex 32)"` — boot fails loudly without it.
+3. Start the server, then bootstrap the first user via `POST /api/auth/register` (with `LOCALFIRST_REGISTRATION_TOKEN` or an invite), or convert an old shared-password install with `./localfirst migrate-credential -admin <account>`.
 4. From an admin account, open **Settings → Admin** to mint **invite tokens** (single-use, expiring; the raw token is shown exactly once) and to read the **audit log** (ACL grants/revokes, registrations, invite events, role changes).
 
 Related behavior to be aware of:
@@ -186,16 +187,16 @@ Related behavior to be aware of:
 
 ## 5. Integration into the Vulos OS
 
-- **Embedding**: every editor surface ships as the npm library `diwan` with entries `diwan/docs`, `diwan/sheets`, `diwan/slides`, `diwan/whiteboard`, `diwan/pdf` — the Vulos OS (or your own app) mounts them as native panels. Built by `vite.config.lib.js` into `dist-lib/`. (The Go module and the binary it builds are named `diwan`; the npm package and the product are Diwan.)
-- **Identity**: on a Vulos OS box, set `IDENTITY_URL` so Diwan introspects the shared `vc_session` cookie — Diwan deliberately holds no session-signing power in that mode.
-- **Peering fabric**: the OS/Pier host provides `/api/peering/stream` (WebSocket signaling) and `/api/peering/ice`; Diwan's collab code discovers them same-origin and lights up P2P collaboration + presence automatically. Without a host-box fabric, Diwan serves its **own** discovery surface at `/api/rendezvous/*` (`collab.builtin_rendezvous`, on by default), so P2P works on a bare binary with nothing configured; you can point it at a self-hosted `vulos-relayd` instead with `collab.rendezvous_url` / `VULOS_RENDEZVOUS_URL` (see [CONFIGURATION.md](CONFIGURATION.md)). Only with the built-in surface turned off *and* no relay configured does it degrade to local-only.
+- **Embedding**: every editor surface ships as the npm library `localfirst` with entries `localfirst/docs`, `localfirst/sheets`, `localfirst/slides`, `localfirst/whiteboard`, `localfirst/pdf` — the Vulos OS (or your own app) mounts them as native panels. Built by `vite.config.lib.js` into `dist-lib/`. (The Go module and the binary it builds are named `localfirst`; the npm package and the product are LocalFirst.)
+- **Identity**: on a Vulos OS box, set `IDENTITY_URL` so LocalFirst introspects the shared `vc_session` cookie — LocalFirst deliberately holds no session-signing power in that mode.
+- **Peering fabric**: the OS/Pier host provides `/api/peering/stream` (WebSocket signaling) and `/api/peering/ice`; LocalFirst's collab code discovers them same-origin and lights up P2P collaboration + presence automatically. Without a host-box fabric, LocalFirst serves its **own** discovery surface at `/api/rendezvous/*` (`collab.builtin_rendezvous`, on by default), so P2P works on a bare binary with nothing configured; you can point it at a self-hosted `vulos-relayd` instead with `collab.rendezvous_url` / `VULOS_RENDEZVOUS_URL` (see [CONFIGURATION.md](CONFIGURATION.md)). Only with the built-in surface turned off *and* no relay configured does it degrade to local-only.
 - **Control plane** (self-wired, multi-tenant): `VULOS_CP_BASE_URL` + `VULOS_CP_TOKEN` + `VULOS_ORG_ID` enable entitlements (`GET {CP}/api/entitlements`, fails open on transient CP outage), usage metering (fire-and-forget `POST {CP}/api/usage`), and `vk_` API-key introspection for `/v1` (fail-closed `503` if the CP is unreachable during key validation). Vulos operates no control plane for you to point this at. See [SELFHOST.md](SELFHOST.md) for the full seam contract.
 
 ---
 
 ## 6. Running behind a reverse proxy
 
-Diwan serves the app + API on one port, so proxying is one location block. Note: Diwan itself hosts **no** long-lived collaboration stream — collaboration is peer-to-peer with no central document server (see [COLLABORATION.md](COLLABORATION.md)). One path needs care, and only on a Vulos OS/Pier host:
+LocalFirst serves the app + API on one port, so proxying is one location block. Note: LocalFirst itself hosts **no** long-lived collaboration stream — collaboration is peer-to-peer with no central document server (see [COLLABORATION.md](COLLABORATION.md)). One path needs care, and only on a Vulos OS/Pier host:
 
 - **WebSocket** (`/api/peering/stream`): the content-blind peer-discovery signaling channel. It only exists when a Vulos OS/Pier host provides the peering fabric; if you proxy such a deployment, `Upgrade`/`Connection` headers must be forwarded and read timeouts kept long, or peers fail to discover each other (see [TROUBLESHOOTING.md](TROUBLESHOOTING.md) §3).
 - **`/api/rendezvous/*`** (the built-in peer discovery a standalone binary serves itself — on by default): ordinary same-origin JSON over `GET`/`POST`, **no WebSocket upgrade needed**. It does **long-poll**, holding a request open for up to 25 seconds while it waits for a peer's signal, so a proxy read timeout below ~30s will chop every poll and make discovery slow or fail. The `proxy_read_timeout 1h` below covers both this and the WS above. A `404` on `/api/rendezvous/healthz` through the proxy, when the binary answers it directly, means the proxy is not passing the path through.
@@ -214,16 +215,16 @@ location / {
 }
 ```
 
-Also remember the per-IP rate limits — writes (burst 30, refill 10/s) and the built-in discovery surface (burst 240, refill 40/s). If the proxy hides client IPs, **all users share one bucket**. Preserve real client addresses (`X-Forwarded-For` above, and make sure Diwan trusts it), or relax limits deliberately. A whole office behind one NAT address is comfortably inside the discovery limit; a proxy that presents every user as `127.0.0.1` is not the same thing as a limit that is too tight.
+Also remember the per-IP rate limits — writes (burst 30, refill 10/s) and the built-in discovery surface (burst 240, refill 40/s). If the proxy hides client IPs, **all users share one bucket**. Preserve real client addresses (`X-Forwarded-For` above, and make sure LocalFirst trusts it), or relax limits deliberately. A whole office behind one NAT address is comfortably inside the discovery limit; a proxy that presents every user as `127.0.0.1` is not the same thing as a limit that is too tight.
 
 ---
 
 ## 7. Security hardening checklist
 
-- [ ] `auth.enabled: true` + strong `DIWAN_JWT_SECRET` (32+ random bytes); never `DIWAN_DEV=1` in production.
+- [ ] `auth.enabled: true` + strong `LOCALFIRST_JWT_SECRET` (32+ random bytes); never `LOCALFIRST_DEV=1` in production.
 - [ ] TLS in front (reverse proxy or Fly `force_https`); session cookies are HttpOnly, but the transport is on you.
-- [ ] `DIWAN_CORS_ORIGINS` set to your exact origins if anything embeds Diwan or calls it cross-origin.
-- [ ] First admin bootstrapped, then registration only via **invites** (avoid leaving a static `DIWAN_REGISTRATION_TOKEN` around).
+- [ ] `LOCALFIRST_CORS_ORIGINS` set to your exact origins if anything embeds LocalFirst or calls it cross-origin.
+- [ ] First admin bootstrapped, then registration only via **invites** (avoid leaving a static `LOCALFIRST_REGISTRATION_TOKEN` around).
 - [ ] Keep the write rate-limit on (don't ship `--no-rate-limit-writes` to the internet).
 - [ ] Volumes for `data/` *and* `uploads/`; backups tested (see §9).
 - [ ] Review the audit log (Settings → Admin) periodically — every share/role/invite/registration event is recorded append-only.
@@ -257,14 +258,14 @@ What to back up:
 | Local storage (default) | The whole **`data/`** directory (documents, versions, annotations, envelopes, sealed PDFs, and all four SQLite DBs) **and `uploads/`** (inline images live here — losing it breaks images in documents) |
 | Docker | The volume(s) at `/srv/data` (+ `/srv/uploads` if mounted) |
 | Postgres | `pg_dump` of the `office` schema, plus `uploads/` (uploads stay on local disk unless object storage is configured) |
-| `config.yaml` + env/secrets | Always — especially `DIWAN_JWT_SECRET` (losing it invalidates all sessions, not data) |
+| `config.yaml` + env/secrets | Always — especially `LOCALFIRST_JWT_SECRET` (losing it invalidates all sessions, not data) |
 
 Practical notes:
 
 - Everything in local mode is flat files + SQLite: a filesystem snapshot or `tar` of `data/` + `uploads/` while traffic is quiescent is a complete backup. For hot backups of the SQLite stores, prefer `sqlite3 <db> ".backup <dest>"` over raw copy.
 - Version history is part of `data/versions/` — backing up documents without it loses restore points.
 - **E2E "Collaborate via link" rooms store nothing on the server** — each participant's browser keeps local snapshots, and their own saves land in their account's storage as usual. There is nothing extra to back up, and nothing server-side to recover if a room's link is lost (rotate/reshare instead).
-- Restore = put `data/` + `uploads/` back in the working directory (or restore the volume / `psql` the dump), then start the binary; run `./diwan migrate up` after restoring a Postgres dump onto a newer binary.
+- Restore = put `data/` + `uploads/` back in the working directory (or restore the volume / `psql` the dump), then start the binary; run `./localfirst migrate up` after restoring a Postgres dump onto a newer binary.
 - Test restores by starting a scratch container against a copy of the backup and hitting `/healthz` + opening a document.
 
 ---
@@ -273,7 +274,7 @@ Practical notes:
 
 1. Back up (above).
 2. Pull/build the new image or binary.
-3. Postgres: `./diwan migrate up` (idempotent) before or during the rolling restart; local storage migrates transparently.
+3. Postgres: `./localfirst migrate up` (idempotent) before or during the rolling restart; local storage migrates transparently.
 4. Watch the startup log lines for the mode announcements you expect (seam/SSO/CORS/rate-limit).
 5. Verify `/healthz`, then log in and open a document.
 

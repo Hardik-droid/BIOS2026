@@ -1,4 +1,4 @@
-# BIOS2026 / Diwan: USP and competitive landscape
+# BIOS2026 / LocalFirst: USP and competitive landscape
 
 **Prepared for judges · 1 November 2026 · Evidence baseline: `d7e9135`**
 
@@ -53,7 +53,7 @@ The hypothesis is that a small local group can continue producing a shared docum
 
 ## 4. What is inherited, and what this version contributes
 
-BIOS2026 is derived from [VulOS Diwan](https://github.com/vul-os/diwan). The local baseline is commit `8cdb6f5`; the pushed project history preserves that ancestry. Diwan already supplied the React office shell, editor integrations, Go server, storage infrastructure, signing-related functionality and existing WebRTC collaboration code. React, Yjs, ProseMirror and TLS are established technologies, not algorithms invented by this project.
+BIOS2026 is derived from [VulOS LocalFirst](https://github.com/vul-os/diwan). The local baseline is commit `8cdb6f5`; the pushed project history preserves that ancestry. LocalFirst already supplied the React office shell, editor integrations, Go server, storage infrastructure, signing-related functionality and existing WebRTC collaboration code. React, Yjs, ProseMirror and TLS are established technologies, not algorithms invented by this project.
 
 The extension work visible against that baseline includes:
 
@@ -76,7 +76,7 @@ These contributions are system integration, persistence semantics, transport ada
 
 | Product or family | Local work without public Internet | Collaboration route in the cited material | Confidentiality relevant to comparison | Fit and gap for this project |
 | --- | --- | --- | --- | --- |
-| **BIOS2026 / Diwan extension** | Implemented and tested for local Docs workflow after package installation | Native Windows Bluetooth; Android fixed-route relay is experimental | Pinned endpoint TLS for document transport; local documents/backups are not application-encrypted at rest | Focused workflow and explicit commit acknowledgements; physical peer/range evidence still incomplete |
+| **BIOS2026 / LocalFirst extension** | Implemented and tested for local Docs workflow after package installation | Native Windows Bluetooth; Android fixed-route relay is experimental | Pinned endpoint TLS for document transport; local documents/backups are not application-encrypted at rest | Focused workflow and explicit commit acknowledgements; physical peer/range evidence still incomplete |
 | [Google Docs](https://support.google.com/docs/answer/6388102?hl=en) | Yes, after supported-browser/profile offline setup | Service-backed synchronization; offline edits wait for reconnection | Do not infer endpoint-only cryptographic confidentiality from offline availability | Strong familiar collaboration; cited flow does not establish direct Bluetooth co-editing |
 | [Microsoft Word / Microsoft 365](https://support.microsoft.com/en-us/sharepoint/get-started-with-sharepoint/document-collaboration-and-co-authoring) | Yes, with suitable desktop/mobile app and local document availability | Co-authoring through shared storage such as OneDrive or SharePoint | Depends on product and organizational deployment; not assessed here as a universal E2EE model | Mature desktop editing; nearby serverless document transport is a different target |
 | [LibreOffice](https://help.libreoffice.org/latest/en-US/text/shared/guide/collab.html?DbPAR=BASE&System=WIN) | Yes, desktop files | Calc has simultaneous shared-file collaboration; other workflows vary | Local ownership does not itself prove encrypted exchange | Strong offline alternative; Calc sharing must not be erased from the comparison |

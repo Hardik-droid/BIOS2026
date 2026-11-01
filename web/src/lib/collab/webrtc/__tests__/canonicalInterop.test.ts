@@ -1,7 +1,7 @@
 /**
  * canonicalInterop.test.ts — the browser half of a two-language pin.
  *
- * Diwan now serves its OWN peer-discovery surface from the Go binary
+ * LocalFirst now serves its OWN peer-discovery surface from the Go binary
  * (backend/rendezvous), and every request to it is authenticated by an Ed25519
  * signature over `canonicalMessage(domain, fields)`. That message is built TWICE,
  * independently: here in JavaScript, and in Go by `CanonicalMessage`. They are

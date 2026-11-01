@@ -1,14 +1,12 @@
-// Package obs wires Prometheus metrics and OTel tracing for diwan.
+// Package obs wires Prometheus metrics and OTel tracing for localfirst.
 // No-op when OTEL_EXPORTER_OTLP_ENDPOINT is unset.
 package obs
 
 import (
 	"context"
-	"net/http"
-	"os"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	dto "github.com/prometheus/client_model/go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -16,34 +14,37 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
+	appbrand "localfirst/internal/brand"
+	"net/http"
+	"strings"
 )
 
-const serviceName = "diwan"
+const serviceName = "localfirst"
 
 var (
 	RequestCount = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: "diwan",
+		Namespace: "localfirst",
 		Name:      "request_count_total",
 		Help:      "Total HTTP requests handled.",
 	})
 	RequestDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Namespace: "diwan",
+		Namespace: "localfirst",
 		Name:      "request_duration_seconds",
 		Help:      "HTTP request latency.",
 		Buckets:   prometheus.DefBuckets,
 	})
 	ErrorCount = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: "diwan",
+		Namespace: "localfirst",
 		Name:      "error_count_total",
 		Help:      "Total error responses.",
 	})
 	QueueDepth = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "diwan",
+		Namespace: "localfirst",
 		Name:      "queue_depth",
 		Help:      "Pending WebSocket signaling operations.",
 	})
 	CacheHitRatio = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "diwan",
+		Namespace: "localfirst",
 		Name:      "cache_hit_ratio",
 		Help:      "CRDT op cache hit ratio (0–1).",
 	})
@@ -57,7 +58,7 @@ func Init() {
 	} {
 		_ = prometheus.DefaultRegisterer.Register(c)
 	}
-	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	endpoint := appbrand.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
 		return
 	}
@@ -84,7 +85,27 @@ func Start(ctx context.Context, op string) (context.Context, trace.Span) {
 }
 
 func Handler() http.Handler {
-	return promhttp.Handler()
+	return promhttp.HandlerFor(compatibleMetrics{prometheus.DefaultGatherer}, promhttp.HandlerOpts{})
+}
+
+// Preserve established metric names for monitoring clients while exposing the
+// LocalFirst namespace. Both aliases report the same collected measurements.
+type compatibleMetrics struct{ prometheus.Gatherer }
+
+func (g compatibleMetrics) Gather() ([]*dto.MetricFamily, error) {
+	families, err := g.Gatherer.Gather()
+	if err != nil {
+		return families, err
+	}
+	for _, family := range families {
+		if strings.HasPrefix(family.GetName(), "localfirst_") {
+			alias := *family
+			name := "diwan_" + strings.TrimPrefix(family.GetName(), "localfirst_")
+			alias.Name = &name
+			families = append(families, &alias)
+		}
+	}
+	return families, nil
 }
 
 // Middleware wraps an http.Handler to increment RequestCount and record

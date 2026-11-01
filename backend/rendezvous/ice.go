@@ -17,7 +17,7 @@ import (
 //
 // WHY IT IS SERVED BY THE BINARY AND NOT BAKED INTO THE BUNDLE
 // -----------------------------------------------------------
-// Diwan's browser code can already read STUN/TURN config from `VITE_STUN_URLS` /
+// LocalFirst's browser code can already read STUN/TURN config from `VITE_STUN_URLS` /
 // `VITE_TURN_*` — but those are BUILD-TIME variables baked into the JS bundle. An
 // operator who downloaded a release binary (or pulled the container) cannot set
 // them without rebuilding the frontend, which makes docs/COTURN.md unusable for

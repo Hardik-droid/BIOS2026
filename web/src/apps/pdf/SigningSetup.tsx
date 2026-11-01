@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { api, type JsonRecord } from '../../lib/api'
 import { Button, IconButton, Card, Tabs, Topbar, Tooltip } from '../../components/ui'
+import { EditorIdentity, EditorTitle } from '../../components/editor/EditorChrome'
 
 type FieldKind = 'signature' | 'initial' | 'date' | 'name' | 'text'
 
@@ -425,10 +426,11 @@ export default function SigningSetup() {
 
   // ── Render ───────────────────────────────────────────────────
   return (
-    <div className="flex-1 flex flex-col bg-bg text-ink overflow-hidden">
+    <div className="lf-editor lf-editor-signing flex-1 flex flex-col bg-bg text-ink overflow-hidden">
 
       {/* TOP BAR — quiet, design-system Topbar */}
       <Topbar
+        className="lf-editor-topbar"
         leading={
           <>
             <Tooltip label="Back">
@@ -436,27 +438,16 @@ export default function SigningSetup() {
                 <ArrowLeft size={15} />
               </IconButton>
             </Tooltip>
-            <span aria-hidden className="h-5 w-px bg-line" />
-            <div className="flex items-center gap-2 text-ink">
-              <div className="w-7 h-7 rounded-md bg-accent text-white flex items-center justify-center">
-                <FileSignature size={14} />
-              </div>
-              <span className="text-sm font-semibold tracking-tightish">Prepare to Sign</span>
-            </div>
+            <EditorIdentity kind="pdf" />
           </>
         }
         title={
-          <input
+          <EditorTitle
+            kind="pdf"
             value={envelopeTitle}
-            onChange={e => setEnvelopeTitle(e.target.value)}
+            onChange={setEnvelopeTitle}
             placeholder="Envelope title…"
-            className={[
-              'flex-1 max-w-md h-8 px-3 rounded-md',
-              'bg-bg-elev2 border border-line text-ink text-sm tracking-tightish',
-              'outline-none transition-colors duration-fast ease-out',
-              'focus:border-accent focus:shadow-focus',
-              'placeholder:text-ink-faint placeholder:font-serif placeholder:italic',
-            ].join(' ')}
+            label="Envelope title"
           />
         }
         actions={
@@ -483,7 +474,7 @@ export default function SigningSetup() {
       />
 
       {/* FIELD TYPE TOOLBAR — chips as IconButtons w/ serif labels */}
-      <div className="bg-paper border-b border-line h-12 flex items-center gap-1.5 px-3 flex-shrink-0">
+      <div className="lf-pdf-tools bg-paper border-b border-line h-12 flex items-center gap-1.5 px-3 flex-shrink-0" role="toolbar" aria-label="Signing field tools">
         <span className="text-2xs font-semibold text-ink-faint tracking-eyebrow uppercase mr-2">
           Place field
         </span>

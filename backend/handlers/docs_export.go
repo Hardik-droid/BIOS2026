@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"diwan/backend/services/docs_export"
-	"diwan/backend/storage"
+	"localfirst/backend/services/docs_export"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 )

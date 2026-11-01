@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/middleware"
-	"diwan/backend/models"
+	"localfirst/backend/middleware"
+	"localfirst/backend/models"
 
 	"github.com/gin-gonic/gin"
 )

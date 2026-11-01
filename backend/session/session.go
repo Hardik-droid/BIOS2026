@@ -44,8 +44,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	appbrand "localfirst/internal/brand"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -111,8 +111,8 @@ type Config struct {
 // FromEnv reads the session-introspection config from the environment.
 func FromEnv() Config {
 	return Config{
-		IdentityURL: strings.TrimRight(strings.TrimSpace(os.Getenv(EnvIdentityURL)), "/"),
-		Token:       strings.TrimSpace(os.Getenv(EnvSharedSecret)),
+		IdentityURL: strings.TrimRight(strings.TrimSpace(appbrand.Getenv(EnvIdentityURL)), "/"),
+		Token:       strings.TrimSpace(appbrand.Getenv(EnvSharedSecret)),
 	}
 }
 

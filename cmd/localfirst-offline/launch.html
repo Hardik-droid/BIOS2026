@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F1F5F9">
+  <title>Opening LocalFirst</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/api/offline-launch.css">
+  <script src="/api/offline-launch.js" defer></script>
+</head>
+<body>
+  <main aria-busy="true">
+    <div class="brand">
+      <svg width="46" height="46" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <rect width="64" height="64" rx="16" fill="#4F46E5"/>
+        <path d="M18 16h10v28h20v9H18z" fill="white"/>
+        <rect x="38" y="16" width="12" height="12" rx="3" fill="#A5B4FC"/>
+      </svg>
+      <span>LocalFirst</span>
+    </div>
+    <p class="eyebrow">YOUR WORKSPACE IS ALMOST READY</p>
+    <h1>Opening the current version of LocalFirst</h1>
+    <div id="progress" class="progress" role="progressbar" aria-label="Loading LocalFirst" aria-valuetext="Preparing this device"><span></span></div>
+    <p id="status" role="status">Updating the app on this device…</p>
+    <p class="reassurance">Your saved documents stay in the same browser profile. Other open document tabs will stay open.</p>
+    <button id="retry" hidden>Try again</button>
+    <div class="signature">Your work. Your space.</div>
+  </main>
+</body>
+</html>

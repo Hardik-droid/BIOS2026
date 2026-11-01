@@ -96,7 +96,7 @@ describe('transactional local workspace', () => {
     const file = await create()
     await updateLocalFile(file.id, { content: { text: 'backed up' }, rev: 1 })
     const backup = JSON.parse(await exportLocalWorkspace()) as { format: string; files: Array<{ content: unknown }>; versions: unknown[] }
-    expect(backup.format).toBe('diwan-local-workspace')
+    expect(backup.format).toBe('localfirst-local-workspace')
     expect(backup.files[0].content).toEqual({ text: 'backed up' })
     expect(backup.versions).toHaveLength(1)
   })

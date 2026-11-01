@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"diwan/backend/config"
-	"diwan/backend/middleware"
-	"diwan/backend/userauth"
+	"localfirst/backend/config"
+	"localfirst/backend/middleware"
+	"localfirst/backend/userauth"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

@@ -1,4 +1,4 @@
-# Diwan – Versioning & Release Policy
+# LocalFirst – Versioning & Release Policy
 
 ## Versioning
 
@@ -17,7 +17,7 @@ Conventional Commits. Breaking CRDT wire-format changes require a `BREAKING CHAN
 ## Signed Artifacts
 
 ```sh
-cosign sign-blob --key release.key diwan-linux-amd64 > diwan-linux-amd64.sig
+cosign sign-blob --key release.key localfirst-linux-amd64 > localfirst-linux-amd64.sig
 git tag -s v0.3.1 -m "Release v0.3.1"
 ```
 

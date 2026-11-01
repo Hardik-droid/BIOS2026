@@ -9,7 +9,7 @@ export default class AppErrorBoundary extends Component<{ children: ReactNode },
     if (!this.state.failed) return this.props.children
     return <main className="min-h-screen bg-bg text-ink p-6 flex items-center justify-center">
       <div role="alert" className="max-w-lg space-y-4">
-        <h1 className="text-xl font-semibold">Diwan could not display this screen</h1>
+        <h1 className="text-xl font-semibold">LocalFirst could not display this screen</h1>
         <p>Try reloading the app or returning to your files. Do not clear browser data while recovering your work.</p>
         <p>If you were editing, check for a recovery draft when you reopen the document. Changes that had not finished saving may need recovery.</p>
         <div className="flex flex-wrap gap-3">

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/models"
+	"localfirst/backend/models"
 )
 
 func TestLocalShareLinks_RoundTripAndHashPersisted(t *testing.T) {

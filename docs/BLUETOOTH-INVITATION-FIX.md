@@ -2,7 +2,7 @@
 
 The reported second-laptop error occurs during local invitation-file validation, before any RFCOMM connection is attempted. It is not evidence of a radio failure. The screenshot shows a working local bridge, local radio and paired-host selection, an empty invitation field, and the generic invalid-file message.
 
-On the hosting development laptop, all four existing Diwan JSON downloads were `diwan-local-workspace` backups, with no invitation field. No downloaded Bluetooth invitation was present. Loading a workspace backup reproduced the exact screenshot message in Chrome. The actual file selected on the other physical laptop has not been inspected, so its precise contents remain unconfirmed. The user subsequently asked where the invitation file is created.
+On the hosting development laptop, all four existing LocalFirst JSON downloads were `diwan-local-workspace` backups, with no invitation field. No downloaded Bluetooth invitation was present. Loading a workspace backup reproduced the exact screenshot message in Chrome. The actual file selected on the other physical laptop has not been inspected, so its precise contents remain unconfirmed. The user subsequently asked where the invitation file is created.
 
 The application previously described every parsed but mismatched file as invalid without explaining that **Export workspace** and **Save invitation file** create different files. That made the setup failure difficult to recover from. Separately, a rejected import left any previously loaded invitation active, JSON parse/read failures surfaced technical errors, pasted malformed codes could reach Connect, and expired hosts could still offer their old invitation for download.
 
@@ -16,7 +16,7 @@ The application previously described every parsed but mismatched file as invalid
 
 ## Preservation and verification
 
-Before changes, all 711 tracked/untracked source files and the tracked diff were copied to a separate workspace backup. This fix does not change the document database schema, saved document records, replica journal, native transport protocol or existing hosted deployment. Old extracted packages remain available. Update using the same browser/profile and `http://127.0.0.1:8765` origin; save work and close all Diwan tabs before reopening the updated launcher. Do not clear browser data.
+Before changes, all 711 tracked/untracked source files and the tracked diff were copied to a separate workspace backup. This fix does not change the document database schema, saved document records, replica journal, native transport protocol or existing hosted deployment. Old extracted packages remain available. Update using the same browser/profile and `http://127.0.0.1:8765` origin; save work and close all LocalFirst tabs before reopening the updated launcher. Do not clear browser data.
 
 TypeScript, 133 focused tests across 13 files and all 18 Chrome scenarios pass. The Chrome suite includes existing document saving, recovery, history, offline restart and replica convergence checks. The standalone package check additionally verifies a real Go-generated invitation survives browser download/import without printing or retaining its secret in reports.
 

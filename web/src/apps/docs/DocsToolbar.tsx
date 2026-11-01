@@ -624,7 +624,7 @@ export default function DocsToolbar({
 
   return (
     <div
-      className="toolbar-surface relative"
+      className="toolbar-surface lf-editor-formatting relative"
       role="toolbar"
       aria-label="Document formatting"
       aria-orientation="horizontal"
@@ -634,7 +634,7 @@ export default function DocsToolbar({
       <div className="flex items-center gap-0 px-2 py-1 min-h-[44px] overflow-x-auto">
 
         {/* ── Undo / Redo ──────────────────────────────────────────────── */}
-        <div className="flex items-center gap-0 mr-1">
+        <div className="flex items-center gap-0 mr-1" role="group" aria-label="Edit history">
           <Btn
             title="Undo (Cmd+Z)"
             onClick={() => editor.chain().focus().undo().run()}
@@ -911,7 +911,7 @@ export default function DocsToolbar({
         />
 
         {/* ── Export ─────────────────────────────────────────────────── */}
-        <div className="ml-auto flex items-center self-center">
+        <div className="lf-editor-export ml-auto flex items-center self-center">
           <Dropdown
             align="right"
             trigger={

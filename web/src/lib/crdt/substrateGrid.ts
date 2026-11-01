@@ -37,7 +37,7 @@
  * exchanged nothing at all while both editors reported "Live". See
  * `./gridEngine.js`.
  *
- * THE MAPPING (Diwan's grid → SYNC.md §4.4)
+ * THE MAPPING (LocalFirst's grid → SYNC.md §4.4)
  * -----------------------------------------
  *   namespace  'sheet'
  *   target     `cell:<r>,<c>`   — one LWW object per cell
@@ -51,7 +51,7 @@
  * WHY `clear` IS NOT A DEATH CERTIFICATE. The substrate has a purpose-built
  * remove-wins delete (§4.5, `kind 4`), and it is the wrong tool here. A death
  * certificate DOMINATES: once a cell is deleted, no ordinary `lww-set` can
- * revive it, however much later it happens. Diwan's grid is plain LWW — clear a
+ * revive it, however much later it happens. LocalFirst's grid is plain LWW — clear a
  * cell, type into it again, and the value comes back. Modelling clear as a
  * death certificate would silently swallow the second edit. Using the LWW
  * register for both preserves the existing, user-visible behaviour exactly.
@@ -66,7 +66,7 @@
  * migration: within one deployment every replica runs the same path.
  *
  * AUTHENTICATION. Ops go in through `ingest_ambient_authenticated` — the §5.6
- * path for ops whose authenticity was established out of band. Diwan's grid ops
+ * path for ops whose authenticity was established out of band. LocalFirst's grid ops
  * are unsigned today (they ride an authenticated fabric room / the server's own
  * update log), so this is the honest mapping and NOT a downgrade. It is also a
  * real hole on a multi-author untrusted transport, which is why the substrate
@@ -118,7 +118,7 @@ export function substrateSyncReady(): boolean {
 }
 
 /**
- * A 32-byte HLC author key derived from Diwan's short replica id.
+ * A 32-byte HLC author key derived from LocalFirst's short replica id.
  *
  * §3 requires a fixed-width author, and it participates in the HLC total order
  * and in every op's identity. SHA-256 of the replica id gives a deterministic,
@@ -152,10 +152,10 @@ export type SubstrateWireOp = { dsync: 1; b: string }
 export type SubstrateLocalOpDetail = { op: SubstrateWireOp }
 
 /**
- * The wire form of a substrate op inside an existing Diwan frame.
+ * The wire form of a substrate op inside an existing LocalFirst frame.
  *
  * The CANONICAL OP BYTES are the durable artifact (the upstream README's rule:
- * the engine is a fold over them). Diwan's update-log frames and fabric
+ * the engine is a fold over them). LocalFirst's update-log frames and fabric
  * messages are JSON, which cannot carry a `Uint8Array`, so the bytes travel
  * base64-wrapped. Nothing else is added — the envelope is transport, the bytes
  * are the semantics.

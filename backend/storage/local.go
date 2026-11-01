@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
 )
 
 type LocalStorage struct {

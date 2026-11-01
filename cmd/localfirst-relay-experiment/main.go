@@ -1,15 +1,16 @@
 //go:build relay_experiment
 
-// diwan-offline serves bundled application assets on loopback. It has no cloud API.
+// localfirst-offline serves bundled application assets on loopback. It has no cloud API.
 package main
 
 import (
 	"bytes"
-	"diwan/internal/nearby"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
+	appbrand "localfirst/internal/brand"
+	"localfirst/internal/nearby"
 	"log"
 	"mime"
 	"net"
@@ -36,7 +37,7 @@ func assetHandler(assets fs.FS) http.Handler {
 		CacheVersion  string `json:"cacheVersion"`
 		NativeVersion string `json:"nativeVersion"`
 	}
-	if marker, err := fs.ReadFile(assets, ".diwan-offline.json"); err == nil {
+	if marker, err := appbrand.ReadOfflineMetadata(assets); err == nil {
 		_ = json.Unmarshal(marker, &build)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +62,7 @@ func assetHandler(assets fs.FS) http.Handler {
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Cache-Control", "no-store")
 			if r.Method != http.MethodHead {
-				_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "server": "diwan-offline", "mode": "offline-only", "cache_version": build.CacheVersion, "native_version": build.NativeVersion, "nearby_protocol": "windows-rfcomm-v1"})
+				_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "server": "localfirst-offline", "mode": "offline-only", "cache_version": build.CacheVersion, "native_version": build.NativeVersion, "nearby_protocol": "windows-rfcomm-v1"})
 			}
 			return
 		}
@@ -131,7 +132,7 @@ func main() {
 	}
 	assets := os.DirFS(*assetsPath)
 	launcherFiles = os.DirFS(path.Join(*assetsPath, "_launcher"))
-	marker, err := fs.ReadFile(assets, ".diwan-offline.json")
+	marker, err := appbrand.ReadOfflineMetadata(assets)
 	if err != nil {
 		log.Fatal("Build the offline application before starting: ", err)
 	}
@@ -144,8 +145,9 @@ func main() {
 	if _, err := fs.Stat(assets, "index.html"); err != nil {
 		log.Fatal(err)
 	}
-	hub, err := nearby.NewRelayedHub(os.Getenv("DIWAN_EXPERIMENTAL_RELAY_CODE"))
-	_ = os.Unsetenv("DIWAN_EXPERIMENTAL_RELAY_CODE")
+	hub, err := nearby.NewRelayedHub(appbrand.Getenv("LOCALFIRST_EXPERIMENTAL_RELAY_CODE"))
+	_ = os.Unsetenv("LOCALFIRST_EXPERIMENTAL_RELAY_CODE")
+	_ = os.Unsetenv("DIWAN_EXPERIMENTAL_RELAY_CODE") // Remove the installed launcher's legacy alias too.
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -154,7 +156,7 @@ func main() {
 	mux.Handle("/_nearby/", hub.Handler())
 	mux.Handle("/", assetHandler(assets))
 	server := &http.Server{Addr: *addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second, WriteTimeout: 30 * time.Second}
-	fmt.Printf("Diwan offline workspace: http://%s\n", *addr)
+	fmt.Printf("LocalFirst offline workspace: http://%s\n", *addr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

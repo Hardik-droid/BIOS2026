@@ -72,12 +72,12 @@ const stylesheet = `
 * { box-sizing:border-box; }
 html { color:#1f2937; font-family:Arial,"Segoe UI",sans-serif; font-size:10.3pt; line-height:1.45; }
 body { margin:0; }
-.cover { min-height:232mm; display:flex; flex-direction:column; justify-content:center; border-top:6px solid #c5451c; padding:18mm 7mm; }
-.eyebrow,.part-label { color:#a43c1e; font-size:10pt; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+.cover { min-height:232mm; display:flex; flex-direction:column; justify-content:center; border-top:6px solid #4F46E5; padding:18mm 7mm; }
+.eyebrow,.part-label { color:#4338CA; font-size:10pt; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
 .cover h1 { font-size:38pt; line-height:1.1; color:#122e40; margin:10mm 0 5mm; }
 .cover .subtitle { font-size:18pt; line-height:1.35; }
 .cover .small { margin-top:10mm; color:#475569; font-size:10pt; }
-.status-box { margin:9mm 0 0; padding:5mm; background:#f4f7fa; border-left:4px solid #c5451c; }
+.status-box { margin:9mm 0 0; padding:5mm; background:#f4f7fa; border-left:4px solid #4F46E5; }
 .contents,.chapter { break-before:page; }
 h1 { color:#122e40; font-size:26pt; line-height:1.2; margin:4mm 0 7mm; }
 h2 { color:#133b50; font-size:16pt; line-height:1.25; margin:8mm 0 3mm; }
@@ -96,7 +96,7 @@ table.comparison th:first-child,table.comparison td:first-child { width:15%; }
 table.comparison th:not(:first-child),table.comparison td:not(:first-child) { width:21.25%; }
 thead { display:table-header-group; }
 tr { break-inside:avoid; }
-blockquote { border-left:3px solid #c5451c; background:#fbf6ef; margin:4mm 0; padding:2mm 4mm; break-inside:avoid; }
+blockquote { border-left:3px solid #4F46E5; background:#fbf6ef; margin:4mm 0; padding:2mm 4mm; break-inside:avoid; }
 pre.code { white-space:pre-wrap; overflow-wrap:anywhere; background:#f3f5f7; border:1px solid #d7dfe5; padding:3mm; font:8.2pt/1.4 Consolas,monospace; break-inside:avoid; }
 code { font-family:Consolas,monospace; font-size:.9em; overflow-wrap:anywhere; }
 .mermaid { text-align:center; white-space:normal; break-inside:avoid; margin:5mm 0; }
@@ -109,7 +109,7 @@ hr { border:0; border-top:1px solid #dce2e7; margin:6mm 0; }
 img { max-width:100%; }
 `
 const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>BIOS2026 — Project and Judges Guide</title><style>${stylesheet}</style></head><body>
-<section class="cover"><div class="eyebrow">Technical documentation · Judge preparation</div><h1>BIOS2026</h1><div class="subtitle">The project, the engineering<br>and the questions judges can ask</div><p>A local-first extension of the Diwan office suite</p><div class="status-box"><strong>Evidence-labelled edition · 1 November 2026</strong><p>Windows offline implementation · experimental Android relay · measured long-range and production gates still open</p></div><p class="small">Based on source commit <code>d7e9135</code> and the available local verification reports.<br>Includes a technical handbook, sourced competitor comparison, minute-by-minute demo plan and 200 questions with model answers.</p></section>
+<section class="cover"><div class="eyebrow">Technical documentation · Judge preparation</div><h1>BIOS2026</h1><div class="subtitle">The project, the engineering<br>and the questions judges can ask</div><p>A local-first extension of the LocalFirst office suite</p><div class="status-box"><strong>Evidence-labelled edition · 1 November 2026</strong><p>Windows offline implementation · experimental Android relay · measured long-range and production gates still open</p></div><p class="small">Based on source commit <code>d7e9135</code> and the available local verification reports.<br>Includes a technical handbook, sourced competitor comparison, minute-by-minute demo plan and 200 questions with model answers.</p></section>
 <section class="contents"><h1>Contents</h1><p>Use the PDF outline or these links to navigate. Source Markdown files remain the editable project documentation.</p><ul class="toc-list">${toc.map(entry => `<li class="level-${entry.depth}"><a href="#${escape(entry.id)}">${escape(entry.title)}</a></li>`).join('')}</ul></section>
 ${html.join('\n')}<script src="/mermaid.js"></script><script>document.querySelectorAll('table').forEach(table=>{if(table.querySelector('th')?.textContent.trim()==='Product or family')table.classList.add('comparison')});window.guideReady=false;mermaid.initialize({startOnLoad:false,securityLevel:'strict',theme:'neutral',fontFamily:'Arial',flowchart:{useMaxWidth:true,htmlLabels:false}});mermaid.run({querySelector:'.mermaid',suppressErrors:false}).then(()=>{window.guideReady=true}).catch(error=>{window.guideError=String(error)});</script></body></html>`
 const server = createServer((request, response) => {

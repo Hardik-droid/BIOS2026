@@ -1,12 +1,12 @@
 # Missing host invitation controls
 
-The reported Home screen shows the older "Nearby sharing not connected" label. Current source and newer packages use an interactive "Bluetooth sharing" control. The local helper was also still serving a previous package rather than the latest package on disk. Existing tabs can continue showing an older shell from the offline asset cache until all Diwan tabs close.
+The reported Home screen shows the older "Nearby sharing not connected" label. Current source and newer packages use an interactive "Bluetooth sharing" control. The local helper was also still serving a previous package rather than the latest package on disk. Existing tabs can continue showing an older shell from the offline asset cache until all LocalFirst tabs close.
 
 The current workspace dialog also lacked a host entry point: it offered receiving controls but only the document editor supplied the callback needed to start hosting. A host looking on Home could not select a document there or discover its invitation controls.
 
 The workspace dialog now includes a Docs document selector and an Open document to share button. This navigates to the editor with its Bluetooth dialog open. The editor still saves and prepares the document before starting the native host. Save invitation file remains visible in the editor dialog, disabled until an active host invitation exists. Empty document lists explain how to create a document. Existing download format and native protocol are unchanged.
 
-Update using the full new Windows ZIP on both laptops. Keep the same browser profile and http://127.0.0.1:8765 origin. Save your work and run the updated launcher. Do not clear browser data. The launcher checks frontend and executable versions and replaces only a verified older Diwan asset server.
+Update using the full new Windows ZIP on both laptops. Keep the same browser profile and http://127.0.0.1:8765 origin. Save your work and run the updated launcher. Do not clear browser data. The launcher checks frontend and executable versions and replaces only a verified older LocalFirst asset server.
 
 The repeated screenshot exposed a second failure: the original foundation service worker serves every navigation from its old cache and does not activate an updated worker while existing tabs remain open. Its bypass covers /api/ and /v1/, but not /_nearby/. Replacing the local server alone therefore leaves the old shell visible. The native launcher now opens /api/offline-launch, a narrowly scoped read-only startup page bypassed by every released offline worker. It updates and activates the current worker, verifies its build, and opens Home. It never reloads other editor tabs or deletes IndexedDB. Older hashed assets remain readable while old tabs are open. The build digest now includes worker-generation code so lifecycle fixes also change the advertised build version.
 

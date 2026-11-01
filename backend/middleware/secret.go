@@ -2,17 +2,17 @@ package middleware
 
 import (
 	"fmt"
-	"os"
+	appbrand "localfirst/internal/brand"
 	"sync"
 )
 
 // JWT secret handling.
 //
 // Security contract (replaces the former hardcoded constant):
-//   - The signing secret is read from DIWAN_JWT_SECRET.
+//   - The signing secret is read from LOCALFIRST_JWT_SECRET.
 //   - In production the secret MUST be set; if it is unset, JWTSecret returns
 //     an error so the server refuses to mint or accept tokens (fail closed).
-//   - A dev default is only allowed when DIWAN_DEV=1 (or "true") is set
+//   - A dev default is only allowed when LOCALFIRST_DEV=1 (or "true") is set
 //     explicitly, so a misconfigured production deploy can never silently fall
 //     back to a well-known key.
 //
@@ -23,15 +23,15 @@ const (
 	// EnvJWTSecret is the env var the office backend reads the HS256 signing
 	// secret from. The cloud/OS issuer (if/when external issuance is added)
 	// must sign office tokens with the same secret.
-	EnvJWTSecret = "DIWAN_JWT_SECRET"
+	EnvJWTSecret = "LOCALFIRST_JWT_SECRET"
 
 	// EnvDevMode, when set to "1"/"true", permits an insecure in-memory dev
 	// secret if EnvJWTSecret is unset. Never set this in production.
-	EnvDevMode = "DIWAN_DEV"
+	EnvDevMode = "LOCALFIRST_DEV"
 
 	// devSecret is the fallback used ONLY in explicit dev mode. It is clearly
 	// labelled so it can never be mistaken for a production key.
-	devSecret = "diwan-dev-only-INSECURE-do-not-use-in-prod"
+	devSecret = "localfirst-dev-only-INSECURE-do-not-use-in-prod"
 )
 
 var (
@@ -41,13 +41,13 @@ var (
 
 // devModeEnabled reports whether explicit dev mode is on.
 func devModeEnabled() bool {
-	v := os.Getenv(EnvDevMode)
+	v := appbrand.Getenv(EnvDevMode)
 	return v == "1" || v == "true" || v == "TRUE" || v == "yes"
 }
 
 // JWTSecret returns the HS256 signing secret.
 //
-// It returns an error (fail closed) when DIWAN_JWT_SECRET is unset and
+// It returns an error (fail closed) when LOCALFIRST_JWT_SECRET is unset and
 // dev mode is not explicitly enabled — so production never signs or verifies
 // tokens with a predictable key.
 func JWTSecret() ([]byte, error) {
@@ -56,7 +56,7 @@ func JWTSecret() ([]byte, error) {
 	if cachedSecret != nil {
 		return cachedSecret, nil
 	}
-	if raw := os.Getenv(EnvJWTSecret); raw != "" {
+	if raw := appbrand.Getenv(EnvJWTSecret); raw != "" {
 		cachedSecret = []byte(raw)
 		return cachedSecret, nil
 	}

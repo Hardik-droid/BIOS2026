@@ -1,5 +1,6 @@
+import { LEGACY } from './brandCompatibility'
 /** Last-resort recovery drafts. Old save acknowledgements cannot clear newer drafts. */
-const DB_NAME = 'diwan-drafts'
+const DB_NAME = LEGACY.draftsDatabase
 const STORE_NAME = 'drafts'
 export type Draft = { id: string; name: string; content: unknown; ts: number; token?: string }
 

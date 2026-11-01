@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"diwan/backend/invites"
+	"localfirst/backend/invites"
 )
 
 func runContract(t *testing.T, s invites.Store) {

@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
 )
 
 func newTraversalStore(t *testing.T) (*LocalStorage, string) {

@@ -17,8 +17,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"diwan/backend/services/slides_export"
-	"diwan/backend/storage"
+	"localfirst/backend/services/slides_export"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 )

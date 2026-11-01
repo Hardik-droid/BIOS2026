@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"diwan/backend/seam"
+	"localfirst/backend/seam"
 
 	"github.com/google/uuid"
 )

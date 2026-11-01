@@ -9,9 +9,9 @@ Earlier verification on 1 November 2026 recorded **133 focused tests**, **18 Chr
 ## Prepare both laptops
 
 1. Copy the **same complete Windows offline ZIP** to both laptops and extract it fully on each. Keep the executable, `web` folder and launcher files together. Do not run just a copied executable or run inside the ZIP. Node.js and Go are not required to use the package.
-2. For an update, save your work, close **all** Diwan tabs and windows on that laptop, then open `Start-Diwan-Offline.cmd` from the newly extracted package. Repeat on the other laptop. Keep the same browser, browser profile and `http://127.0.0.1:8765` origin/port that held your documents. Do not clear browser data to update.
-3. Turn on Bluetooth in Windows Settings on both laptops. Pair the laptops there and verify that the Windows pairing code matches on both laptops before accepting. Only keep an existing pairing if you trust the device and how it was paired; Diwan does not pair devices automatically. A four-digit Diwan code does not replace this Windows identity check.
-4. Double-click `Start-Diwan-Offline.cmd` on each laptop. The browser should open `http://127.0.0.1:8765`. Use a regular browser profile, since its IndexedDB holds the documents and shared replicas. Files are not stored in the ZIP or beside the executable.
+2. For an update, save your work, close **all** LocalFirst tabs and windows on that laptop, then open `Start-LocalFirst-Offline.cmd` from the newly extracted package. Repeat on the other laptop. Keep the same browser, browser profile and `http://127.0.0.1:8765` origin/port that held your documents. Do not clear browser data to update.
+3. Turn on Bluetooth in Windows Settings on both laptops. Pair the laptops there and verify that the Windows pairing code matches on both laptops before accepting. Only keep an existing pairing if you trust the device and how it was paired; LocalFirst does not pair devices automatically. A four-digit LocalFirst code does not replace this Windows identity check.
+4. Double-click `Start-LocalFirst-Offline.cmd` on each laptop. The browser should open `http://127.0.0.1:8765`. Use a regular browser profile, since its IndexedDB holds the documents and shared replicas. Files are not stored in the ZIP or beside the executable.
 5. For the radio acceptance test, turn Wi-Fi off on both laptops and disconnect Ethernet or other internet links while leaving Bluetooth on. The local page still works. Keep the laptops near each other and awake.
 
 The browser communicates with its own laptop's helper through `127.0.0.1:8765/_nearby/`. That loopback HTTP connection stays inside that laptop. The connection between laptops uses OS-authenticated and encrypted **classic Bluetooth RFCOMM**, with TLS 1.3 and an invitation that pins the hosting session's certificate and carries a random 256-bit secret. There is no inter-laptop IP/Wi-Fi transport or cloud fallback, and this path does not use BLE or Web Bluetooth.
@@ -30,15 +30,15 @@ The four-digit code expires after **two minutes**, permits at most **three faile
 
 ### Use the full invitation instead
 
-Open **Invitation file and full code** in A's Bluetooth dialog. Choose **Copy invitation** to transfer the complete `DBT1-` code by a trusted method, or choose **Save invitation file** to download `diwan-bluetooth-invitation.json`.
+Open **Invitation file and full code** in A's Bluetooth dialog. Choose **Copy invitation** to transfer the complete `DBT1-` code by a trusted method, or choose **Save invitation file** to download `localfirst-bluetooth-invitation.json`.
 
-Move that small invitation file to B using USB or Windows Bluetooth file transfer. For the latter, open Windows **Send or receive files via Bluetooth** (or run `fsquirt`): choose **Receive files** on B, then **Send files** on A, select B and send the downloaded JSON file. Accept/save it on B. Windows file transfer is only moving the invitation; Diwan subsequently uses its own Bluetooth session to carry document edits. The full-invitation route remains available for existing workflows and experimental relays; a relay does not support the four-digit shortcut.
+Move that small invitation file to B using USB or Windows Bluetooth file transfer. For the latter, open Windows **Send or receive files via Bluetooth** (or run `fsquirt`): choose **Receive files** on B, then **Send files** on A, select B and send the downloaded JSON file. Accept/save it on B. Windows file transfer is only moving the invitation; LocalFirst subsequently uses its own Bluetooth session to carry document edits. The full-invitation route remains available for existing workflows and experimental relays; a relay does not support the four-digit shortcut.
 
 Treat the invitation as a secret: someone who has it and paired Bluetooth access can join. The invitation/session expires after 30 minutes. Starting sharing again creates a fresh invitation; the other laptop must use that new code. Delete transferred invitation files when finished.
 
 ### Find the invitation file
 
-The file exists only after choosing **Save invitation file** in the document's Bluetooth dialog on laptop A. Look in A's **Downloads** folder for **diwan-bluetooth-invitation.json**, or press **Ctrl+J** in that browser to find the download. The browser may ask you to choose another save location. Transfer this file to B before loading it there. **Export workspace** creates a document backup named `diwan-workspace-…json`; it does not create a Bluetooth invitation.
+The file exists only after choosing **Save invitation file** in the document's Bluetooth dialog on laptop A. Look in A's **Downloads** folder for **localfirst-bluetooth-invitation.json**, or press **Ctrl+J** in that browser to find the download. The browser may ask you to choose another save location. Transfer this file to B before loading it there. **Export workspace** creates a document backup named `localfirst-workspace-…json`; it does not create a Bluetooth invitation.
 
 The updated importer identifies workspace backups and connection reports separately, explains how to create the right file, and clears any previously loaded code after a rejected file. It also accepts complete plain-text DBT1 codes and UTF-8 BOM/line wrapping. Truncated codes, unsupported versions and oversized files remain rejected. An expired host session cannot export its stale invitation. See [the invitation fix report](BLUETOOTH-INVITATION-FIX.md) for evidence and remaining physical validation.
 
@@ -68,9 +68,9 @@ After a radio interruption or restart, turn Bluetooth back on, reopen the same s
 
 | What you see | What to do |
 | --- | --- |
-| “Bluetooth sharing needs the Windows offline launcher” / “Open this page using the Windows offline launcher” | Save and close all Diwan tabs, launch the same complete package using `Start-Diwan-Offline.cmd`, and use `http://127.0.0.1:8765`. A hosted site, another port, or an older helper does not provide this bridge. |
+| “Bluetooth sharing needs the Windows offline launcher” / “Open this page using the Windows offline launcher” | Save and close all LocalFirst tabs, launch the same complete package using `Start-LocalFirst-Offline.cmd`, and use `http://127.0.0.1:8765`. A hosted site, another port, or an older helper does not provide this bridge. |
 | “No active Bluetooth radio” or the share button is disabled | Turn Bluetooth on in Windows Settings, leave airplane mode off or re-enable Bluetooth, then choose **Refresh Bluetooth**. Check Windows can see the adapter. An adapter's BLE capability alone does not prove this RFCOMM path works. |
-| No paired devices, or the host is missing | Confirm both laptops are paired in Windows Settings, Bluetooth is on, then choose **Refresh Bluetooth**. Diwan lists paired devices; it is not a discovery/pairing screen. |
+| No paired devices, or the host is missing | Confirm both laptops are paired in Windows Settings, Bluetooth is on, then choose **Refresh Bluetooth**. LocalFirst lists paired devices; it is not a discovery/pairing screen. |
 | Four-digit code expired, locked or already used | On A choose **Share this document** again, tell B the new four digits and approve only B's expected request. The code lasts two minutes; three failed attempts lock it. Do not omit a leading zero. |
 | Waiting for host approval, approval timed out or request rejected | Check A's Bluetooth dialog and the requesting device's actual address. Approve only the intended laptop within 30 seconds. After a failure, use a fresh code if the dialog says the previous one is unavailable. |
 | Connection fails or stays at connecting | Verify both run the same extracted package, A is still waiting in its host session, B selected A, and the invitation is current. Keep both awake and close by. Choose **Disconnect**, start sharing again on A and use its fresh invitation on B. Record any displayed Windows error number if it still fails. |
@@ -91,7 +91,7 @@ These checks are **pending**, not recorded passes. Record the package version, d
 - [ ] Make simultaneous edits on both laptops, including different paragraphs and a deletion. Stop typing; compare complete text and formatting and confirm both converge with peer acknowledgement.
 - [ ] Turn Bluetooth off on one laptop. Confirm the disconnected/local state. Make distinct edits on both while disconnected and wait for local saves.
 - [ ] Turn Bluetooth on, establish a fresh host/invitation connection using the same shared document and reopen both shared editors. Confirm both disconnected edits survive, deletion/formatting converge, and each laptop obtains peer acknowledgement after another edit.
-- [ ] Save locally and close all Diwan tabs on both laptops. Restart both laptops with Wi-Fi still off. Relaunch the same package with the same browser/profile/port and reopen the existing document. Verify each local copy survives before reconnecting.
+- [ ] Save locally and close all LocalFirst tabs on both laptops. Restart both laptops with Wi-Fi still off. Relaunch the same package with the same browser/profile/port and reopen the existing document. Verify each local copy survives before reconnecting.
 - [ ] Reconnect with a fresh invitation after both restarts. Confirm complete convergence, then make another edit from each laptop and obtain actual peer acknowledgement in both directions.
 - [ ] Record any radio loss, expiry, restart, formatting or storage failure. Do not mark the physical test passed if either laptop only reports a connection or a local save.
 

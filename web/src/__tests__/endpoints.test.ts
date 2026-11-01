@@ -1,5 +1,5 @@
 /**
- * endpoints.test.ts — smoke test that Diwan's first-party endpoints module
+ * endpoints.test.ts — smoke test that LocalFirst's first-party endpoints module
  * (src/lib/endpoints/index.js) still honours the office localStorage key +
  * health path.
  *

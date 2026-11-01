@@ -15,19 +15,19 @@ package handlers
 // hardcoded, so a self-hoster sees what their instance is ACTUALLY doing.
 //
 // no-broker-dep:allow-file: EnvPublicURL's doc comment below names Pier once as an example of
-// what an operator might put behind DIWAN_PUBLIC_URL — an env var this binary only reads, with
+// what an operator might put behind LOCALFIRST_PUBLIC_URL — an env var this binary only reads, with
 // no default value and no code that names or calls Pier specifically.
 
 import (
+	appbrand "localfirst/internal/brand"
 	"net/http"
-	"os"
 	"strings"
 
-	"diwan/backend/config"
-	"diwan/backend/middleware"
-	"diwan/backend/rendezvous"
-	"diwan/backend/storage"
-	"diwan/backend/userauth"
+	"localfirst/backend/config"
+	"localfirst/backend/middleware"
+	"localfirst/backend/rendezvous"
+	"localfirst/backend/storage"
+	"localfirst/backend/userauth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +38,7 @@ import (
 // use INSTEAD of window.location.origin when a visitor loads Office over a
 // LAN-only / private address. Unset ⇒ the client keeps using its own origin
 // (correct for a directly-reachable standalone box).
-const EnvPublicURL = "DIWAN_PUBLIC_URL"
+const EnvPublicURL = "LOCALFIRST_PUBLIC_URL"
 
 type SystemHandler struct {
 	cfg     *config.Config
@@ -55,9 +55,9 @@ func NewSystemHandler(cfg *config.Config, version, mode, deployMode string) *Sys
 }
 
 // PublicBaseURL returns Office's configured externally-reachable origin
-// (DIWAN_PUBLIC_URL), trimmed of a trailing slash, or "" when unset.
+// (LOCALFIRST_PUBLIC_URL), trimmed of a trailing slash, or "" when unset.
 func PublicBaseURL() string {
-	return strings.TrimRight(strings.TrimSpace(os.Getenv(EnvPublicURL)), "/")
+	return strings.TrimRight(strings.TrimSpace(appbrand.Getenv(EnvPublicURL)), "/")
 }
 
 // Reachability GET /api/reachability (unauthenticated — returns no secrets).
@@ -65,7 +65,7 @@ func PublicBaseURL() string {
 // The client's collab layer consumes this to learn Office's externally-reachable
 // base URL so P2P invite links / signaling target a URL an external peer can
 // actually reach, rather than blindly trusting window.location.origin (which may
-// be a LAN-only address). When DIWAN_PUBLIC_URL is unset the response's
+// be a LAN-only address). When LOCALFIRST_PUBLIC_URL is unset the response's
 // public_base_url is empty and the client falls back to its own origin.
 //
 // It also surfaces the OS-free P2P discovery facts (see docs/COLLABORATION.md §3
@@ -75,7 +75,7 @@ func PublicBaseURL() string {
 //   - `rendezvous_url` — the operator's configured relayd (config.yaml
 //     `collab.rendezvous_url` / VULOS_RENDEZVOUS_URL). This is the origin the
 //     BROWSER calls directly: relayd's rendezvous role serves CORS, so no
-//     server of ours sits in the discovery path and Diwan never sees the
+//     server of ours sits in the discovery path and LocalFirst never sees the
 //     signaling envelopes. Empty when unset, same contract as public_base_url —
 //     the client MUST treat empty as "not available" rather than guessing a
 //     default, which is what keeps a local-only deployment honestly local-only.
@@ -88,7 +88,7 @@ func PublicBaseURL() string {
 //
 //     Reported as a PATH, not a URL, deliberately. It is same-origin by
 //     construction, so the browser is the only party that can say what origin it
-//     loaded Diwan from — and it already has to reconcile that with
+//     loaded LocalFirst from — and it already has to reconcile that with
 //     `public_base_url`. Handing back a server-guessed absolute URL would invent
 //     an origin the server does not reliably know (it sits behind whatever
 //     reverse proxy the operator chose).

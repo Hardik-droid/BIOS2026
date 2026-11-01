@@ -7,6 +7,8 @@ import { LoadingState } from './components/ui'
 import Home from './components/Home'
 import AppHome from './components/AppHome'
 import InstallPrompt from './lib/InstallPrompt'
+import SearchCommandPalette from './components/SearchCommandPalette'
+import { useTheme } from './components/ui'
 
 // Do not execute every office engine just to show the file list. The offline
 // build still bundles and precaches all chunks for later use without internet.
@@ -36,6 +38,7 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 export default function App() {
+  useTheme()
   const { status, loading, fetchStatus, fetchIdentity } = useAuthStore()
   const location = useLocation()
   const navigate = useNavigate()
@@ -49,7 +52,7 @@ export default function App() {
 
   // ── Protocol handler + deep-link ?goto= param ─────────────────────────────
   useEffect(() => {
-    // Register diwan:// protocol handler (web+ prefix required by browsers).
+    // Register localfirst:// protocol handler (web+ prefix required by browsers).
     // TS's lib.dom types only the current 2-arg spec signature; the trailing
     // title arg is a harmless legacy 3rd param some older engines still read
     // (extra JS call args are simply ignored where unsupported), so widen the
@@ -73,11 +76,11 @@ export default function App() {
       // Confirmed by direct removal.
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       const registerProtocolHandlerLegacy = navigator.registerProtocolHandler.bind(navigator) as RegisterProtocolHandlerLegacy
-      registerProtocolHandlerLegacy('web+diwan', window.location.origin + '/?goto=%s', 'Diwan')
+      registerProtocolHandlerLegacy('web+localfirst', window.location.origin + '/?goto=%s', 'LocalFirst')
     } catch { /* unsupported browser */ }
 
     // Handle incoming deep-link ?goto= param
-    // e.g. OS rewrites web+diwan://docs/abc123 → https://app.vulos.org/?goto=docs%2Fabc123
+    // e.g. OS rewrites web+localfirst://docs/abc123 → https://app.vulos.org/?goto=docs%2Fabc123
     const params = new URLSearchParams(window.location.search)
     const goto = params.get('goto')
     if (goto) {
@@ -101,7 +104,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-bg">
-        <LoadingState label="Loading Diwan…" />
+        <LoadingState label="Loading LocalFirst…" />
       </div>
     )
   }
@@ -131,6 +134,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes></Suspense>
       <InstallPrompt />
+      <SearchCommandPalette />
     </Layout>
   )
 }

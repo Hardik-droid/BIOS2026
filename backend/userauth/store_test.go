@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"diwan/backend/userauth"
+	"localfirst/backend/userauth"
 )
 
 func runUserAuthContract(t *testing.T, s userauth.Store) {

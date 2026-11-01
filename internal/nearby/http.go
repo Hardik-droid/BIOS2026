@@ -31,7 +31,7 @@ func (h *Hub) Handler() http.Handler {
 			return
 		}
 		if (r.Header.Get("Origin") != "" && r.Header.Get("Origin") != "http://"+r.Host) || (r.Header.Get("Sec-Fetch-Site") != "" && r.Header.Get("Sec-Fetch-Site") != "same-origin" && r.Header.Get("Sec-Fetch-Site") != "none") {
-			fail(403, "Open Bluetooth sharing from the local Diwan app.")
+			fail(403, "Open Bluetooth sharing from the local LocalFirst app.")
 			return
 		}
 		path := strings.TrimPrefix(r.URL.Path, "/_nearby/")
@@ -39,7 +39,13 @@ func (h *Hub) Handler() http.Handler {
 			_ = json.NewEncoder(w).Encode(map[string]any{"token": h.Token, "transport": "windows-bluetooth-rfcomm", "version": 1})
 			return
 		}
-		if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Diwan-Native-Token")), []byte(h.Token)) != 1 {
+		// Cached clients may retain the old header until their next app update.
+		// A supplied new header is authoritative; an invalid value never falls back.
+		nativeToken := r.Header.Get("X-LocalFirst-Native-Token")
+		if len(r.Header.Values("X-LocalFirst-Native-Token")) == 0 {
+			nativeToken = r.Header.Get("X-Diwan-Native-Token")
+		}
+		if subtle.ConstantTimeCompare([]byte(nativeToken), []byte(h.Token)) != 1 {
 			fail(403, "Local bridge token required.")
 			return
 		}

@@ -1,200 +1,146 @@
-/* ============================================================================
- * Diwan — Design Tokens
- * ----------------------------------------------------------------------------
- * Single source of truth for colour, type, space, radii, motion, elevation.
- * Tailwind reads these via tailwind.config.js theme.extend so utilities like
- * `bg-paper`, `text-ink`, `border-line`, `bg-accent`, `font-serif`, … resolve
- * through here.  Never hard-code a hex / px / shadow in component code — add or
- * extend a token instead.
- *
- * ── Diwan identity — "Warm Workshop" ───────────────────────────────────────
- * Diwan is a warm, human, delightful collaborative office suite.  It has its
- * OWN identity, deliberately distinct from the near-black IDE look of sibling
- * products: a bright, editorial, paper-warm surface with a confident signature
- * accent.  Light is the DEFAULT (a workspace should feel like daylight); a warm
- * dark theme is a first-class opt-in.
- *
- *   PALETTE
- *     - Signature accent : EMBER — a warm terracotta-coral (#D0471F).  Creative,
- *       friendly, energetic.  Used for the one "yes" action, focus, links,
- *       active state.  Exactly one UI accent.
- *     - Secondary        : TEAL (#0E8B86) — coral's complement.  An occasional
- *       brand mark + the neutral "info" signal.  Never a second control accent.
- *     - Neutrals         : warm ivory canvas, crisp white paper, sand chrome,
- *       warm-charcoal ink.  No cold greys anywhere.
- *     - Per-app tints    : one calm hue each (Docs blue, Sheets green, Slides
- *       gold, PDF rose, Board violet) so the suite is findable at a glance.
- *
- *   TYPE — a warm, characterful trio (all self-hosted via @fontsource, never
- *   fetched from Google at runtime, so a self-host install leaks no IP and
- *   stays air-gappable):
- *     - Chrome / UI  : Hanken Grotesk — a friendly humanist grotesque.
- *     - Document /    : Fraunces (opsz) — a soft editorial serif with real
- *       display        warmth; carries doc bodies AND display moments.
- *     - Micro-UI      : JetBrains Mono — crisp mono for eyebrows, kbd, labels.
- *
- *   GEOMETRY — soft, generous radii (10px base) + warm, low, no-bloom shadows.
- * ========================================================================= */
-
-/* SOVEREIGNTY: fonts are vendored locally via @fontsource (self-hosted woff2),
- * NOT fetched from fonts.googleapis.com / fonts.gstatic.com at runtime. */
-@import '@fontsource-variable/schibsted-grotesk/wght.css';
-@import '@fontsource-variable/schibsted-grotesk/wght-italic.css';
-@import '@fontsource-variable/bricolage-grotesque/opsz.css';
+/* LocalFirst: semantic design tokens. Fonts are bundled locally for offline use. */
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/inter/wght-italic.css';
 @import '@fontsource-variable/fraunces/opsz.css';
 @import '@fontsource-variable/fraunces/opsz-italic.css';
 @import '@fontsource-variable/jetbrains-mono/wght.css';
 
 :root {
-  /* ── Ember ramp — the signature accent (warm terracotta-coral) ───────────
-   * Legacy scale names (`--teal-*`, kept so any old alias resolves) now hold
-   * the EMBER values.  50 = lightest tint surface, 900 = deepest. */
-  --ember-50:  #FDF1EB;
-  --ember-100: #FBE0D4;
-  --ember-200: #F6C4AC;
-  --ember-300: #F09E7B;
-  --ember-400: #EB784F;
-  --ember-500: #E15A31;
-  --ember-600: #D0471F;   /* primary accent — buttons, focus, links */
-  --ember-700: #AE3917;
-  --ember-800: #8A2D12;
-  --ember-900: #571E0D;
 
-  /* Back-compat aliases: `teal-*` / `brand-*` tailwind scales point here. */
-  --teal-50:  var(--ember-50);
-  --teal-100: var(--ember-100);
-  --teal-200: var(--ember-200);
-  --teal-300: var(--ember-300);
-  --teal-400: var(--ember-400);
-  --teal-500: var(--ember-500);
-  --teal-600: var(--ember-600);
-  --teal-700: var(--ember-700);
-  --teal-800: var(--ember-800);
-  --teal-900: var(--ember-900);
+  --indigo-50:  #EEF2FF;
+  --indigo-100: #E0E7FF;
+  --indigo-200: #C7D2FE;
+  --indigo-300: #A5B4FC;
+  --indigo-400: #818CF8;
+  --indigo-500: #6366F1;
+  --indigo-600: #4F46E5;
+  --indigo-700: #4338CA;
+  --indigo-800: #3730A3;
+  --indigo-900: #312E81;
 
-  /* ── Warm neutral ramp (oat-* names kept for back-compat) ────────────────
-   * Monotonic light→dark: 50 = lightest surface, 900 = deepest ink. */
-  --oat-50:  #FDFBF7;
-  --oat-100: #F6F0E6;
-  --oat-200: #ECE4D6;   /* hairline dividers / default border */
-  --oat-300: #DFD6C6;   /* stronger borders */
-  --oat-400: #BBB2A6;   /* muted icons, placeholders */
-  --oat-500: #8B8378;   /* secondary / faint text */
-  --oat-600: #6B655C;   /* tertiary text */
-  --oat-700: #4A453E;   /* primary-muted text */
-  --oat-800: #35312B;   /* near-ink */
-  --oat-900: #2A2723;   /* ink — primary text on light */
 
-  /* ── Surfaces (light — the default) ──────────────────────────────────────
-   * Warm ivory canvas, crisp white paper that pops, sand chrome. */
-  --bg-base:            #FBF7F1;   /* ivory canvas */
-  --bg-surface:         #FFFFFF;   /* paper — cards, topbar, rail */
-  --bg-elevated:        #F3ECE0;   /* sand — chips, wells, table headers */
-  --bg-hover:           #EFE7D9;   /* hover well */
-  --bg-selected:        #FBE9DF;   /* ember-tinted selection */
-  --bg-selected-border: #F5D2BE;
+  --teal-50:  var(--indigo-50);
+  --teal-100: var(--indigo-100);
+  --teal-200: var(--indigo-200);
+  --teal-300: var(--indigo-300);
+  --teal-400: var(--indigo-400);
+  --teal-500: var(--indigo-500);
+  --teal-600: var(--indigo-600);
+  --teal-700: var(--indigo-700);
+  --teal-800: var(--indigo-800);
+  --teal-900: var(--indigo-900);
 
-  --paper:   #FFFFFF;
-  --paper-2: #FBF7F1;
-  --paper-3: #F3ECE0;
-  --clay:    #F3ECE0;
 
-  /* ── Secondary accent: TEAL — coral's complement, occasional brand mark ── */
-  --brand:        #0E8B86;
-  --brand-hover:  #0B726E;
-  --brand-subtle: color-mix(in srgb, #0E8B86 14%, transparent);
+  --oat-50: #F8FAFC;
+  --oat-100: #F1F5F9;
+  --oat-200: #E2E8F0;
+  --oat-300: #CBD5E1;
+  --oat-400: #94A3B8;
+  --oat-500: #64748B;
+  --oat-600: #475569;
+  --oat-700: #334155;
+  --oat-800: #1E293B;
+  --oat-900: #0F172A;
 
-  /* ── Signal colours ──────────────────────────────────────────────────────
-   * Tuned to sit legibly on warm light surfaces (and re-tuned for dark below). */
-  --signal-warning:    #C77E12;
-  --signal-warning-bg: color-mix(in srgb, #C77E12 14%, transparent);
-  --signal-error:      #D63B3B;
-  --signal-error-bg:   color-mix(in srgb, #D63B3B 12%, transparent);
-  --signal-success:    #1E9E57;
-  --signal-success-bg: color-mix(in srgb, #1E9E57 13%, transparent);
-  --signal-info:       #0E8B86;
-  --signal-info-bg:    color-mix(in srgb, #0E8B86 12%, transparent);
 
-  /* ── Per-app icon tints — one calm hue per app so Docs / Sheets / Slides /
-   *    PDF / Board are findable at a glance.  These colour the ICON STROKE in
-   *    the rail (never a row background); the `-bg` chip tints the Home cards. */
-  --app-docs:      #3B6FD6;                                  /* blue   */
+  --bg-base: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F1F5F9;
+  --bg-hover: #EEF2F6;
+  --bg-selected: #EEF2FF;
+  --bg-selected-border: #C7D2FE;
+
+  --paper: #FFFFFF;
+  --paper-2: #F8FAFC;
+  --paper-3: #F1F5F9;
+  --clay: #F1F5F9;
+
+
+  --brand: #4F46E5;
+  --brand-hover: #4338CA;
+  --brand-subtle: #EEF2FF;
+
+
+  --signal-warning: #B45309;
+  --signal-warning-bg: #FFFBEB;
+  --signal-error: #DC2626;
+  --signal-error-bg: #FEF2F2;
+  --signal-success: #15803D;
+  --signal-success-bg: #F0FDF4;
+  --signal-info: #4338CA;
+  --signal-info-bg: #EEF2FF;
+
+
+  --app-docs:      #3B6FD6;
   --app-docs-bg:   color-mix(in srgb, #3B6FD6 12%, transparent);
-  --app-sheets:    #1E9E57;                                  /* green  */
+  --app-sheets:    #1E9E57;
   --app-sheets-bg: color-mix(in srgb, #1E9E57 12%, transparent);
-  --app-slides:    #D69314;                                  /* gold   */
+  --app-slides:    #D69314;
   --app-slides-bg: color-mix(in srgb, #D69314 14%, transparent);
-  --app-pdf:       #D6455C;                                  /* rose   */
+  --app-pdf:       #D6455C;
   --app-pdf-bg:    color-mix(in srgb, #D6455C 12%, transparent);
-  --app-board:     #7B5BD1;                                  /* violet */
+  --app-board:     #7B5BD1;
   --app-board-bg:  color-mix(in srgb, #7B5BD1 13%, transparent);
 
-  /* ── Semantic aliases (DEFAULT = warm light) ─────────────────────────────*/
-  --bg:        var(--bg-base);        /* #FBF7F1 */
-  --bg-elev-1: var(--bg-surface);     /* #FFFFFF — panels, cards, topbar */
-  --bg-elev-2: var(--bg-elevated);    /* #F3ECE0 — sand chrome, wells */
-  --bg-sunk:   #EDE6D9;               /* deepest sunk */
 
-  --ink:        #2A2723;
-  --ink-muted:  #6B655C;
-  --ink-faint:  #8B8378;
-  --ink-ghost:  #BBB2A6;
-  --ink-on-accent: #FFFFFF;           /* legible on the ember CTA */
+  --bg:        var(--bg-base);
+  --bg-elev-1: var(--bg-surface);
+  --bg-elev-2: var(--bg-elevated);
+  --bg-sunk: #E9EEF5;
 
-  --line:        #ECE4D6;
-  --line-strong: #DFD6C6;
-  --line-emphasis: #CDC2AF;
+  --ink: #0F172A;
+  --ink-muted: #475569;
+  --ink-faint: #64748B;
+  --ink-ghost: #94A3B8;
+  --ink-on-accent: #FFFFFF;
 
-  --accent:        var(--ember-600);  /* #D0471F */
-  --accent-hover:  var(--ember-700);
-  --accent-press:  var(--ember-700);  /* active text/icon on light */
-  --accent-tint:   #FBEADF;           /* selected / hover tint */
-  --accent-tint-2: #F7D8C6;           /* selected border / stronger tint */
-  --accent-on-ink: var(--ember-600);
+  --line: #E2E8F0;
+  --line-strong: #CBD5E1;
+  --line-emphasis: #94A3B8;
 
-  --selection-bg: color-mix(in srgb, #D0471F 22%, transparent);
-  --selection-fg: #571E0D;
+  --accent: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-press: #3730A3;
+  --accent-tint: #EEF2FF;
+  --accent-tint-2: #E0E7FF;
+  --accent-on-ink: #4F46E5;
 
-  /* ── Typography ──────────────────────────────────────────────────────────
-   * The Diwan voice — a warm editorial quartet, all self-hosted:
-   *   sans     Schibsted Grotesk — warm, humane UI/body workhorse
-   *   display  Bricolage Grotesque — characterful headings, hero, wordmark
-   *   serif    Fraunces (opsz) — the writing surface + editorial moments
-   *   mono     JetBrains Mono — micro-labels, kbd, code */
-  --font-sans:  'Schibsted Grotesk Variable', system-ui, -apple-system,
-                BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Bricolage Grotesque Variable', 'Schibsted Grotesk Variable',
-                system-ui, -apple-system, sans-serif;
+  --selection-bg: #C7D2FE;
+  --selection-fg: #1E1B4B;
+
+
+  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: var(--font-sans);
   --font-serif: 'Fraunces Variable', 'Iowan Old Style', 'Charter',
                 'Source Serif Pro', Cambria, Georgia, serif;
   --font-mono:  'JetBrains Mono Variable', ui-monospace, 'SF Mono',
                 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
 
-  /* Type scale — anchored 14px; display sizes pushed for editorial presence. */
-  --text-2xs: 0.6875rem; /* 11px — micro-labels, metadata */
-  --text-xs:  0.75rem;   /* 12px — secondary chrome */
-  --text-sm:  0.8125rem; /* 13px — buttons, default UI */
-  --text-md:  0.875rem;  /* 14px — body chrome */
-  --text-base:1rem;      /* 16px — document body */
-  --text-lg:  1.1875rem; /* 19px — section titles */
-  --text-xl:  1.5rem;    /* 24px — page titles */
-  --text-2xl: 2rem;      /* 32px — display */
-  --text-3xl: 2.75rem;   /* 44px — hero */
 
-  /* Tracking */
+  --text-2xs: 0.6875rem;
+  --text-xs:  0.75rem;
+  --text-sm:  0.8125rem;
+  --text-md:  0.875rem;
+  --text-base:1rem;
+  --text-lg:  1.1875rem;
+  --text-xl:  1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2rem;
+
+
   --tracking-tight:   -0.011em;
   --tracking-normal:   0em;
   --tracking-wide:     0.04em;
-  --tracking-wider:    0.14em;   /* uppercase mono eyebrows */
-  --tracking-display: -0.02em;   /* Bricolage headings at large sizes */
+  --tracking-wider: 0.08em;
+  --tracking-display: -0.02em;
 
-  /* Leading */
+
   --leading-tight: 1.2;
   --leading-snug:  1.35;
   --leading-body:  1.55;
   --leading-doc:   1.72;
 
-  /* ── Spacing (4px base) ─────────────────────────────────────────────── */
+
   --space-1:  0.25rem;
   --space-2:  0.5rem;
   --space-3:  0.75rem;
@@ -204,144 +150,55 @@
   --space-7:  3rem;
   --space-8:  4rem;
 
-  /* ── Radii — soft + friendly (10px base) ─────────────────────────────── */
-  --radius-xs: 5px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 999px;
 
-  /* ── Elevation — warm, soft, no bloom (the paper rests, it doesn't float) ─
-   * Two stacked layers per step: a tight contact shadow + a soft warm ambient,
-   * so cards read tactile and printed rather than flatly bordered. */
+
   --elev-0: none;
-  --elev-1: 0 1px 1px rgba(74, 52, 30, 0.05),
-            0 2px 4px -1px rgba(74, 52, 30, 0.07);
-  --elev-2: 0 1px 2px rgba(74, 52, 30, 0.06),
-            0 6px 16px -4px rgba(74, 52, 30, 0.12);
-  --elev-3: 0 2px 6px rgba(60, 40, 20, 0.08),
-            0 24px 48px -12px rgba(60, 40, 20, 0.26);
+  --elev-1: 0 1px 2px rgb(15 23 42 / .04);
+  --elev-2: 0 4px 16px -4px rgb(15 23 42 / .10);
+  --elev-3: 0 16px 48px -12px rgb(15 23 42 / .18);
   --elev-focus: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
 
-  /* ── Motion ─────────────────────────────────────────────────────────── */
+
   --ease-out:   cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-spring: cubic-bezier(0.16, 1.0, 0.3, 1);
   --ease-in:    cubic-bezier(0.4, 0, 1, 1);
   --duration-fast: 150ms;
   --duration-base: 200ms;
-  --duration-slow: 320ms;
+  --duration-slow: 250ms;
 
   color-scheme: light;
 }
 
-/* Explicit light toggle — identical to the :root default. Kept so the app's
- * theme cycler ('light' | 'dark' | 'system') has a concrete light target. */
+
 :root[data-theme="light"] {
   color-scheme: light;
 }
 
-/* ────────────────────────────────────────────────────────────────────────
- * Dark theme — a first-class WARM dark (espresso, not slate/black), opt-in via
- * the app toggle (`[data-theme="dark"]`).  Same ember accent; active text/icons
- * brighten so they stay legible on the warm-dark canvas.
- * ────────────────────────────────────────────────────────────────────── */
+
+
 :root[data-theme="dark"] {
-  /* Neutral ramp inverts: 50 = lightest text, 900 = deepest surface. */
-  --oat-50:  #F1EBE0;
-  --oat-100: #D9D1C4;
-  --oat-200: #2E2820;   /* hairline dividers / default border */
-  --oat-300: #3A332A;   /* stronger borders */
-  --oat-400: #8E8677;
-  --oat-500: #A79E8E;
-  --oat-600: #C3BAAC;
-  --oat-700: #D9D1C4;
-  --oat-800: #201C16;
-  --oat-900: #F1EBE0;
-
-  --bg-base:            #17130E;   /* warm espresso canvas */
-  --bg-surface:         #201B15;   /* paper — cards, topbar, rail */
-  --bg-elevated:        #2A241C;   /* sand-dark chrome */
-  --bg-hover:           #322B22;
-  --bg-selected:        #2F1D12;
-  --bg-selected-border: #4A2C1A;
-
-  --paper:   #201B15;
-  --paper-2: #17130E;
-  --paper-3: #2A241C;
-  --clay:    #2A241C;
-
-  --bg:        #17130E;
-  --bg-elev-1: #201B15;
-  --bg-elev-2: #2A241C;
-  --bg-sunk:   #120F0A;
-
-  --ink:        #F1EBE0;
-  --ink-muted:  #C3BAAC;
-  --ink-faint:  #8E8677;
-  --ink-ghost:  #6A6358;
-  --ink-on-accent: #FFFFFF;
-
-  --line:        #2E2820;
-  --line-strong: #3A332A;
-  --line-emphasis: #4A4236;
-
-  --accent:        var(--ember-600);  /* #D0471F — white text stays legible */
-  --accent-hover:  var(--ember-500);
-  --accent-press:  #FF8759;           /* bright ember for active text/icons */
-  --accent-tint:   #2E1C12;
-  --accent-tint-2: #3E2417;
-  --accent-on-ink: #FF8759;
-
-  --brand:        #2CB5AE;
-  --brand-hover:  #46C7C0;
-  --brand-subtle: color-mix(in srgb, #2CB5AE 15%, transparent);
-
-  --selection-bg: color-mix(in srgb, #FF8759 30%, transparent);
-  --selection-fg: #F1EBE0;
-
-  --signal-warning:    #E9A93C;
-  --signal-warning-bg: color-mix(in srgb, #E9A93C 15%, transparent);
-  --signal-error:      #F26B6B;
-  --signal-error-bg:   color-mix(in srgb, #F26B6B 15%, transparent);
-  --signal-success:    #3FC77E;
-  --signal-success-bg: color-mix(in srgb, #3FC77E 14%, transparent);
-  --signal-info:       #2CB5AE;
-  --signal-info-bg:    color-mix(in srgb, #2CB5AE 14%, transparent);
-
-  /* Per-app tints — brightened for legibility on the warm-dark chrome. */
-  --app-docs:      #6F9FE6;
-  --app-docs-bg:   color-mix(in srgb, #6F9FE6 15%, transparent);
-  --app-sheets:    #4FC486;
-  --app-sheets-bg: color-mix(in srgb, #4FC486 15%, transparent);
-  --app-slides:    #E9B84A;
-  --app-slides-bg: color-mix(in srgb, #E9B84A 15%, transparent);
-  --app-pdf:       #EC7183;
-  --app-pdf-bg:    color-mix(in srgb, #EC7183 15%, transparent);
-  --app-board:     #A487E0;
-  --app-board-bg:  color-mix(in srgb, #A487E0 16%, transparent);
-
-  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.40),
-            0 1px 3px rgba(0, 0, 0, 0.30);
-  --elev-2: 0 4px 14px -2px rgba(0, 0, 0, 0.55),
-            0 2px 5px -2px rgba(0, 0, 0, 0.40);
-  --elev-3: 0 20px 44px -12px rgba(0, 0, 0, 0.70),
-            0 6px 16px -8px rgba(0, 0, 0, 0.45);
-  --elev-focus: 0 0 0 3px color-mix(in srgb, var(--accent-press) 40%, transparent);
-
-  color-scheme: dark;
+ --bg-base:#0B1120;--bg-surface:#111B2E;--bg-elevated:#1C293F;--bg-hover:#23334C;
+ --bg-selected:#23244C;--bg-selected-border:#4C4F89;
+ --paper:#111B2E;--paper-2:#0B1120;--paper-3:#1C293F;--clay:#1C293F;
+ --bg:#0B1120;--bg-elev-1:#111B2E;--bg-elev-2:#1C293F;--bg-sunk:#070C16;
+ --ink:#F1F5F9;--ink-muted:#CBD5E1;--ink-faint:#94A3B8;--ink-ghost:#64748B;--ink-on-accent:#0F172A;
+ --line:#28364C;--line-strong:#3B4A62;--line-emphasis:#64748B;
+ --accent:#818CF8;--accent-hover:#A5B4FC;--accent-press:#C7D2FE;--accent-tint:#23244C;--accent-tint-2:#333469;--accent-on-ink:#A5B4FC;
+ --brand:#A5B4FC;--brand-hover:#C7D2FE;--brand-subtle:#23244C;
+ --selection-bg:#373073;--selection-fg:#F1F5F9;
+ --signal-warning:#FBBF24;--signal-warning-bg:#342710;--signal-error:#FCA5A5;--signal-error-bg:#371E29;
+ --signal-success:#86EFAC;--signal-success-bg:#143326;--signal-info:#A5B4FC;--signal-info-bg:#23244C;
+ --app-docs:#93C5FD;--app-docs-bg:#1B3051;--app-sheets:#86EFAC;--app-sheets-bg:#143326;
+ --app-slides:#FCD34D;--app-slides-bg:#342710;--app-board:#C4B5FD;--app-board-bg:#2C2446;--app-pdf:#FDA4AF;--app-pdf-bg:#371E29;
+ --oat-50:#F1F5F9;--oat-100:#CBD5E1;--oat-200:#94A3B8;--oat-300:#64748B;--oat-400:#475569;--oat-500:#64748B;--oat-600:#94A3B8;--oat-700:#CBD5E1;--oat-800:#1C293F;--oat-900:#F1F5F9;
+ --elev-1:0 1px 2px rgb(0 0 0 / .2);--elev-2:0 8px 24px -6px rgb(0 0 0 / .35);--elev-3:0 16px 48px -12px rgb(0 0 0 / .5);
+ color-scheme:dark;
 }
-
-/* Reduced-motion. */
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration-base: 0ms;
-    --duration-slow: 0ms;
-  }
-}
-
-/* Global selection — accent tint, not the browser blue. */
-::selection {
-  background: var(--selection-bg);
-  color: var(--selection-fg);
-}
+@media (prefers-reduced-motion: reduce) { :root { --duration-fast:0ms;--duration-base:0ms;--duration-slow:0ms; } }

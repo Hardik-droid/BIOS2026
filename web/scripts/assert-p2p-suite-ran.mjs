@@ -12,7 +12,7 @@
 // This script instead reads Playwright's JSON reporter output — one entry
 // per test with its ACTUAL run-time status — and asserts, by exact count,
 // that the tests in e2e-p2p/builtin-rendezvous-p2p.e2e.ts (the suite proving
-// Diwan's built-in, no-relay P2P discovery works, which has no external
+// LocalFirst's built-in, no-relay P2P discovery works, which has no external
 // dependency and so must never be allowed to just not run) all report
 // "passed". A renamed file or a testMatch that stops matching the file
 // yields zero collected specs for it, which fails the count check exactly

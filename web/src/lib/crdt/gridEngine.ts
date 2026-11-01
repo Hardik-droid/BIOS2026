@@ -1,3 +1,4 @@
+import { LEGACY } from '../brandCompatibility'
 /**
  * src/lib/crdt/gridEngine.js — the Sheets grid's ENGINE-ADVERTISEMENT HANDSHAKE.
  *
@@ -109,7 +110,7 @@
 // disagree, never for a refactor.
 
 /** `grid.js` — hand-rolled LWW map, total order (lamport counter, replicaId). */
-export const ENGINE_LOCAL_LWW = 'diwan/grid-lww-lamport@1'
+export const ENGINE_LOCAL_LWW = LEGACY.gridEngine
 
 /** `substrateGrid.js` — KOTVA Sync §4.4 LWW register, total order = HLC. */
 export const ENGINE_KOTVA_SYNC = 'kotva-sync/lww-hlc@1'

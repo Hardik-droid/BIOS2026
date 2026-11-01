@@ -1,5 +1,5 @@
 // no-broker-dep:allow-file: names Pier/vulos-relayd three times below describing the
-// OPTIONAL, explicitly-configured rendezvous_url and DIWAN_PUBLIC_URL — this file's own text
+// OPTIONAL, explicitly-configured rendezvous_url and LOCALFIRST_PUBLIC_URL — this file's own text
 // states "Empty when unset... callers must treat '' as 'not configured', never guess a
 // default" and documents the built-in surface as "the DEFAULT path — no other product at
 // all". Verified: backend/config/config_test.go's TestDefault_RendezvousURLEmpty.
@@ -19,10 +19,10 @@
  *
  * The box's operator surfaces the real public origin (a public domain, or an
  * Pier tunnel URL when the box is behind NAT/CGNAT) via the backend env
- * DIWAN_PUBLIC_URL, exposed at the unauthenticated `GET /api/reachability`
+ * LOCALFIRST_PUBLIC_URL, exposed at the unauthenticated `GET /api/reachability`
  * endpoint (see backend/handlers/system.go).
  *
- * When DIWAN_PUBLIC_URL is unset (a directly-reachable standalone box, or
+ * When LOCALFIRST_PUBLIC_URL is unset (a directly-reachable standalone box, or
  * the cloud deployment where the origin IS public) the resolved base is empty
  * and callers fall back to `window.location.origin` — byte-identical to today.
  *
@@ -32,9 +32,9 @@
  * `collab.rendezvous_url` / VULOS_RENDEZVOUS_URL — see backend/config/config.go):
  * the base URL of any vulos-relayd's OPEN rendezvous surface (announce/resolve/
  * signal/mailbox + ICE) that the BROWSER talks to DIRECTLY — cross-origin, with
- * no host-box `/api/peering/*` and no Diwan server in the loop at all (relayd's
+ * no host-box `/api/peering/*` and no LocalFirst server in the loop at all (relayd's
  * rendezvous role serves CORS, so our origin never sees the discovery
- * envelopes). When set, a standalone Diwan binary
+ * envelopes). When set, a standalone LocalFirst binary
  * (which mounts no `/api/peering/*`, see main.go) can still get real
  * peer-to-peer collaboration — see transportSelection.js for how this and
  * host-box peering combine, and docs/COLLABORATION.md §3 for the full picture.
@@ -44,9 +44,9 @@
  * ── Built-in rendezvous prefix (the DEFAULT path — no other product at all) ──
  *
  * The same endpoint surfaces `builtin_rendezvous_prefix`: the path under THIS
- * origin at which the Diwan binary serves its OWN signed, content-blind
+ * origin at which the LocalFirst binary serves its OWN signed, content-blind
  * peer-discovery protocol (backend/rendezvous, `/api/rendezvous/*`). It is on by
- * default, so a bare `diwan` on a VPS can introduce two browsers to each other
+ * default, so a bare `localfirst` on a VPS can introduce two browsers to each other
  * with no Vulos OS, no Pier, and no external relay — which is the whole reason
  * it exists. `''` when the operator turned it off (`collab.builtin_rendezvous:
  * false`) or the server predates it, and `''` must mean local-only rather than a
@@ -179,13 +179,13 @@ export async function resolveRendezvousUrl(opts?: { force?: boolean }): Promise<
 }
 
 /**
- * Resolve the path prefix at which THIS Diwan server serves its own built-in
+ * Resolve the path prefix at which THIS LocalFirst server serves its own built-in
  * peer-discovery surface (`/api/rendezvous` — see backend/rendezvous), or `''`
  * when the operator disabled it (`collab.builtin_rendezvous: false`) or the
  * server is too old to report it.
  *
  * A PATH, not a URL: the surface is same-origin by construction, and the browser
- * is the only party that reliably knows which origin it loaded Diwan from (the
+ * is the only party that reliably knows which origin it loaded LocalFirst from (the
  * server sits behind whatever reverse proxy the operator chose). Callers join it
  * to their own origin — see selectCollabTransport, which also refuses anything
  * that is not an absolute same-origin path.

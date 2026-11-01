@@ -1,7 +1,7 @@
 package rendezvous
 
 // no-broker-dep:allow-file: below (in the CORS doc comment) cites Pier's rendezvous role as
-// prior art for this package's own no-auth-middleware argument — this file implements Diwan's
+// prior art for this package's own no-auth-middleware argument — this file implements LocalFirst's
 // OWN built-in discovery surface (the default path), not a dependency on Pier.
 
 import (
@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Prefix is where the built-in surface is mounted, under Diwan's own /api. It is
+// Prefix is where the built-in surface is mounted, under LocalFirst's own /api. It is
 // a CONSTANT rather than a config knob: the browser learns it from
 // GET /api/reachability, so nothing is gained by letting two deployments disagree
 // about it, and a fixed path is one less thing an operator can misconfigure into
@@ -43,7 +43,7 @@ const MaxBodyBytes = 256 * 1024
 //	GET  /healthz                    liveness for deploy tooling and tests
 //
 // CORS is whatever the app already applies process-wide (main.go: a wildcard
-// WITHOUT credentials unless DIWAN_CORS_ORIGINS names an allowlist, in which case
+// WITHOUT credentials unless LOCALFIRST_CORS_ORIGINS names an allowlist, in which case
 // credentials are allowed for those origins). This surface adds nothing and
 // removes nothing, and it is safe under either posture for one specific reason:
 // the protocol never authenticates with ambient credentials. Authority comes

@@ -4,7 +4,7 @@ Prepared on 1 November 2026 for the current local development workspace. This is
 
 ## 1. The message to remember
 
-**Working proposition:** an extension of the open-source Diwan office suite that lets a Windows user keep editing and saving documents locally, then explicitly share a Docs replica over authenticated Bluetooth. A separate Android relay prototype forwards the endpoints' encrypted stream over a manually selected path. Longer range, automatic routing and production certification are future validation work.
+**Working proposition:** an extension of the original open-source [Diwan office suite](https://github.com/vul-os/diwan) that lets a Windows user keep editing and saving documents locally, then explicitly share a Docs replica over authenticated Bluetooth. A separate Android relay prototype forwards the endpoints' encrypted stream over a manually selected path. Longer range, automatic routing and production certification are future validation work.
 
 Lead with the user's problem: a document should remain usable when Internet service disappears. Then explain the engineering contribution: local commits, recoverable drafts, conflict handling, durable collaborative updates and clear acknowledgement states. Discuss the radio and relay work after the audience understands what is being protected.
 
@@ -14,13 +14,13 @@ The project is not a new radio technology, a new cipher, a new CRDT, or a claim 
 
 ### A. Thirty-second introduction
 
-“BIOS2026 extends the open-source Diwan office suite for a local-first workflow. A Windows user can create, edit and save a document without an Internet account or cloud document API. For nearby collaboration, we added a native Bluetooth path with authenticated encrypted sessions and durable Yjs updates. We also built an experimental Android forwarding app. The app and protocol have software-test evidence; long-distance radio performance is not yet measured.”
+“BIOS2026 extends the original open-source [Diwan office suite](https://github.com/vul-os/diwan) for a local-first workflow. A Windows user can create, edit and save a document without an Internet account or cloud document API. For nearby collaboration, we added a native Bluetooth path with authenticated encrypted sessions and durable Yjs updates. We also built an experimental Android forwarding app. The app and protocol have software-test evidence; long-distance radio performance is not yet measured.”
 
 ### B. Ninety-second pitch
 
 “Our target situation is a classroom, workshop or field team where an Internet connection is unreliable but people still need to work on a document. Traditional offline editors already solve individual editing. Our focus is joining local document ownership with nearby collaboration and recoverable state.
 
-“We started from Diwan rather than claiming to build a complete office engine from scratch. The extension adds a separate offline Windows package, browser-local storage, exact save acknowledgements, recovery drafts and a native Classic Bluetooth connection. Shared documents keep a durable Yjs update journal. Reconnecting peers exchange state vectors and missing updates, and the destination acknowledges an update after its journal commit.
+“We started from LocalFirst rather than claiming to build a complete office engine from scratch. The extension adds a separate offline Windows package, browser-local storage, exact save acknowledgements, recovery drafts and a native Classic Bluetooth connection. Shared documents keep a durable Yjs update journal. Reconnecting peers exchange state vectors and missing updates, and the destination acknowledges an update after its journal commit.
 
 “The next prototype uses Android phones as consenting relays. A phone receives a relay access code, not the document invitation, and forwards the original endpoint TLS stream. That is a fixed route, not automatic mesh discovery. We have passing software checks and a built APK; we still need the physical multi-device and range trials. Our next milestone is measured evidence, not an unsupported one-kilometre claim.”
 
@@ -28,7 +28,7 @@ The project is not a new radio technology, a new cipher, a new CRDT, or a claim 
 
 | Time | Show or say | Purpose |
 | --- | --- | --- |
-| 0:00–0:30 | Describe an Internet outage during document work; introduce BIOS2026 and its Diwan base. | Establish the problem and attribution. |
+| 0:00–0:30 | Describe an Internet outage during document work; introduce BIOS2026 and its LocalFirst base. | Establish the problem and attribution. |
 | 0:30–1:15 | Disconnect Internet, type in a test document, wait for local save, then reload. | Demonstrate the strongest independently checkable local behavior. |
 | 1:15–1:55 | Show the offline architecture: browser storage on the same machine; Go helper on loopback; Bluetooth between machines. | Explain why a localhost page can work without Internet. |
 | 1:55–2:25 | Show the host invitation controls and explain pairing plus pinned TLS. If a physical peer has not passed rehearsal, stop at host setup. | Separate implementation from verified transfer. |
@@ -58,7 +58,7 @@ The minute ranges are a rehearsal schedule, not latency promises. A slow or disc
 
 ### Twenty minutes before presenting
 
-1. Launch the exact packaged build you rehearsed. On this workspace the working launcher is `Start-Diwan-Offline.cmd` in the parent `W` folder. A fresh clone can instead build the Windows package using the commands in section 7.
+1. Launch the exact packaged build you rehearsed. The historical parent-workspace launcher is `Start-Diwan-Offline.cmd`; newly generated LocalFirst packages use their own `Start-LocalFirst-Offline.cmd`. A fresh clone can instead build the Windows package using the commands in section 7.
 2. Confirm `http://127.0.0.1:8765/healthz` reports the expected offline server and version. Health only proves the local server is responding; it does not prove radio delivery.
 3. Use the same browser profile as rehearsal. Browser storage is scoped to that profile and origin. Avoid private/incognito mode for the working demo.
 4. Save and export any valuable work before testing failure scenarios. Use synthetic demonstration documents for all destructive or recovery examples.
@@ -107,7 +107,7 @@ If you do not know an answer, name the uncertainty and the next experiment. Do n
 
 | Question | Short answer to practise |
 | --- | --- |
-| “What did you build rather than inherit?” | The offline packaging and storage path, recovery/save behavior, native Bluetooth bridge, nearby replica persistence/sync integration, invitation/update usability fixes and the experimental relay work. The editor engines and substantial office/backend code are inherited from Diwan and its dependencies. |
+| “What did you build rather than inherit?” | The offline packaging and storage path, recovery/save behavior, native Bluetooth bridge, nearby replica persistence/sync integration, invitation/update usability fixes and the experimental relay work. The editor engines and substantial office/backend code are inherited from the original Diwan project and its dependencies. |
 | “Why not use Google Docs or LibreOffice?” | They are useful solutions with existing offline capabilities. The chosen design targets an explicit browser-local document workflow and a nearby Bluetooth transport that does not rely on a cloud document API. The comparison is about fit, not universal superiority. |
 | “Is your encryption unbreakable?” | No absolute guarantee is justified. The design uses existing TLS 1.3 with a pinned host certificate and invitation authentication, while endpoint compromise, stolen invitations, traffic metadata and denial of service remain concerns. |
 | “Have you achieved one kilometre?” | No. The target is a field-validation goal; simulated relay counts do not measure metres or area coverage. |
@@ -143,8 +143,8 @@ Invoke-RestMethod http://127.0.0.1:8765/healthz
 
 ```powershell
 # From the main repository, with Go on PATH:
-go test ./internal/nearby ./cmd/diwan-offline
-go test -tags relay_experiment ./internal/nearby ./cmd/diwan-offline ./cmd/diwan-relay-experiment
+go test ./internal/nearby ./cmd/localfirst-offline
+go test -tags relay_experiment ./internal/nearby ./cmd/localfirst-offline ./cmd/localfirst-relay-experiment
 
 # From web, after building the offline assets:
 npm.cmd run test:e2e:offline

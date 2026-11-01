@@ -1,11 +1,11 @@
-# Diwan — Static Deploy Guide
+# LocalFirst — Static Deploy Guide
 
-Diwan ships the `office` SPA, built with Vite and uploaded to Tigris
+LocalFirst ships the `office` SPA, built with Vite and uploaded to Tigris
 object storage for CDN delivery.
 
-> Diwan is the **documents-only** product (Docs, Sheets, Slides, PDF/Signing).
+> LocalFirst is the **documents-only** product (Docs, Sheets, Slides, PDF/Signing).
 > Calendar and Contacts come from the bring-your-own-mailbox PIM connector
-> (**lilmail**), surfaced by the OS as standalone widgets — not from Diwan.
+> (**lilmail**), surfaced by the OS as standalone widgets — not from LocalFirst.
 > Chat and video are third-party (Matrix/Element; Element Call / Jitsi), not
 > Vulos products. The **Vulos OS** is the shell that hosts the apps.
 
@@ -20,7 +20,7 @@ object storage for CDN delivery.
 |---|---|
 | `TIGRIS_ACCESS_KEY_ID` | Tigris access key |
 | `TIGRIS_SECRET_ACCESS_KEY` | Tigris secret key |
-| `TIGRIS_BUCKET` | Bucket name (e.g. `diwan-static`) |
+| `TIGRIS_BUCKET` | Bucket name (e.g. `localfirst-static`) |
 | `TIGRIS_ENDPOINT` | Optional; defaults to `https://fly.storage.tigris.dev` |
 
 ## Usage

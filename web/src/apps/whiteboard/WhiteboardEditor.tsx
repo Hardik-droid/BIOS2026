@@ -1,5 +1,5 @@
 /**
- * WhiteboardEditor — Diwan's whiteboard document type.
+ * WhiteboardEditor — LocalFirst's whiteboard document type.
  *
  * A whiteboard is an Excalidraw canvas (MIT — https://github.com/excalidraw/excalidraw)
  * backed by a Y.Doc, mounted on Office's OWN distributed peer-to-peer collab
@@ -7,7 +7,7 @@
  *
  *   • The scene is a Yjs CRDT: elements live one-per-id in a Y.Map so concurrent
  *     edits to different shapes merge cleanly (see lib/crdt/boardYdoc.js).
- *   • It syncs over an E2E-encrypted P2P room via Diwan's own first-party
+ *   • It syncs over an E2E-encrypted P2P room via LocalFirst's own first-party
  *     src/lib/collab/webrtc/fabric.js FabricClient — DIRECT WebRTC data
  *     channels, relay/TURN only on hard-NAT
  *     failure and content-blind even then. The room key lives in the URL
@@ -32,11 +32,12 @@ import { Excalidraw } from '@excalidraw/excalidraw'
 import '@excalidraw/excalidraw/index.css'
 import type { ExcalidrawImperativeAPI, ExcalidrawProps } from '@excalidraw/excalidraw/types'
 import { ArrowLeft, Users, Eye, Share2, Info, WifiOff } from 'lucide-react'
-import { useFilesStore, getSaveState, onSaveStateChange, type DiwanFile } from '../../store/filesStore'
+import { useFilesStore, getSaveState, onSaveStateChange, type LocalFirstFile } from '../../store/filesStore'
 import { api } from '../../lib/api'
 import { useAuthStore } from '../../store/authStore'
 import { useResolvedTheme } from '../../components/ui/useTheme'
 import { Topbar, IconButton, Tooltip, SaveStatus, LoadingState, useToast } from '../../components/ui'
+import { EditorIdentity, EditorTitle, EditorStatusBar } from '../../components/editor/EditorChrome'
 import { docsCollabEnabled, DOCS_COLLAB_OFF_NOTICE, updateLogEnabled } from '../../lib/flags.js'
 import { UpdateLogSync } from '../../lib/collab/updateLog.js'
 import { Y, SEED_ORIGIN } from '../../lib/crdt/ydoc.js'
@@ -66,7 +67,7 @@ export default function WhiteboardEditor() {
   const collabEnabled = useMemo(() => docsCollabEnabled(), [])
 
   const { files, saveFileWithDraft, markDirty } = useFilesStore()
-  const [file, setFile] = useState<DiwanFile | undefined>(files.find((f) => f.id === id))
+  const [file, setFile] = useState<LocalFirstFile | undefined>(files.find((f) => f.id === id))
   const [title, setTitle] = useState(file?.name || 'Untitled whiteboard')
   const [saveStatus, setSaveStatus] = useState(getSaveState(id as string))
   const [seeded, setSeeded] = useState(false)
@@ -100,7 +101,7 @@ export default function WhiteboardEditor() {
   useEffect(() => {
     if (file || !id) return
     api.getFile(id)
-      .then((f) => { const loaded = f as DiwanFile; setFile(loaded); setTitle(loaded.name || 'Untitled whiteboard') })
+      .then((f) => { const loaded = f as LocalFirstFile; setFile(loaded); setTitle(loaded.name || 'Untitled whiteboard') })
       .catch(() => navigate('/whiteboards'))
   }, [id, file, navigate])
 
@@ -236,28 +237,23 @@ export default function WhiteboardEditor() {
     saveStatus.status === 'error' ? 'Save failed — retrying' : undefined
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-bg" data-testid="whiteboard-editor">
+    <div className="lf-editor lf-editor-whiteboard flex-1 flex flex-col overflow-hidden bg-bg" data-testid="whiteboard-editor">
       <Topbar
+        className="lf-editor-topbar"
         leading={
-          <Tooltip label="Back to Whiteboards">
+          <><Tooltip label="Back to Whiteboards">
             <IconButton size="sm" onClick={() => void navigate('/whiteboards')}>
               <ArrowLeft size={15} />
             </IconButton>
-          </Tooltip>
+          </Tooltip><EditorIdentity kind="whiteboard" /></>
         }
         title={
-          <input
+          <EditorTitle
+            kind="whiteboard"
             value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
+            onChange={handleTitleChange}
             placeholder="Untitled whiteboard"
-            aria-label="Whiteboard title"
-            className={[
-              'flex-1 min-w-0 text-sm font-semibold tracking-tightish',
-              'bg-transparent border border-transparent rounded-sm px-2 py-1',
-              'text-ink placeholder:text-ink-faint',
-              'hover:border-line focus:border-line-strong focus:bg-paper',
-              'transition-[border-color,background] duration-fast ease-out outline-none',
-            ].join(' ')}
+            label="Whiteboard title"
           />
         }
         meta={
@@ -344,6 +340,11 @@ export default function WhiteboardEditor() {
           theme={resolvedTheme}
         />
       </div>
+
+      <EditorStatusBar leading={<span>Infinite canvas</span>}>
+        <span>{p2p.readOnly ? 'View only' : 'Select, draw or add a note to get started'}</span>
+        <span>{saveStatus.status === 'saving' ? 'Saving changes…' : saveStatus.status === 'dirty' ? 'Unsaved changes' : saveStatus.status === 'error' ? 'Save needs attention' : saveStatus.status === 'saved' ? 'Changes saved' : 'Ready'}</span>
+      </EditorStatusBar>
 
       <P2PShareModal
         open={showShare}

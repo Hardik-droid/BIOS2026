@@ -1,4 +1,4 @@
-// no-broker-dep:allow-file: this suite's own subject is proving Diwan needs NO Pier/relay by
+// no-broker-dep:allow-file: this suite's own subject is proving LocalFirst needs NO Pier/relay by
 // default ("No Vulos OS, no Pier, no relay, no account") — it names the broker only to assert
 // its absence from the default path, the same pattern already recognised for a CI step
 // elsewhere in this suite.
@@ -6,12 +6,12 @@
  * builtin-rendezvous-p2p.e2e.ts — the DEFAULT path, proved end to end with
  * nothing mocked and nothing external:
  *
- *   "One `diwan` binary on one box is enough for two people to collaborate
+ *   "One `localfirst` binary on one box is enough for two people to collaborate
  *    peer-to-peer. No Vulos OS, no Pier, no relay, no account."
  *
  * That sentence is the whole reason backend/rendezvous exists. WebRTC cannot
  * introduce two browsers to each other unaided — something has to carry the first
- * offer/answer/ICE frames — and Diwan used to be able to get that ONLY from
+ * offer/answer/ICE frames — and LocalFirst used to be able to get that ONLY from
  * another product. With neither present, every session fell through to
  * honestly-local-only. Now the binary serves the signalling itself.
  *
@@ -26,7 +26,7 @@
  * ── What "proven" means here ────────────────────────────────────────────────
  *
  * Two browser contexts (separate storage, separate WebRTC stacks) load the SAME
- * Diwan server, because that is what an operator actually deploys. The server is
+ * LocalFirst server, because that is what an operator actually deploys. The server is
  * therefore in common — so the suite does not merely argue "there was no other
  * path", it shows positively:
  *
@@ -61,7 +61,7 @@ interface ReachabilityResponse {
 let stack: Stack
 
 test.beforeAll(async () => {
-  // One Diwan with its own discovery surface, plus one with NOTHING configured
+  // One LocalFirst with its own discovery surface, plus one with NOTHING configured
   // for the negative control.
   stack = await startStack({ rendezvous: 'builtin', offices: 1, localOnlyOffice: true })
 })
@@ -70,12 +70,12 @@ test.afterAll(() => {
   if (stack) stack.stop()
 })
 
-test('a bare standalone Diwan serves its own discovery surface and no host-box peering', async ({ request }) => {
+test('a bare standalone LocalFirst serves its own discovery surface and no host-box peering', async ({ request }) => {
   const [a] = stack.offices
 
   // The premise: this binary is not fronted by a Vulos OS / Pier host.
   const peering = await request.get(`${a.url}/api/peering/ice`)
-  expect(peering.status(), 'a standalone Diwan must not serve host-box peering').toBe(404)
+  expect(peering.status(), 'a standalone LocalFirst must not serve host-box peering').toBe(404)
 
   // It advertises its own surface, as a PATH on this origin, and names no relay.
   const reach = await (await request.get(`${a.url}/api/reachability`)).json() as ReachabilityResponse
@@ -116,7 +116,7 @@ test('the discovery surface refuses an unsigned write', async ({ request }) => {
   expect(resolved.status()).not.toBe(200)
 })
 
-test('THE PAYOFF — two browsers collaborate P2P through one bare Diwan binary', async ({ browser }) => {
+test('THE PAYOFF — two browsers collaborate P2P through one bare LocalFirst binary', async ({ browser }) => {
   const [a] = stack.offices
   const doc = await createDoc(a.url, 'Built-in Rendezvous Proof')
 
@@ -254,7 +254,7 @@ test('THE PAYOFF — two browsers collaborate P2P through one bare Diwan binary'
   }
 })
 
-test('NEGATIVE — with discovery disabled and no relay, Diwan is honestly local-only', async ({ browser, request }) => {
+test('NEGATIVE — with discovery disabled and no relay, LocalFirst is honestly local-only', async ({ browser, request }) => {
   // The honesty half of the contract: turning the surface off must degrade to
   // "you can still edit, nobody can join", never to a broken editor and never to
   // a UI that claims a live session it does not have.

@@ -155,7 +155,7 @@ describe('useCollabFabric', () => {
     _resetReachableBaseCache()
     // /api/peering/ice 404s (standalone: no host-box peering) but
     // /api/reachability reports a configured rendezvous_url — the deployment
-    // pointed Diwan at a self-hosted relayd with no Vulos OS involved at all.
+    // pointed LocalFirst at a self-hosted relayd with no Vulos OS involved at all.
     vi.stubGlobal('fetch', vi.fn((url: string) => {
       if (String(url).includes('/api/reachability')) {
         return Promise.resolve({

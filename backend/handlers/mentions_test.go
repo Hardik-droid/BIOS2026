@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
-	"diwan/backend/fileacl"
-	"diwan/backend/middleware"
-	"diwan/backend/models"
-	"diwan/backend/notify"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/middleware"
+	"localfirst/backend/models"
+	"localfirst/backend/notify"
 
 	"github.com/gin-gonic/gin"
 )

@@ -35,7 +35,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"diwan/backend/middleware"
+	"localfirst/backend/middleware"
 
 	"github.com/gin-gonic/gin"
 )

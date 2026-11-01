@@ -1,5 +1,6 @@
+import { LEGACY } from '../brandCompatibility'
 /** Local document storage. Success is reported only after an IndexedDB commit. */
-export const WORKSPACE_DB = 'diwan-local-workspace'
+export const WORKSPACE_DB = LEGACY.workspaceDatabase
 export const MAX_BACKUP_BYTES = 32 * 1024 * 1024
 const DB_VERSION = 1
 const VERSION_LIMIT = 50
@@ -35,7 +36,7 @@ export function openWorkspace(): Promise<IDBDatabase> {
   connection = new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open(WORKSPACE_DB, DB_VERSION)
     let expired = false
-    const timeout = setTimeout(() => { expired = true; reject(new Error('Local storage is blocked. Close other Diwan tabs, then try again.')) }, 10000)
+    const timeout = setTimeout(() => { expired = true; reject(new Error('Local storage is blocked. Close other LocalFirst tabs, then try again.')) }, 10000)
     request.onupgradeneeded = () => {
       const db = request.result
       db.createObjectStore('files', { keyPath: 'id' })
@@ -261,14 +262,14 @@ export async function deviceMetadata(): Promise<DeviceMetadata> {
 export async function exportLocalWorkspace(): Promise<string> {
   const db = await openWorkspace()
   const backup = await transaction<Record<string, unknown>>(db, ['files', 'folders', 'versions', 'metadata'], 'readonly', (tx, result) => {
-    const data: Record<string, unknown> = { format: 'diwan-local-workspace', version: DB_VERSION, exported_at: new Date().toISOString() }
+    const data: Record<string, unknown> = { format: 'localfirst-local-workspace', version: DB_VERSION, exported_at: new Date().toISOString() }
     for (const store of ['files', 'folders', 'versions', 'metadata']) tx.objectStore(store).getAll().onsuccess = event => { data[store] = (event.target as IDBRequest<unknown[]>).result }
     result(data)
   })
   return JSON.stringify(backup)
 }
 
-export interface WorkspaceBackup { format: 'diwan-local-workspace'; version: 1; files: LocalFile[]; folders: LocalFolder[]; versions: LocalVersion[] }
+export interface WorkspaceBackup { format: 'localfirst-local-workspace'; version: 1; files: LocalFile[]; folders: LocalFolder[]; versions: LocalVersion[] }
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new WorkspaceError('The backup contains an invalid record.', 400)
   return value as Record<string, unknown>
@@ -322,8 +323,8 @@ function backupContent(value: unknown, type: string): unknown {
 export function parseWorkspaceBackup(json: string): WorkspaceBackup {
   if (new TextEncoder().encode(json).length > MAX_BACKUP_BYTES) throw new WorkspaceError('This backup exceeds the 32 MiB restore limit. Restore a smaller backup.', 413)
   let data: Record<string, unknown>
-  try { data = record(JSON.parse(json)) } catch { throw new WorkspaceError('Choose a valid Diwan workspace JSON backup.', 400) }
-  if (data.format !== 'diwan-local-workspace' || data.version !== 1) throw new WorkspaceError('This backup format or version is not supported.', 400)
+  try { data = record(JSON.parse(json)) } catch { throw new WorkspaceError('Choose a valid LocalFirst workspace JSON backup.', 400) }
+  if ((data.format !== 'localfirst-local-workspace' && data.format !== LEGACY.backupFormat) || data.version !== 1) throw new WorkspaceError('This backup format or version is not supported.', 400)
   if (!Array.isArray(data.files) || !Array.isArray(data.folders) || !Array.isArray(data.versions) || data.files.length > 1000 || data.folders.length > 1000 || data.versions.length > 50000) throw new WorkspaceError('This backup has invalid or too many records.', 400)
   const files = data.files.map(value => {
     const entry = record(value)
@@ -356,7 +357,7 @@ export function parseWorkspaceBackup(json: string): WorkspaceBackup {
     return { id: identifier(entry.id), file_id: file.id, name: name(entry.name as string), content: backupContent(entry.content, file.type), rev, created_at: timestamp(entry.created_at), label: typeof entry.label === 'string' ? entry.label.slice(0, 512) : '' } satisfies LocalVersion
   })
   if (new Set(versions.map(version => version.id)).size !== versions.length || new Set(versions.map(version => `${version.file_id}:${version.rev}`)).size !== versions.length) throw new WorkspaceError('The backup contains duplicate version identifiers or revisions.', 400)
-  return { format: 'diwan-local-workspace', version: 1, files, folders, versions }
+  return { format: 'localfirst-local-workspace', version: 1, files, folders, versions }
 }
 
 /** Restore as new copies. Existing records and this device's identity survive. */

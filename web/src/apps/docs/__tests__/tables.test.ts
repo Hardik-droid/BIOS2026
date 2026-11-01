@@ -1,5 +1,5 @@
 /**
- * WAVE-52 — Tables in Diwan Docs.
+ * WAVE-52 — Tables in LocalFirst Docs.
  *
  * Coverage:
  *   1. Insert / edit ops on a real TipTap editor (insert N×M with header,

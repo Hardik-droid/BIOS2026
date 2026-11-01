@@ -126,7 +126,7 @@ export function recordRequests(page: Page): RecordedRequest[] {
   return seen
 }
 
-/** Wait for the editor of a Diwan docs page to be interactive. */
+/** Wait for the editor of a LocalFirst docs page to be interactive. */
 export async function openDoc(page: Page, url: string): Promise<void> {
   await page.goto(url)
   await expect(page.locator('.ProseMirror')).toBeVisible({ timeout: 60_000 })

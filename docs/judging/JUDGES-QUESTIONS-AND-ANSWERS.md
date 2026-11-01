@@ -1,10 +1,10 @@
-# BIOS2026 / Diwan: 200 Judge Questions and Model Answers
+# BIOS2026 / LocalFirst: 200 Judge Questions and Model Answers
 
 **Prepared:** 1 November 2026. **Source reference:** `d7e9135` in [BIOS2026](https://github.com/Vasu-Gupta105/BIOS2026). **Audience:** students, product judges, software engineers, security reviewers and networking specialists.
 
 This is a broad rehearsal bank, not a claim that every conceivable question can be predicted. Answers describe the available source and recorded evidence. Use “implemented,” “tested in software,” “tested on this radio,” and “physically validated between devices” carefully: they are different statements.
 
-The current deliverable extends the open-source [Diwan project](https://github.com/vul-os/diwan). Its strongest demonstrated path is a Windows offline Docs workspace with local persistence and recovery. Native Windows Bluetooth sharing exists as a preview. A separate Android relay APK and Windows receiver have passed software checks. Independent physical two-laptop document exchange, Android relay lifecycle, 800 m–1 km range and production security remain open gates.
+The current deliverable extends the open-source [original Diwan project](https://github.com/vul-os/diwan). Its strongest demonstrated path is a Windows offline Docs workspace with local persistence and recovery. Native Windows Bluetooth sharing exists as a preview. A separate Android relay APK and Windows receiver have passed software checks. Independent physical two-laptop document exchange, Android relay lifecycle, 800 m–1 km range and production security remain open gates.
 
 ## 1. Beginner questions: problem, purpose and scope
 
@@ -634,7 +634,7 @@ The attempted race build failed because the installed local MinGW compiler canno
 
 ### Q152. How would you make the tests reproducible for judges?
 
-Provide the source commit, lockfiles, toolchain requirements, test command and expected report, with no private credentials or personal documents. There is a current reproducibility gap: the broad `diwan` ignore rule accidentally excludes the local Java package directory, and some build/verifier helpers live outside the pushed repository. Before claiming a reproducible Android source release, correct that rule, commit the missing source and make the helpers portable. Label each transport as memory, loopback, browser stub or real Bluetooth, and record the exact hardware for field trials.
+Provide the source commit, lockfiles, toolchain requirements, test command and expected report, with no private credentials or personal documents. There is a current reproducibility gap: the broad `localfirst` ignore rule accidentally excludes the local Java package directory, and some build/verifier helpers live outside the pushed repository. Before claiming a reproducible Android source release, correct that rule, commit the missing source and make the helpers portable. Label each transport as memory, loopback, browser stub or real Bluetooth, and record the exact hardware for field trials.
 
 ### Q153. Why test the actual packaged executable?
 
@@ -730,7 +730,7 @@ The deployment configuration is designed to obtain relevant secrets through envi
 
 ### Q175. Why were SDK files not committed to Git?
 
-Downloaded toolchains, caches and generated application packages are not the project's source. Trying to stage them caused excessive line-ending warnings and a Windows path-length failure, so local exclusions now keep those directories out of staging. Source exclusion needs equal care: an existing broad `diwan` ignore rule also matched the Java package name, which is an accidental gap to fix. Reproducible setup should version the actual source and tool definitions while downloading SDKs by documented versions and checksums.
+Downloaded toolchains, caches and generated application packages are not the project's source. Trying to stage them caused excessive line-ending warnings and a Windows path-length failure, so local exclusions now keep those directories out of staging. Source exclusion needs equal care: an existing broad `localfirst` ignore rule also matched the Java package name, which is an accidental gap to fix. Reproducible setup should version the actual source and tool definitions while downloading SDKs by documented versions and checksums.
 
 ### Q176. Why does the repository contain both hosted and offline code?
 
@@ -790,7 +790,7 @@ Run the same realistic outage-and-collaboration task with target users across su
 
 ### Q189. Did you build the entire office suite from scratch?
 
-No. This repository extends the open-source Diwan codebase, with a known upstream baseline and retained history. The contribution should be explained through the actual offline workspace, safety fixes, native nearby transport, invitation/update improvements, relay prototype and tests added or changed here. Libraries and upstream authors should be credited explicitly instead of presenting the inherited editor and backend as entirely original work.
+No. This repository extends the original open-source Diwan codebase, with a known upstream baseline and retained history. The contribution should be explained through the actual offline workspace, safety fixes, native nearby transport, invitation/update improvements, relay prototype and tests added or changed here. Libraries and upstream authors should be credited explicitly instead of presenting the inherited editor and backend as entirely original work.
 
 ### Q190. What licensing responsibilities follow from that?
 
@@ -845,7 +845,7 @@ These links identify the main implementation boundaries behind the answers. Some
 | Topic | Primary project source |
 | --- | --- |
 | Scope, upstream attribution and repository history | [Project README](../../README.md), [upstream Diwan](https://github.com/vul-os/diwan), source reference `d7e9135` |
-| Offline build and service-worker behavior | [Offline build generator](../../scripts/build-offline.mjs), [offline mode flag](../../web/src/lib/offline/mode.ts), [native launcher](../../cmd/diwan-offline/launch.js) |
+| Offline build and service-worker behavior | [Offline build generator](../../scripts/build-offline.mjs), [offline mode flag](../../web/src/lib/offline/mode.ts), [native launcher](../../cmd/localfirst-offline/launch.js) |
 | Local file schema, revision validation and backup limits | [Workspace storage](../../web/src/lib/offline/workspace.ts), [local API adapter](../../web/src/lib/offline/localApi.ts) |
 | Draft tokens and save generations | [Draft store](../../web/src/lib/draftStore.ts), [file state/store](../../web/src/store/filesStore.ts) |
 | Journal, checkpoint replay and atomic compaction | [Local replica](../../web/src/lib/nearby/replica.ts) |
@@ -859,7 +859,7 @@ These links identify the main implementation boundaries behind the answers. Some
 | Synthetic relay and endpoint trust tests | [Relay lab](../../internal/nearby/relay_lab_test.go), [tagged relay tests](../../internal/nearby/relay_experiment_test.go) |
 | Open gates and measured-versus-planned distinction | [Relay phase plan](../BLUETOOTH-RELAY-PHASES.md), [scenario register](../BLUETOOTH-RELAY-SCENARIOS.json) |
 
-**Public-source completeness note:** the Android Java links above point to files present in the local working tree. At the documented commit `d7e9135`, the root ignore pattern `diwan` also matched the Java package directory, so the Java implementation and core tests were not included in the pushed source. Several Windows/Android build and verification helpers remain outside the nested repository too. The locally built APK and software reports are real evidence, but a clean-clone Android rebuild is not yet a passed claim. Correct the ignore scope, commit the missing implementation and make build helpers portable before presenting the Android source release as reproducible.
+**Public-source completeness note:** the Android Java links above point to files present in the local working tree. At the documented commit `d7e9135`, the root ignore pattern `localfirst` also matched the Java package directory, so the Java implementation and core tests were not included in the pushed source. Several Windows/Android build and verification helpers remain outside the nested repository too. The locally built APK and software reports are real evidence, but a clean-clone Android rebuild is not yet a passed claim. Correct the ignore scope, commit the missing implementation and make build helpers portable before presenting the Android source release as reproducible.
 
 The workspace-local evidence files are `Diwan-offline-package-verification.json`, `Diwan-offline-upgrade-verification.json`, `Diwan-relay-phase1-verification.json` and `Diwan-relay-experiment-verification.json` in the parent workspace. They are development reports, not independent certificates, and are not automatically part of the public source repository. The package report records 19 Chrome scenarios; earlier audit prose mentioning 18 is historical. The prototype report records 108 JVM checks, nine tagged Go leaf scenarios repeated three times, zero lint issues, debug-signature verification and isolated Windows smoke checks. Its physical-relay, Android-lifecycle, range and production fields remain unverified.
 

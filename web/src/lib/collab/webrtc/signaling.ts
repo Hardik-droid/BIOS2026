@@ -1,7 +1,7 @@
 // no-broker-dep:allow-file: this file's title names Pier because it implements the HOST_PEERING
 // transport (/api/peering/stream), which exists only when a Vulos OS/Pier host mounts that
-// path in front of Diwan — one optional case in transportSelection.js's priority chain, not a
-// default or an import of anything named pier. A standalone Diwan never mounts this path (see
+// path in front of LocalFirst — one optional case in transportSelection.js's priority chain, not a
+// default or an import of anything named pier. A standalone LocalFirst never mounts this path (see
 // main.go) and falls through to its own built-in surface.
 /**
  * signaling.ts — Pier signalling client for the office suite.

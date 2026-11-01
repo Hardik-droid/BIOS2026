@@ -14,12 +14,13 @@
 // object-store layer the OFFICE-STORE-01 deliverable shipped but never wired.
 //
 // No endpoint-selection logic lives here beyond the env→struct mapping that
-// OFFICE-STORE-01 explicitly requires: "diwan accepts the endpoint, it
+// OFFICE-STORE-01 explicitly requires: "localfirst accepts the endpoint, it
 // does NOT decide between Tigris or MinIO".
 package storage
 
 import (
 	"fmt"
+	appbrand "localfirst/internal/brand"
 	"log"
 	"os"
 	"strings"
@@ -74,12 +75,12 @@ type ResolvedBackend struct {
 //     (no client returned when Tigris creds are absent — env-default endpoint
 //     is still reported for logging).
 func ResolveOfficeBackend() (*ResolvedBackend, error) {
-	mode := strings.TrimSpace(os.Getenv(EnvStorageMode))
+	mode := strings.TrimSpace(appbrand.Getenv(EnvStorageMode))
 
-	minioEndpoint := strings.TrimSpace(os.Getenv(EnvMinIOEndpoint))
-	minioRegion := strings.TrimSpace(os.Getenv(EnvMinIORegion))
-	minioBucket := strings.TrimSpace(os.Getenv(EnvMinIOBucket))
-	minioCreds := strings.TrimSpace(os.Getenv(EnvMinIOCredsRef))
+	minioEndpoint := strings.TrimSpace(appbrand.Getenv(EnvMinIOEndpoint))
+	minioRegion := strings.TrimSpace(appbrand.Getenv(EnvMinIORegion))
+	minioBucket := strings.TrimSpace(appbrand.Getenv(EnvMinIOBucket))
+	minioCreds := strings.TrimSpace(appbrand.Getenv(EnvMinIOCredsRef))
 
 	anyMinIO := minioEndpoint != "" || minioRegion != "" || minioBucket != "" || minioCreds != ""
 
@@ -172,7 +173,7 @@ func InitOrgBucket() {
 		log.Printf("[storage] org-bucket: no S3 credentials configured — object store disabled (OSS mode)")
 		return
 	}
-	orgID := strings.TrimSpace(os.Getenv(EnvOrgID))
+	orgID := strings.TrimSpace(appbrand.Getenv(EnvOrgID))
 	if orgID == "" {
 		log.Printf("[storage] org-bucket: VULOS_ORG_ID not set — single-tenant mode (no org prefix)")
 	} else {
@@ -210,15 +211,15 @@ type ObjectStoreInfo struct {
 // handler). It mirrors the selection rules in ResolveOfficeBackend.
 func DescribeObjectStore() ObjectStoreInfo {
 	info := ObjectStoreInfo{Kind: "none"}
-	info.OrgID = strings.TrimSpace(os.Getenv(EnvOrgID))
+	info.OrgID = strings.TrimSpace(appbrand.Getenv(EnvOrgID))
 
-	mode := strings.TrimSpace(os.Getenv(EnvStorageMode))
-	minioEndpoint := strings.TrimSpace(os.Getenv(EnvMinIOEndpoint))
-	minioBucket := strings.TrimSpace(os.Getenv(EnvMinIOBucket))
+	mode := strings.TrimSpace(appbrand.Getenv(EnvStorageMode))
+	minioEndpoint := strings.TrimSpace(appbrand.Getenv(EnvMinIOEndpoint))
+	minioBucket := strings.TrimSpace(appbrand.Getenv(EnvMinIOBucket))
 	anyMinIO := minioEndpoint != "" ||
-		strings.TrimSpace(os.Getenv(EnvMinIORegion)) != "" ||
+		strings.TrimSpace(appbrand.Getenv(EnvMinIORegion)) != "" ||
 		minioBucket != "" ||
-		strings.TrimSpace(os.Getenv(EnvMinIOCredsRef)) != ""
+		strings.TrimSpace(appbrand.Getenv(EnvMinIOCredsRef)) != ""
 
 	if mode == modeLocalMinioSync || anyMinIO {
 		info.Kind = "minio"
@@ -229,7 +230,7 @@ func DescribeObjectStore() ObjectStoreInfo {
 	}
 
 	// Tigris (managed) is engaged only when credentials are present in env.
-	if os.Getenv("TIGRIS_ACCESS_KEY_ID") != "" && os.Getenv("TIGRIS_SECRET_ACCESS_KEY") != "" {
+	if appbrand.Getenv("TIGRIS_ACCESS_KEY_ID") != "" && appbrand.Getenv("TIGRIS_SECRET_ACCESS_KEY") != "" {
 		t := OfficeTigrisDefaults()
 		info.Kind = "tigris"
 		info.Endpoint = t.Endpoint
@@ -254,7 +255,7 @@ func DescribeObjectStore() ObjectStoreInfo {
 // This is the authoritative key builder — all handlers that write to the org
 // bucket must call this function instead of constructing keys ad-hoc.
 func OrgScopedKey(accountID, name string) string {
-	orgID := strings.TrimSpace(os.Getenv(EnvOrgID))
+	orgID := strings.TrimSpace(appbrand.Getenv(EnvOrgID))
 	var parts []string
 	if orgID != "" {
 		parts = append(parts, sanitizeKeySegment(orgID))
@@ -311,8 +312,8 @@ func readMinIOCreds(credsRef string) (string, string, error) {
 		}
 		return ak, sk, nil
 	}
-	if ak, sk := os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"); ak != "" || sk != "" {
+	if ak, sk := appbrand.Getenv("AWS_ACCESS_KEY_ID"), appbrand.Getenv("AWS_SECRET_ACCESS_KEY"); ak != "" || sk != "" {
 		return ak, sk, nil
 	}
-	return os.Getenv("MINIO_ROOT_USER"), os.Getenv("MINIO_ROOT_PASSWORD"), nil
+	return appbrand.Getenv("MINIO_ROOT_USER"), appbrand.Getenv("MINIO_ROOT_PASSWORD"), nil
 }

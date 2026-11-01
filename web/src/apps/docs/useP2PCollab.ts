@@ -1,5 +1,5 @@
 // no-broker-dep:allow-file: names Pier once, describing unchanged default behaviour when a
-// Vulos OS/Pier host is in front of Diwan — an optional case in the priority chain
+// Vulos OS/Pier host is in front of LocalFirst — an optional case in the priority chain
 // transportSelection.js implements, not a default or an import.
 /**
  * useP2PCollab — React hook wiring the secure P2P collab session (WAVE-25) into
@@ -25,7 +25,7 @@
  *   • Otherwise, both entry points resolve transportSelection.js's three-way
  *     choice BEFORE touching the fabric:
  *       1. HOST-BOX PEERING — this server mounts `/api/peering/*` (Vulos OS /
- *          Pier in front of Diwan). Unchanged default.
+ *          Pier in front of LocalFirst). Unchanged default.
  *       2. ANY RELAYD RENDEZVOUS — no host-box peering, but a rendezvous URL is
  *          configured (config.yaml `collab.rendezvous_url` /
  *          VULOS_RENDEZVOUS_URL). The invite-link session then runs entirely

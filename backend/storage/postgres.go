@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"diwan/backend/config"
-	"diwan/backend/models"
-	"diwan/backend/signing"
+	"localfirst/backend/config"
+	"localfirst/backend/models"
+	"localfirst/backend/signing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

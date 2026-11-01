@@ -5,7 +5,7 @@
  * hypothetical: upstream's own `bindings/go/embed.go` records the incident this
  * guard exists to prevent — a committed WASM module went stale against a fix in
  * `src/abi.rs`, and every response whose Rust-side String capacity outran its
- * length aborted the allocator on free. Invisibly. Diwan had drifted the same
+ * length aborted the allocator on free. Invisibly. LocalFirst had drifted the same
  * way while it VENDORED the engine under `third_party/dmtap-sync-wasm/`
  * (395,912 B / sha256 94262463… against upstream's 400,930 B / 0c50eff9…), and
  * nothing failed.

@@ -1,7 +1,8 @@
+import { LEGACY } from '../brandCompatibility'
 import { Y, applyRemoteUpdate, isFragmentEmpty, seedUpdateFromPMJSON, SEED_ORIGIN, REMOTE_ORIGIN, MAX_SNAPSHOT_BYTES, type YContext } from '../crdt/ydoc'
 
-const DB_NAME = 'diwan-replicas'
-const REPLAY = 'diwan-replica-replay'
+const DB_NAME = LEGACY.replicasDatabase
+const REPLAY = LEGACY.replicaOrigin
 interface UpdateRecord { seq?: number; fileId: string; data: Uint8Array }
 interface Checkpoint { fileId: string; data: Uint8Array }
 
@@ -89,8 +90,8 @@ export class LocalReplica {
       const found = await replica.pull()
       if (!found && seed) {
         Y.applyUpdate(context.ydoc, seedUpdateFromPMJSON(context.schema, seed), SEED_ORIGIN)
-        context.ydoc.getMap('diwan-meta').set('title', title)
-        for (const key of ['pageSetup', 'headerFooter']) if (metadata?.[key] && typeof metadata[key] === 'object') context.ydoc.getMap('diwan-meta').set(key, metadata[key])
+        context.ydoc.getMap(LEGACY.documentMetadata).set('title', title)
+        for (const key of ['pageSetup', 'headerFooter']) if (metadata?.[key] && typeof metadata[key] === 'object') context.ydoc.getMap(LEGACY.documentMetadata).set(key, metadata[key])
       }
       const snapshot = Y.encodeStateAsUpdate(context.ydoc)
       if (snapshot.length > MAX_SNAPSHOT_BYTES) throw new Error('Bluetooth sharing currently supports documents up to 1 MiB of replica data.')
@@ -117,7 +118,7 @@ export class LocalReplica {
       }
       context.ydoc.on('update', replica.onUpdate)
       if (typeof BroadcastChannel !== 'undefined') {
-        replica.channel = new BroadcastChannel(`diwan-replica-${fileId}`)
+        replica.channel = new BroadcastChannel(`${LEGACY.replicaChannel}${fileId}`)
         replica.channel.onmessage = event => {
           const update = event.data
           if (ArrayBuffer.isView(update) && 'BYTES_PER_ELEMENT' in update && update.BYTES_PER_ELEMENT === 1 && update.byteLength <= MAX_SNAPSHOT_BYTES) {

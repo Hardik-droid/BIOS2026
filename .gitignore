@@ -1,5 +1,7 @@
-diwan
-diwan.exe
+/localfirst
+/diwan
+/localfirst.exe
+/diwan.exe
 data/
 uploads/
 
@@ -45,3 +47,4 @@ dist-office/
 /.vercel/
 /dist-offline/
 /offline-package/
+/compute-experiment-package/

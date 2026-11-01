@@ -28,11 +28,11 @@ import (
 	"net/http"
 	"time"
 
-	"diwan/backend/audit"
-	"diwan/backend/fileacl"
-	"diwan/backend/models"
-	"diwan/backend/signing"
-	"diwan/backend/storage"
+	"localfirst/backend/audit"
+	"localfirst/backend/fileacl"
+	"localfirst/backend/models"
+	"localfirst/backend/signing"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

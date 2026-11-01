@@ -8,7 +8,7 @@
  * Nothing here is mocked. Two topologies are supported, and the DEFAULT is the
  * one that matters most:
  *
- *   • 'builtin' (default) — ONE standalone `diwan` binary, serving its OWN
+ *   • 'builtin' (default) — ONE standalone `localfirst` binary, serving its OWN
  *     peer-discovery surface at /api/rendezvous/* (backend/rendezvous). Two
  *     browsers load that one server and collaborate peer-to-peer through it. This
  *     is the shape an operator actually deploys: one binary, one VPS, no other
@@ -24,7 +24,7 @@
  *     ciphertext it cannot read, and the edits themselves are asserted to have
  *     crossed a direct WebRTC data channel.
  *
- *   • 'external' — two standalone `diwan` binaries (separate ports, separate data
+ *   • 'external' — two standalone `localfirst` binaries (separate ports, separate data
  *     dirs) with their built-in surface DISABLED, both pointed at a separately
  *     supplied `vulos-relayd` (Pier) via `collab.rendezvous_url`. This proves the
  *     other supported posture: discovery delegated to an operator's own relay,
@@ -60,7 +60,7 @@ export const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 export const REPO_ROOT = path.resolve(WEB_ROOT, '..')
 
 /**
- * Diwan's own built-in rendezvous mount prefix — must match
+ * LocalFirst's own built-in rendezvous mount prefix — must match
  * backend/rendezvous.Prefix and what GET /api/reachability advertises as
  * `builtin_rendezvous_prefix`.
  */
@@ -125,12 +125,12 @@ export interface BuiltBinaries {
 }
 
 /**
- * Build the Diwan binary under test. The frontend is built first because the
+ * Build the LocalFirst binary under test. The frontend is built first because the
  * binary embeds dist/ via go:embed — without it the server would serve a stale or
  * absent app and every browser assertion would be meaningless.
  */
 export async function buildBinaries(outDir: string): Promise<BuiltBinaries> {
-  const officeBin = path.join(outDir, 'diwan-e2e')
+  const officeBin = path.join(outDir, 'localfirst-e2e')
   await execFileAsync('npx', ['vite', 'build'], { cwd: WEB_ROOT, timeout: 300_000, maxBuffer: 64 << 20 })
   await execFileAsync('go', ['build', '-o', officeBin, '.'], { cwd: REPO_ROOT, timeout: 300_000, maxBuffer: 64 << 20 })
   return { officeBin }
@@ -184,14 +184,14 @@ interface StartOfficeOptions {
 /**
  * Boot the stack.
  *
- *   rendezvous='builtin'  — Diwan serves discovery itself (default; no external anything)
+ *   rendezvous='builtin'  — LocalFirst serves discovery itself (default; no external anything)
  *   rendezvous='external' — discovery delegated to VULOS_RELAYD_BIN; built-in surface OFF
  *   rendezvous='none'     — no discovery at all (the honest local-only negative control)
- *   offices                how many Diwan instances to boot
+ *   offices                how many LocalFirst instances to boot
  *   localOnlyOffice         also boot one with NO discovery
  */
 export async function startStack({ rendezvous = 'builtin', offices = 1, localOnlyOffice = false }: StackOptions = {}): Promise<Stack> {
-  const root = mkdtempSync(path.join(tmpdir(), 'diwan-p2p-'))
+  const root = mkdtempSync(path.join(tmpdir(), 'localfirst-p2p-'))
   const logs: string[] = []
   const procs: ChildProcess[] = []
 
@@ -232,7 +232,7 @@ export async function startStack({ rendezvous = 'builtin', offices = 1, localOnl
     await waitFor(() => httpOk(`${relayUrl}/rendezvous/healthz`), { what: 'relayd rendezvous' })
   }
 
-  // ── standalone Diwan instances ────────────────────────────────────────────
+  // ── standalone LocalFirst instances ────────────────────────────────────────────
   const startOffice = async (name: string, { rendezvousUrl = '', builtin = false }: StartOfficeOptions = {}): Promise<OfficeInstance> => {
     const dir = path.join(root, name)
     mkdirSync(path.join(dir, 'data'), { recursive: true })
@@ -258,7 +258,7 @@ export async function startStack({ rendezvous = 'builtin', offices = 1, localOnl
       cwd: dir,
       // DEPLOY_MODE stays standalone: this is exactly the bare binary the claim
       // is about — it mounts no /api/peering/*.
-      env: { ...process.env, DEPLOY_MODE: 'standalone', DIWAN_PUBLIC_URL: '' },
+      env: { ...process.env, DEPLOY_MODE: 'standalone', LOCALFIRST_PUBLIC_URL: '' },
     }, name, logs)
     procs.push(proc)
 
@@ -321,7 +321,7 @@ export interface RendezvousResolveResult {
  * @param baseUrl origin of the rendezvous server
  * @param key base64url Ed25519 key to look up
  * @param prefix mount prefix ('/rendezvous' for relayd, '/api/rendezvous' for
- *   Diwan's built-in surface)
+ *   LocalFirst's built-in surface)
  */
 export async function rendezvousResolve(baseUrl: string, key: string, prefix = '/rendezvous'): Promise<RendezvousResolveResult> {
   const res = await fetch(`${baseUrl}${prefix}/resolve/${encodeURIComponent(key)}`)
@@ -341,7 +341,7 @@ interface CreateDocResponse {
   data?: { id?: string }
 }
 
-/** Create a document on a Diwan instance through its real HTTP API. */
+/** Create a document on a LocalFirst instance through its real HTTP API. */
 export async function createDoc(officeUrl: string, name: string): Promise<string> {
   const res = await fetch(`${officeUrl}/api/files`, {
     method: 'POST',

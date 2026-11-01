@@ -3,26 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Diwan docs</title>
-<meta name="description" content="Diwan documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
+<title>LocalFirst docs</title>
+<meta name="description" content="LocalFirst documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
   <link rel="canonical" href="https://vulos.org/projects/diwan/docs.html">
   <meta name="color-scheme" content="dark light">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Diwan">
-  <meta property="og:title" content="Diwan docs">
-  <meta property="og:description" content="Diwan documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
+  <meta property="og:site_name" content="LocalFirst">
+  <meta property="og:title" content="LocalFirst docs">
+  <meta property="og:description" content="LocalFirst documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
   <meta property="og:url" content="https://vulos.org/projects/diwan/docs.html">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Diwan docs">
-  <meta name="twitter:description" content="Diwan documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
+  <meta name="twitter:title" content="LocalFirst docs">
+  <meta name="twitter:description" content="LocalFirst documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
   <meta property="og:image" content="https://vulos.org/projects/diwan/assets/og-card.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Diwan docs — Diwan documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
+  <meta property="og:image:alt" content="LocalFirst docs — LocalFirst documentation — getting started, architecture, collaboration, configuration, API, self-hosting, deploy, threat model and more.">
   <meta name="twitter:image" content="https://vulos.org/projects/diwan/assets/og-card.png">
 <meta name="theme-color" content="#FBF7F1">
-<link rel="icon" href="./assets/diwan-mark.svg">
+<link rel="icon" href="./assets/localfirst-mark.svg">
 <link rel="preload" href="./assets/fonts/bricolage-grotesque-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="./assets/fonts/schibsted-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <script>
@@ -32,7 +32,7 @@
     // with zero flash — see .navtoggle / .navlinks in the stylesheet below.
     document.documentElement.classList.add('js');
     try {
-      var s = localStorage.getItem('diwan.site-theme');
+      var s = localStorage.getItem('localfirst.site-theme');
       var t = s || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       document.documentElement.setAttribute('data-theme', t);
     } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
@@ -40,7 +40,7 @@
 </script>
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
-   Diwan — docs viewer
+   LocalFirst — docs viewer
    Same "Warm Workshop" theme as site/index.html (src/design/tokens.css):
    warm ivory paper, ember terracotta, exactly one accent, soft geometry.
    Fonts are vendored locally — nothing is fetched at runtime.
@@ -558,7 +558,7 @@ img{max-width:100%;display:block}
 <header class="topbar">
   <div class="bar">
     <a class="brand" href="./index.html">
-      <span class="tile"><img src="./assets/diwan-mark.svg" alt=""></span>Diwan
+      <span class="tile"><img src="./assets/localfirst-mark.svg" alt=""></span>LocalFirst
       <span class="ar" lang="ar" dir="rtl">ديوان</span>
     </a>
     <div class="spacer"></div>
@@ -584,7 +584,7 @@ img{max-width:100%;display:block}
 <main>
 <div class="wrap docs-shell">
   <aside class="docs-rail" aria-label="Documentation chapters">
-    <div class="rail-label">Diwan docs</div>
+    <div class="rail-label">LocalFirst docs</div>
     <button class="rail-toggle" id="railToggle" type="button" aria-expanded="false" aria-controls="railNav">
       <span class="rail-toggle-cur" id="railToggleCur">Chapters</span>
       <span class="rail-toggle-chev" aria-hidden="true"></span>
@@ -1017,7 +1017,7 @@ load(current());
   btn.addEventListener('click', function () {
     var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
-    try { localStorage.setItem('diwan.site-theme', next); } catch (e) {}
+    try { localStorage.setItem('localfirst.site-theme', next); } catch (e) {}
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', next === 'dark' ? '#17130E' : '#FBF7F1');
     repaintMermaid();

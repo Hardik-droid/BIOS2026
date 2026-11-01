@@ -1,4 +1,4 @@
-// Package rendezvous is Diwan's OWN peer-discovery surface: the signed,
+// Package rendezvous is LocalFirst's OWN peer-discovery surface: the signed,
 // content-blind announce / resolve / signal / mailbox protocol that two browsers
 // need in order to exchange WebRTC offer/answer/ICE and then talk directly to
 // each other.
@@ -12,16 +12,16 @@
 // ---------------
 // Two browsers cannot find each other without something in the middle to pass
 // the first few packets. That "something" is signalling, and it is a genuine
-// requirement of WebRTC, not a design choice we can decline. Until now Diwan
+// requirement of WebRTC, not a design choice we can decline. Until now LocalFirst
 // could only get it from somewhere ELSE: a Vulos OS / Pier host mounting
 // `/api/peering/*`, or an operator-run `vulos-relayd` named in
-// `collab.rendezvous_url`. With neither, a standalone Diwan binary had NO path
+// `collab.rendezvous_url`. With neither, a standalone LocalFirst binary had NO path
 // to peer-to-peer collaboration at all — `transportSelection.js` fell through to
 // LOCAL_ONLY and the UI honestly said "Offline".
 //
 // That made the product's central claim conditional on another product being
-// deployed. This package removes that condition: the Diwan binary serves the
-// same protocol itself, on its own origin, so an operator who runs one Diwan on
+// deployed. This package removes that condition: the LocalFirst binary serves the
+// same protocol itself, on its own origin, so an operator who runs one LocalFirst on
 // one VPS has everything two users need. Pier remains a legitimate CHOICE (an
 // operator who wants a shared relay across several deployments, or its NAT
 // traversal) — it is no longer a prerequisite.
@@ -59,7 +59,7 @@
 // It is deliberately OPEN in the sense that no account is required — anonymous
 // invite-link collaboration is the feature — and same-origin only: unlike
 // Pier's rendezvous role this surface serves NO CORS headers, because the only
-// browsers that need it are the ones already loading Diwan from this origin.
+// browsers that need it are the ones already loading LocalFirst from this origin.
 //
 // INTEROPERABILITY
 // ----------------
@@ -280,7 +280,7 @@ type queue struct {
 	waiters []chan struct{}
 }
 
-// Service is the rendezvous state for one Diwan process: in-memory, bounded, and
+// Service is the rendezvous state for one LocalFirst process: in-memory, bounded, and
 // deliberately NOT persisted.
 //
 // Why nothing is written to disk: every record here is soft state with a TTL of

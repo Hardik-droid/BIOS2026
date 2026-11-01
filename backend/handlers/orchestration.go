@@ -15,17 +15,17 @@ package handlers
 
 import (
 	"fmt"
+	appbrand "localfirst/internal/brand"
 	"log"
 	"net/http"
 	"net/smtp"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"diwan/backend/models"
-	"diwan/backend/storage"
+	"localfirst/backend/models"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -179,7 +179,7 @@ func (h *OrchestrationHandler) Remind(c *gin.Context) {
 }
 
 // smtpHost returns VULOS_SMTP_HOST, or "" when not configured.
-func smtpHost() string { return strings.TrimSpace(os.Getenv("VULOS_SMTP_HOST")) }
+func smtpHost() string { return strings.TrimSpace(appbrand.Getenv("VULOS_SMTP_HOST")) }
 
 // emitReminder logs a reminder for sg and, when SMTP is configured, sends an
 // email. Returns (delivered, error).
@@ -193,16 +193,16 @@ func emitReminder(env *models.Envelope, sg *models.Signer) (bool, error) {
 		return false, nil
 	}
 
-	portStr := strings.TrimSpace(os.Getenv("VULOS_SMTP_PORT"))
+	portStr := strings.TrimSpace(appbrand.Getenv("VULOS_SMTP_PORT"))
 	port := 587
 	if portStr != "" {
 		if p, err := strconv.Atoi(portStr); err == nil && p > 0 {
 			port = p
 		}
 	}
-	user := strings.TrimSpace(os.Getenv("VULOS_SMTP_USER"))
-	pass := strings.TrimSpace(os.Getenv("VULOS_SMTP_PASSWORD"))
-	from := strings.TrimSpace(os.Getenv("VULOS_SMTP_FROM"))
+	user := strings.TrimSpace(appbrand.Getenv("VULOS_SMTP_USER"))
+	pass := strings.TrimSpace(appbrand.Getenv("VULOS_SMTP_PASSWORD"))
+	from := strings.TrimSpace(appbrand.Getenv("VULOS_SMTP_FROM"))
 	if from == "" {
 		from = user
 	}

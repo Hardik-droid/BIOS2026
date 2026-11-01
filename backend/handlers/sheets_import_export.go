@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"diwan/backend/services/sheets_export"
-	"diwan/backend/storage"
+	"localfirst/backend/services/sheets_export"
+	"localfirst/backend/storage"
 
 	"github.com/gin-gonic/gin"
 )

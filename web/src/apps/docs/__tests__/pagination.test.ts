@@ -66,6 +66,14 @@ function fakeContent(
 }
 
 describe('measurePageBreaks', () => {
+  it('keeps page counts and break positions independent of display zoom', () => {
+    const normal = measurePageBreaks(fakeContent([100, 100, 100, 100, 100, 100]), 300)
+    const zoomed = measurePageBreaks(fakeContent([150, 150, 150, 150, 150, 150], { contentTop: 80 }), 300, 1.5)
+    expect(zoomed).toEqual(normal)
+    const reduced = measurePageBreaks(fakeContent([50, 50, 50, 50, 50, 50]), 300, .5)
+    expect(reduced).toEqual(normal)
+  })
+
   it('single short page → no breaks, pageCount 1', () => {
     const el = fakeContent([100, 100, 100]) // 300px total
     const { breaks, pageCount } = measurePageBreaks(el, 900)

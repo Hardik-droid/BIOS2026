@@ -57,7 +57,7 @@ test('offline creation, committed save, reload and export use no API or external
   await expect.poll(async () => JSON.stringify(await readRecord(page, 'diwan-local-workspace', 'files', id))).toContain('and after a fully offline refresh')
   const downloaded = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export workspace', exact: true }).click()
-  expect((await downloaded).suggestedFilename()).toMatch(/^diwan-workspace-.*\.json$/)
+  expect((await downloaded).suggestedFilename()).toMatch(/^localfirst-workspace-.*\.json$/)
   expect(network).toEqual([])
   expect(errors).toEqual([])
 })
@@ -104,7 +104,7 @@ test('a stale tab cannot silently replace another tab\'s committed edit', async 
 
 test('the installed shell and document survive a complete browser restart without HTTP access', async ({ baseURL }) => {
   if (!baseURL) throw new Error('The offline test base URL is required.')
-  const profile = await mkdtemp(join(tmpdir(), 'diwan-offline-profile-'))
+  const profile = await mkdtemp(join(tmpdir(), 'localfirst-offline-profile-'))
   let context = await chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true, serviceWorkers: 'allow', baseURL })
   let page = await context.newPage()
   const id = await newDoc(page, 'Browser restart')

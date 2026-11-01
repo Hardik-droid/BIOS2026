@@ -1,4 +1,4 @@
-# .github/workflows/security-scan.yml — security scanning for diwan
+# .github/workflows/security-scan.yml — security scanning for localfirst
 #
 # Triggers on:
 #   - push to any branch
@@ -62,7 +62,7 @@ jobs:
       # ../vulos-apps` directive that go.mod no longer has (and has not had for
       # some time). Because the job is advisory (`continue-on-error: true`), the
       # dead clone failing took gosec and govulncheck down with it silently — the
-      # scan reported nothing and the run stayed green. Diwan builds from this
+      # scan reported nothing and the run stayed green. LocalFirst builds from this
       # repository alone; if a step here ever needs another repo, that is the
       # signal to remove the dependency, not to fetch it.
 

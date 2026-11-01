@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"diwan/backend/fileacl"
+	"localfirst/backend/fileacl"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
